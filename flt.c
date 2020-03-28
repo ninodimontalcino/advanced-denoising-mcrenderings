@@ -3,7 +3,7 @@
 #include "flt.h"
 
 void flt(buffer *out, buffer *d_out_d_in, buffer *input, buffer *u, buffer *var_u, buffer *f, buffer *var_f, Flt_parameters p) {
-    double wc, wf;
+    double wc, wf, w;
     double sum_weights;
 
     buffer *gradients[NB_FEATURES][IMG_SIZE][IMG_SIZE];
@@ -14,13 +14,21 @@ void flt(buffer *out, buffer *d_out_d_in, buffer *input, buffer *u, buffer *var_
     sum_weights = 0;
     for(int xp=0;xp<IMG_SIZE;++xp) {
         for(int yp=0;yp<IMG_SIZE;++yp) {
+            sum_weights = 0;
+            for(int i=0;i<3;++i)
+                out[i][xp][yp] = 0;
             for(int xq = MIN(xp-p.r, 0); xq <= MAX(xp+p.r, IMG_SIZE-1); xq++) {
                 for(int yq = MIN(yp-p.r, 0); yq <= MAX(yp+p.r, IMG_SIZE-1); yq++) {
                     wc = color_weight(u, var_u, p, xp, yp, xq, yq);
                     wf = feature_weight(f, var_f, gradients, p, xp, yp, xq, yq);
-                    // TODO complete
+                    w = fmin(wc, wf);
+                    sum_weights += w;
+                    for(int i=0;i<3;++i)
+                        out[i][xp][yp] += input[i][xp][yp] * w;
                 }
             }
+            for(int i=0;i<3;++i)
+                out[i][xp][yp] /= sum_weights;
         }
     }
 }
