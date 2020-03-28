@@ -22,7 +22,7 @@ typedef struct
  *  - input: input buffer
  *  - u: color buffer (3 colors)
  *  - var_u: variance of u
- *  - f: feature buffers
+ *  - f: feature buffers. May be NULL if no feature buffer wanted.
  *  - var_f: variance of feature buffers
  *  - p: flt parameters
  * 

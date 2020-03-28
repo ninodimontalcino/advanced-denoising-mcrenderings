@@ -7,8 +7,10 @@ void flt(buffer *out, buffer *d_out_d_in, buffer *input, buffer *u, buffer *var_
     double sum_weights;
 
     buffer *gradients[NB_FEATURES][IMG_SIZE][IMG_SIZE];
-    for(int i=0; i<NB_FEATURES;++i) {
-        compute_gradient(gradients[i], f[i]);
+    if(f != NULL) {
+        for(int i=0; i<NB_FEATURES;++i) {
+            compute_gradient(gradients[i], f[i]);
+        }
     }
 
     sum_weights = 0;
@@ -20,7 +22,10 @@ void flt(buffer *out, buffer *d_out_d_in, buffer *input, buffer *u, buffer *var_
             for(int xq = MIN(xp-p.r, 0); xq <= MAX(xp+p.r, IMG_SIZE-1); xq++) {
                 for(int yq = MIN(yp-p.r, 0); yq <= MAX(yp+p.r, IMG_SIZE-1); yq++) {
                     wc = color_weight(u, var_u, p, xp, yp, xq, yq);
-                    wf = feature_weight(f, var_f, gradients, p, xp, yp, xq, yq);
+                    if(f != NULL)
+                        wf = feature_weight(f, var_f, gradients, p, xp, yp, xq, yq);
+                    else
+                        wf = wc;
                     w = fmin(wc, wf);
                     sum_weights += w;
                     for(int i=0;i<3;++i)
