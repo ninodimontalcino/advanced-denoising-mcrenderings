@@ -15,6 +15,7 @@
 #include <string.h>
 #include "denoise.h"
 #include "tsc_x86.h"
+#include "exrload.h"
 #include <cfloat>
 
 
@@ -22,7 +23,7 @@
 #define REP 10
 #define MAX_FUNCS 32
 // TODO: define number of flops
-#define FLOPS (4.*n)
+#define FLOPS (4.)
 #define EPS (1e-3)
 
 using namespace std;
@@ -58,7 +59,13 @@ int main(int argc, char **argv)
   double perf;
   int i;
 
-  register_functions();
+  //register_functions();
+
+  const char* filename = "../renderings/100spp/scene_Coateddiffuse.exr";
+  Array2D<Rgba> pixels;
+  int w, h;
+  readRgba1(filename, pixels, w, h);
+  cout << w << " " << h << "\n";
 
   if (numFuncs == 0){
     cout << endl;
