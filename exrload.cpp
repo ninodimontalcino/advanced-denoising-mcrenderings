@@ -135,7 +135,7 @@ readGZ1 (const char fileName[],
 }
 
 void load_image(const char fileName[],
-     buffer** &c,
+     buffer* &c,
 	 int &width, int &height) 
 {
         Array2D<float> pixelsR, pixelsG, pixelsB;
