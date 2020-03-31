@@ -25,8 +25,6 @@ https://onlinelibrary.wiley.com/doi/full/10.1111/cgf.12219
 
 ### EXR Loading
 
-Requirements: cmake (`sudo apt install cmake`)
-
     cd build
     git submodule update --init --recursive
     cmake ..
