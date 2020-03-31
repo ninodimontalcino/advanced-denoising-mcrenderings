@@ -1,11 +1,10 @@
 #ifndef FLT_H
 #define FLT_H
-
 #define IMG_SIZE 512
 #define EPSILON 0.01
 #define NB_FEATURES 3
 
-typedef double** buffer;
+typedef float** buffer;
 typedef struct
 {
     double kc; //Sensitivity to color

@@ -61,13 +61,27 @@ int main(int argc, char **argv)
 
   //register_functions();
 
-  const char* filename = "../renderings/100spp/scene_Coateddiffuse.exr";
-  Array2D<Rgba> pixels;
-  int w, h;
-  readRgba1(filename, pixels, w, h);
-  cout << w << " " << h << "\n";
+  // TODO @Félicité
+  // Build inputs
+  buffer *c, *svar_c, *features, *svar_f;
+  c, svar_c, features, svar_f = new buffer[3];
+  int r, w, h;
 
-  if (numFuncs == 0){
+  const char filename_c[] = "../renderings/100spp/scene_Coateddiffuse.exr";
+  const char filename_varc[] = "../renderings/100spp/scene_Coateddiffuse_variance.exr";
+  const char filename_albeido[] = "../renderings/100spp/scene_Coateddiffuse_albedo.exr";
+  const char filename_varalbeido[] = "../renderings/100spp/scene_Coateddiffuse_albedo_variance.exr";
+  const char filename_depth[] = "../renderings/100spp/scene_Coateddiffuse_depth.exr";
+  const char filename_depth_variance[] = "../renderings/100spp/scene_Coateddiffuse_depth_variance.exr";
+  const char filename_normal[] = "../renderings/100spp/scene_Coateddiffuse_normal.exr";
+  const char filename_normal_variance[] = "../renderings/100spp/scene_Coateddiffuse_normal_variance.exr";
+  
+  load_image(filename_c, c, w, h);
+  load_image(filename_varc, svar_c, w, h);
+  load_image(filename_albeido, features, w, h);
+  load_image(filename_varalbeido, svar_f, w, h);
+
+  if (numFuncs == 0){ 
     cout << endl;
     cout << "No functions registered - nothing for driver to do" << endl;
     cout << "Register functions by calling register_func(f, name)" << endl;
@@ -77,11 +91,6 @@ int main(int argc, char **argv)
   }
   cout << numFuncs << " functions registered." << endl;
    
-  
-  // TODO @Félicité
-  // Build inputs
-  buffer *c, *svar_c, *features, *svar_f;
-  int r;
 
   // TODO @Nino
   // Call correct function and check output
