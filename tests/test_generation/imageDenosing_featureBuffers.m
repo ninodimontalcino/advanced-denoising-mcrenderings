@@ -3,20 +3,30 @@ function imageDenosing_featureBuffers(file_name, f, r, k_c, k_f, t)
     
     % Read input image --> to be denoised
     dat = exrread(strcat(file_name, '.exr'));
+    arrayimgToFile(strcat(file_name, '.txt'), dat);
     
     % Read input features
     dat_var_color = exrread(strcat(file_name, '_variance.exr'));
+    arrayimgToFile(strcat(file_name, '_variance.txt'), dat_var_color);
     dat_var_normal = exrread(strcat(file_name, '_normal_variance.exr'));
+    arrayimgToFile(strcat(file_name, '_normal_variance.txt'), dat_var_normal);
     dat_var_albedo = exrread(strcat(file_name, '_albedo_variance.exr'));
+    arrayimgToFile(strcat(file_name, '_albedo_variance.txt'), dat_var_albedo);
     dat_var_depth = exrread(strcat(file_name, '_depth_variance.exr'));
+    arrayimgToFile(strcat(file_name, '_depth_variance.txt'), dat_var_depth);
     dat_normal = exrread(strcat(file_name, '_normal.exr'));
+    arrayimgToFile(strcat(file_name, '_normal.txt'), dat_normal);
     dat_depth = exrread(strcat(file_name, '_depth.exr'));
+    arrayimgToFile(strcat(file_name, '_depth.txt'), dat_depth);
     dat_albedo = exrread(strcat(file_name, '_albedo.exr'));
+    arrayimgToFile(strcat(file_name, '_albedo.txt'), dat_albedo);
     
     % Calculate feeature gradients
     sqrd_grad_normal = sqrd_gradient(dat_normal);
     sqrd_grad_depth = sqrd_gradient(dat_depth);
     sqrd_grad_albedo = sqrd_gradient(dat_albedo);
+    
+    arrayimgToFile(strcat(file_name, '_sqrd_grad_normal.txt'), sqrd_grad_normal);
     
     % Init containers with zeros
     flt = zeros(size(dat));
@@ -43,6 +53,7 @@ function imageDenosing_featureBuffers(file_name, f, r, k_c, k_f, t)
             % Box-Filtering distance (color)
             box_f = ones(2*f+1);
             dist_color = convn(dist_color, box_f, 'same');
+            arrayimgToFile(strcat(file_name, '_distcolor_', int2str(dx), '_', int2str(dy), '.txt'), dist_color);
             wgt_color = exp(-max(0, dist_color));
             
             % Compute distance (assume noise-free features)
@@ -56,8 +67,10 @@ function imageDenosing_featureBuffers(file_name, f, r, k_c, k_f, t)
              dist_depth = ((dat_depth - ngb_depth).^2 - (dat_var_depth + min(ngb_var_depth, dat_var_depth))) ...
                 ./ (k_f^2 * max(t, max(dat_var_depth, sqrd_grad_depth)) );
             
+            arrayimgToFile(strcat(file_name, '_distalbedo_', int2str(dx), '_', int2str(dy), '.txt'), dist_albedo);
             dist_features = max(max(dist_normal, dist_depth), dist_albedo);
             wgt_features = exp(-dist_features);
+            
             
             % Compute joint weight
             wgt = min(wgt_color, wgt_features);
@@ -74,6 +87,7 @@ function imageDenosing_featureBuffers(file_name, f, r, k_c, k_f, t)
     
     %% Normalize and write denoise image to exr-file
     flt = flt ./ wgtsum;
+    arrayimgToFile(strcat(file_name, '_output.txt'), flt);
     exrwrite(flt, strcat(file_name, '_denoised_fb_r=', int2str(r), '.exr'));
 end
 
