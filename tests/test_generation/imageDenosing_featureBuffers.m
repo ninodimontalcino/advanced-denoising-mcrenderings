@@ -25,9 +25,7 @@ function imageDenosing_featureBuffers(file_name, f, r, k_c, k_f, t)
     sqrd_grad_normal = sqrd_gradient(dat_normal);
     sqrd_grad_depth = sqrd_gradient(dat_depth);
     sqrd_grad_albedo = sqrd_gradient(dat_albedo);
-    
-    arrayimgToFile(strcat(file_name, '_sqrd_grad_normal.txt'), sqrd_grad_normal);
-    
+        
     % Init containers with zeros
     flt = zeros(size(dat));
     wgtsum = zeros(size(dat));
@@ -53,7 +51,6 @@ function imageDenosing_featureBuffers(file_name, f, r, k_c, k_f, t)
             % Box-Filtering distance (color)
             box_f = ones(2*f+1);
             dist_color = convn(dist_color, box_f, 'same');
-            arrayimgToFile(strcat(file_name, '_distcolor_', int2str(dx), '_', int2str(dy), '.txt'), dist_color);
             wgt_color = exp(-max(0, dist_color));
             
             % Compute distance (assume noise-free features)
@@ -67,7 +64,6 @@ function imageDenosing_featureBuffers(file_name, f, r, k_c, k_f, t)
              dist_depth = ((dat_depth - ngb_depth).^2 - (dat_var_depth + min(ngb_var_depth, dat_var_depth))) ...
                 ./ (k_f^2 * max(t, max(dat_var_depth, sqrd_grad_depth)) );
             
-            arrayimgToFile(strcat(file_name, '_distalbedo_', int2str(dx), '_', int2str(dy), '.txt'), dist_albedo);
             dist_features = max(max(dist_normal, dist_depth), dist_albedo);
             wgt_features = exp(-dist_features);
             
