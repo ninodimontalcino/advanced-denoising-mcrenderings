@@ -61,10 +61,12 @@ int main(int argc, char **argv)
 
   //register_functions();
 
-  // TODO @Félicité
   // Build inputs
   buffer *c, *svar_c, *features, *svar_f;
-  c, svar_c, features, svar_f = new buffer[3];
+  c = new buffer[3];
+  svar_c = new buffer[3];
+  features = new buffer[3];
+  svar_f = new buffer[3];
   int r, w, h;
 
   const char filename_c[] = "../renderings/100spp/scene_Coateddiffuse.exr";

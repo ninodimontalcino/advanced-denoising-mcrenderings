@@ -135,23 +135,35 @@ readGZ1 (const char fileName[],
 }
 
 void load_image(const char fileName[],
-     buffer** &c,
+     buffer* c,
 	 int &width, int &height) 
 {
         Array2D<float> pixelsR, pixelsG, pixelsB;
-        int w, h;
-        readGZ1(fileName, pixelsR, pixelsG, pixelsB, w, h);
+        readGZ1(fileName, pixelsR, pixelsG, pixelsB, width, height);
 
-        cout << w << " " << h << "\n";
+        c[0] = new float*[height];
+        c[1] = new float*[height];
+        c[2] = new float*[height];
+        for (int i = 0; i < height; i ++) {
 
-        c = new buffer[3];
-        c[0] = new float*[h];
-        c[1] = new float*[h];
-        c[2] = new float*[h];
-        for (int i = 0; i < h; i ++) {
-            c[0][i] = pixelsR[i];
-            c[1][i] = pixelsG[i];
-            c[2][i] = pixelsB[i];
+            c[0][i] = new float[width];
+            c[1][i] = new float[width];
+            c[2][i] = new float[width];
+
+            std::copy(pixelsR[i], pixelsR[i]+width, c[0][i]);
+            std::copy(pixelsG[i], pixelsG[i]+width, c[1][i]);
+            std::copy(pixelsB[i], pixelsB[i]+width, c[2][i]);
+
+            // c[0][i] = pixelsR[i];
+            // c[1][i] = pixelsG[i];
+            // c[2][i] = pixelsB[i];
+
+            // for (int j=0; j<width; j ++) {
+
+            //     c[0][i][j] = pixelsR[i][j];
+            //     c[1][i][j] = pixelsG[i][j];
+            //     c[2][i][j] = pixelsB[i][j];
+            // }
         }
 }
 

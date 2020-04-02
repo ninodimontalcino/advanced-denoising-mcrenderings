@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.10)
 project(team053)
 
 ###########################################################################
-# OpenEXR
+# OpenEXR (taken from https://github.com/mmp/pbrt-v3/blob/master/CMakeLists.txt)
 
 SET(ILMBASE_NAMESPACE_VERSIONING OFF CACHE BOOL " " FORCE)
 SET(OPENEXR_NAMESPACE_VERSIONING OFF CACHE BOOL " " FORCE)
@@ -32,4 +32,5 @@ ENDIF()
 # add the executable
 add_executable(exe main.cpp flt.c tsc_x86.h flt.h denoise.h exrload.cpp exrload.h)
 
-target_link_libraries(exe ${OPENEXR_LIBS})
+# Et pour que l'exécutable fonctionne, il faut lui indiquer la bibliothèque dont il dépend
+target_link_libraries(exe ${OPENEXR_LIBS}) 
