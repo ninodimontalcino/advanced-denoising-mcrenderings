@@ -25,7 +25,7 @@ using namespace IMATH_NAMESPACE;
 
 void
 load_image (const char fileName[],
-	   buffer* pixels,
+	   buffer* &pixels,
 	   int &width,
 	   int &height);
 
