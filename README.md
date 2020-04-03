@@ -1,4 +1,3 @@
-
 # ASL Project - Team 053
 
 **Main Paper:** Robust Denoising using Feature and Color Information, Rouselle 
@@ -21,11 +20,14 @@ https://onlinelibrary.wiley.com/doi/full/10.1111/cgf.12219
     ├── renderings                    # Extracted Buffers of Monte Carlo Renderings
     │   ├──  100spp                       # MC-Rendering using 100 samples per pixel
     │   ├──  500spp_GT                    # MC-Rendering using 500 samples per pixel (Claimed Grountd-Truth)
+    ├── src/ext                       # Openexr and zlib repositories
 
 
 ### EXR Loading
 
+    mkdir build
     cd build
     git submodule update --init --recursive
     cmake ..
     make
+    ./exe
