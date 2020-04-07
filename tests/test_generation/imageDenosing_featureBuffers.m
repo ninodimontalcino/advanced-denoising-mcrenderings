@@ -3,23 +3,23 @@ function imageDenosing_featureBuffers(file_name, f, r, k_c, k_f, t)
     
     % Read input image --> to be denoised
     dat = exrread(strcat(file_name, '.exr'));
-    arrayimgToFile(strcat(file_name, '.txt'), dat);
+    arrayimgToFile(strcat(file_name, '.txt'), dat, 0);
     
     % Read input features
     dat_var_color = exrread(strcat(file_name, '_variance.exr'));
-    arrayimgToFile(strcat(file_name, '_variance.txt'), dat_var_color);
+    arrayimgToFile(strcat(file_name, '_variance.txt'), dat_var_color, 0);
     dat_var_normal = exrread(strcat(file_name, '_normal_variance.exr'));
-    arrayimgToFile(strcat(file_name, '_normal_variance.txt'), dat_var_normal);
+    arrayimgToFile(strcat(file_name, '_normal_variance.txt'), dat_var_normal, 2);
     dat_var_albedo = exrread(strcat(file_name, '_albedo_variance.exr'));
-    arrayimgToFile(strcat(file_name, '_albedo_variance.txt'), dat_var_albedo);
+    arrayimgToFile(strcat(file_name, '_albedo_variance.txt'), dat_var_albedo, 2);
     dat_var_depth = exrread(strcat(file_name, '_depth_variance.exr'));
-    arrayimgToFile(strcat(file_name, '_depth_variance.txt'), dat_var_depth);
+    arrayimgToFile(strcat(file_name, '_depth_variance.txt'), dat_var_depth, 2);
     dat_normal = exrread(strcat(file_name, '_normal.exr'));
-    arrayimgToFile(strcat(file_name, '_normal.txt'), dat_normal);
+    arrayimgToFile(strcat(file_name, '_normal.txt'), dat_normal, 1);
     dat_depth = exrread(strcat(file_name, '_depth.exr'));
-    arrayimgToFile(strcat(file_name, '_depth.txt'), dat_depth);
+    arrayimgToFile(strcat(file_name, '_depth.txt'), dat_depth, 1);
     dat_albedo = exrread(strcat(file_name, '_albedo.exr'));
-    arrayimgToFile(strcat(file_name, '_albedo.txt'), dat_albedo);
+    arrayimgToFile(strcat(file_name, '_albedo.txt'), dat_albedo, 1);
     
     % Calculate feeature gradients
     sqrd_grad_normal = sqrd_gradient(dat_normal);
@@ -83,7 +83,7 @@ function imageDenosing_featureBuffers(file_name, f, r, k_c, k_f, t)
     
     %% Normalize and write denoise image to exr-file
     flt = flt ./ wgtsum;
-    arrayimgToFile(strcat(file_name, '_output.txt'), flt);
+    arrayimgToFile(strcat(file_name, '_output.txt'), flt, 0);
     exrwrite(flt, strcat(file_name, '_denoised_fb_r=', int2str(r), '.exr'));
 end
 
