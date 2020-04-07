@@ -13,18 +13,35 @@ void flt(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, ch
             gradients[i] = (channel)malloc(IMG_W*sizeof(void *));
             for(int j=0; j<IMG_W;++j)
                 gradients[i][j] = (scalar*)malloc(IMG_H*sizeof(scalar));
-            compute_gradient(gradients[i], f[i]);
+            compute_gradient(gradients[i], f[i], p.r+p.f);
         }
     }
 
+    // For edges, just copy in output the input
+    for(int i=0;i<3;++i) {
+        for(int xp=0;xp<p.r+p.f;++xp) {
+            for(int yp=0;yp<p.r+p.f;++yp)
+                out[i][xp][yp] = input[i][xp][yp];
+            for(int yp=IMG_H-p.r-p.f;yp<IMG_H;++yp)
+                out[i][xp][yp] = input[i][xp][yp];
+        }
+        for(int xp=IMG_W-p.r-p.f;xp<IMG_W;++xp) {
+            for(int yp=0;yp<p.r+p.f;++yp)
+                out[i][xp][yp] = input[i][xp][yp];
+            for(int yp=IMG_H-p.r-p.f;yp<IMG_H;++yp)
+                out[i][xp][yp] = input[i][xp][yp];
+        }
+    }
+
+    // Real computation
     sum_weights = 0;
-    for(int xp=0;xp<IMG_W;++xp) {
-        for(int yp=0;yp<IMG_H;++yp) {
+    for(int xp=p.r+p.f;xp<IMG_W-p.r-p.f;++xp) {
+        for(int yp=p.r+p.f;yp<IMG_H-p.r-p.f;++yp) {
             sum_weights = 0;
             for(int i=0;i<3;++i)
                 out[i][xp][yp] = 0;
-            for(int xq = MIN(xp-p.r, 0); xq <= MAX(xp+p.r, IMG_W-1); xq++) {
-                for(int yq = MIN(yp-p.r, 0); yq <= MAX(yp+p.r, IMG_H-1); yq++) {
+            for(int xq = xp-p.r; xq <= xp+p.r; xq++) {
+                for(int yq = yp-p.r; yq <= yp+p.r; yq++) {
                     wc = color_weight(u, var_u, p, xp, yp, xq, yq);
                     if(f != NULL)
                         wf = feature_weight(f, var_f, gradients, p, xp, yp, xq, yq);
@@ -33,7 +50,7 @@ void flt(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, ch
                     w = fmin(wc, wf);
                     sum_weights += w;
                     for(int i=0;i<3;++i)
-                        out[i][xp][yp] += input[i][xp][yp] * w;
+                        out[i][xp][yp] += input[i][xq][yq] * w;
                 }
             }
             for(int i=0;i<3;++i)
@@ -58,10 +75,9 @@ scalar color_weight(buffer u, buffer var_u, Flt_parameters p, int xp, int yp, in
 
 scalar nl_means_weights(buffer u, buffer var_u, Flt_parameters p, int xp, int yp, int xq, int yq) {
     scalar distance = 0;
-    for(int xn = -p.r; xn <= p.f; xn++) {
-        for(int yn = -p.r; yn <= p.f; yn++) {
+    for(int xn = -p.f; xn <= p.f; xn++) {
+        for(int yn = -p.f; yn <= p.f; yn++) {
             for(int i=0;i<3;++i) {
-                // TODO check boundaries
                 distance += per_pixel_distance(u[i], var_u[i], p.kc, xp + xn, yp + yn, xq + xn, yq + yn);
             }
         }
@@ -77,10 +93,9 @@ scalar per_pixel_distance(channel u, channel var_u, scalar kc, int xp, int yp, i
     return (sqdist - var_cancel) / normalization;
 }
 
-void compute_gradient(channel gradient, channel u) {
-    for(int x=0; x<IMG_W; ++x) {
-        for(int y=0; y<IMG_H; ++y) {
-            //TODO check bounds
+void compute_gradient(channel gradient, channel u, int d) {
+    for(int x=d; x<IMG_W-d; ++x) {
+        for(int y=d; y<IMG_H-d; ++y) {
             double diffL = u[x][y] - u[x-1][y];
             double diffR = u[x][y] - u[x+1][y];
             double diffU = u[x][y] - u[x][y-1];
