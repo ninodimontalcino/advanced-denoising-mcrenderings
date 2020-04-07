@@ -55,7 +55,7 @@ void rands(double * m, size_t row, size_t col)
 */
 int main(int argc, char **argv)
 {
-  cout << "Starting program. ";
+  //cout << "Starting program. ";
   double perf;
   int i;
 
@@ -83,11 +83,18 @@ int main(int argc, char **argv)
   load_image(filename_albeido, features, w, h);
   load_image(filename_varalbeido, svar_f, w, h);
 
+  for (int i = 0; i < h; i ++) {
+    for (int j = 0; j < w; j ++) {
+      cout << c[0][j][i] << " " << c[1][j][i] << " " << c[2][j][i] << " ";
+    }
+    cout << "\n";
+  }
+
   if (numFuncs == 0){ 
-    cout << endl;
-    cout << "No functions registered - nothing for driver to do" << endl;
-    cout << "Register functions by calling register_func(f, name)" << endl;
-    cout << "in register_funcs()" << endl;
+    // cout << endl;
+    // cout << "No functions registered - nothing for driver to do" << endl;
+    // cout << "Register functions by calling register_func(f, name)" << endl;
+    // cout << "in register_funcs()" << endl;
 
     return 0;
   }
