@@ -10,10 +10,17 @@ extern "C" {
 void allocate_buffer(buffer *buf) {
     *buf = (buffer) malloc(3*sizeof(void*));
     for(int i=0;i<3;++i) {
-        (*buf)[i] = (scalar**)malloc(IMG_W*sizeof(void*));
+        (*buf)[i] = (channel)malloc(IMG_W*sizeof(void*));
         for(int x=0;x<IMG_W;++x) {
             (*buf)[i][x] = (scalar*)malloc(IMG_H*sizeof(scalar));
         } 
+    }
+}
+
+void allocate_channel(channel *buf) {
+    *buf = (channel) malloc(IMG_W*sizeof(void*));
+    for(int i=0;i<IMG_W;++i) {
+        (*buf)[i] = (scalar*)malloc(IMG_H*sizeof(void*));
     }
 }
 
@@ -23,6 +30,12 @@ void free_buffer(buffer *buf) {
             free((*buf)[i][x]);
         free((*buf)[i]);
     }
+    free(*buf);
+}
+
+void free_channel(channel *buf) {
+    for(int x=0;x<IMG_W;++x)
+        free((*buf)[x]);
     free(*buf);
 }
 
@@ -37,6 +50,22 @@ void load_buffer_from_txt(buffer *buf, std::string filename) {
         for(int x=0; x<IMG_W; ++x) {
             for(int i=0;i<3;++i) 
                 file >> (*buf)[i][x][y];
+        }
+    }
+
+    file.close();
+}
+
+void load_channel_from_txt(channel *buf, std::string filename) {
+    std::cout << "\t\tLoading file " << filename << std::endl;
+    std::ifstream file;
+    file.open(filename);
+
+    allocate_channel(buf);
+
+    for(int y=0; y<IMG_H; ++y) {
+        for(int x=0; x<IMG_W; ++x) {
+            file >> (*buf)[x][y];
         }
     }
 
@@ -65,8 +94,8 @@ bool compare_buffers(buffer buf1, buffer buf2) {
 bool test_flt() {
     std::string base_file(TEST_FILES);
     buffer c, c_var;
-    buffer *features = (buffer*)malloc(3*sizeof(void*));
-    buffer *f_var = (buffer*)malloc(3*sizeof(void*));
+    channel *features = (channel*)malloc(NB_FEATURES*sizeof(void*));
+    channel *f_var = (channel*)malloc(NB_FEATURES*sizeof(void*));
 
     buffer out, out_d, out_ref;
 
@@ -74,12 +103,12 @@ bool test_flt() {
 
     load_buffer_from_txt(&c, base_file + ".txt");
     load_buffer_from_txt(&c_var, base_file + "_variance.txt");
-    load_buffer_from_txt(features, base_file + "_albedo.txt");
-    load_buffer_from_txt(&features[1], base_file + "_depth.txt");
-    load_buffer_from_txt(&features[2], base_file + "_normal.txt");
-    load_buffer_from_txt(&f_var[0], base_file + "_albedo_variance.txt");
-    load_buffer_from_txt(&f_var[1], base_file + "_depth_variance.txt");
-    load_buffer_from_txt(&f_var[2], base_file + "_normal_variance.txt");
+    load_channel_from_txt(features, base_file + "_albedo.txt");
+    load_channel_from_txt(&features[1], base_file + "_depth.txt");
+    load_channel_from_txt(&features[2], base_file + "_normal.txt");
+    load_channel_from_txt(&f_var[0], base_file + "_albedo_variance.txt");
+    load_channel_from_txt(&f_var[1], base_file + "_depth_variance.txt");
+    load_channel_from_txt(&f_var[2], base_file + "_normal_variance.txt");
     
     allocate_buffer(&out);
     allocate_buffer(&out_d);
@@ -101,9 +130,9 @@ bool test_flt() {
     free_buffer(&out);
     free_buffer(&out_d);
     free_buffer(&out_ref);
-    for(int i=0;i<3;++i) {
-        free_buffer(&features[i]);
-        free_buffer(&f_var[i]);
+    for(int i=0;i<NB_FEATURES;++i) {
+        free_channel(&features[i]);
+        free_channel(&f_var[i]);
     }
 
     free(features);

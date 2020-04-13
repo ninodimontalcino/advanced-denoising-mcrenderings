@@ -19,6 +19,8 @@ extern "C" {
 bool test_flt();
 void load_buffer_from_txt(buffer *buf, std::string filename);
 void free_buffer(buffer *buf);
+void load_channel_from_txt(channel *buf, std::string filename);
+void free_channel(channel *buf);
 
 bool compare_buffers(buffer buf1, buffer buf2);
 bool compare_scalar(scalar x, scalar y);
