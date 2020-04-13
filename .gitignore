@@ -1,3 +1,5 @@
 *.asv
 Makefile
 build/
+src/ext/
+.vscode/

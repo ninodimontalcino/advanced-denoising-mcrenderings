@@ -15,6 +15,7 @@
 #include <string.h>
 #include "denoise.h"
 #include "tsc_x86.h"
+#include "exrload.h"
 #include <cfloat>
 
 
@@ -22,7 +23,7 @@
 #define REP 10
 #define MAX_FUNCS 32
 // TODO: define number of flops
-#define FLOPS (4.*n)
+#define FLOPS (4.)
 #define EPS (1e-3)
 
 using namespace std;
@@ -54,27 +55,51 @@ void rands(double * m, size_t row, size_t col)
 */
 int main(int argc, char **argv)
 {
-  cout << "Starting program. ";
+  //cout << "Starting program. ";
   double perf;
   int i;
 
-  register_functions();
+  //register_functions();
 
-  if (numFuncs == 0){
-    cout << endl;
-    cout << "No functions registered - nothing for driver to do" << endl;
-    cout << "Register functions by calling register_func(f, name)" << endl;
-    cout << "in register_funcs()" << endl;
+  // Build inputs
+  buffer *c, *svar_c, *features, *svar_f;
+  c = new buffer[3];
+  svar_c = new buffer[3];
+  features = new buffer[3];
+  svar_f = new buffer[3];
+  int r, w, h;
+
+  const char filename_c[] = "../renderings/100spp/scene_Coateddiffuse.exr";
+  const char filename_varc[] = "../renderings/100spp/scene_Coateddiffuse_variance.exr";
+  const char filename_albeido[] = "../renderings/100spp/scene_Coateddiffuse_albedo.exr";
+  const char filename_varalbeido[] = "../renderings/100spp/scene_Coateddiffuse_albedo_variance.exr";
+  const char filename_depth[] = "../renderings/100spp/scene_Coateddiffuse_depth.exr";
+  const char filename_depth_variance[] = "../renderings/100spp/scene_Coateddiffuse_depth_variance.exr";
+  const char filename_normal[] = "../renderings/100spp/scene_Coateddiffuse_normal.exr";
+  const char filename_normal_variance[] = "../renderings/100spp/scene_Coateddiffuse_normal_variance.exr";
+  
+  load_image(filename_c, c, w, h);
+  load_image(filename_varc, svar_c, w, h);
+  load_image(filename_albeido, features, w, h);
+  load_image(filename_varalbeido, svar_f, w, h);
+
+  for (int i = 0; i < h; i ++) {
+    for (int j = 0; j < w; j ++) {
+      cout << c[0][j][i] << " " << c[1][j][i] << " " << c[2][j][i] << " ";
+    }
+    cout << "\n";
+  }
+
+  if (numFuncs == 0){ 
+    // cout << endl;
+    // cout << "No functions registered - nothing for driver to do" << endl;
+    // cout << "Register functions by calling register_func(f, name)" << endl;
+    // cout << "in register_funcs()" << endl;
 
     return 0;
   }
   cout << numFuncs << " functions registered." << endl;
    
-  
-  // TODO @Félicité
-  // Build inputs
-  buffer *c, *svar_c, *features, *svar_f;
-  int r;
 
   // TODO @Nino
   // Call correct function and check output
