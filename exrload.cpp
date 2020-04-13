@@ -55,20 +55,26 @@ readGZ1 (const char fileName[],
 }
 
 void load_image(const char fileName[],
-     buffer* &c,
-	 int &width, int &height) 
+                buffer* &c,
+	            int &width, 
+                int &height) 
 {
+        
+        // Read RGB Channels
         Array2D<float> pixelsR, pixelsG, pixelsB;
         readGZ1(fileName, pixelsR, pixelsG, pixelsB, width, height);
 
-        c[0] = new float*[width];
-        c[1] = new float*[width];
-        c[2] = new float*[width];
+        // Init buffer channels (R,G,B)
+        c[0] = new scalar*[width];
+        c[1] = new scalar*[width];
+        c[2] = new scalar*[width];
+
+        // Fill buffer with corresponding values -> c[channel][x][y]
         for (int i = 0; i < width; i ++) {
 
-            c[0][i] = new float[height];
-            c[1][i] = new float[height];
-            c[2][i] = new float[height];
+            c[0][i] = new scalar[height];
+            c[1][i] = new scalar[height];
+            c[2][i] = new scalar[height];
 
             for (int j=0; j<height; j ++) {
 

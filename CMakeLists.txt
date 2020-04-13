@@ -1,6 +1,6 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required (VERSION 3.10)
 
-# set the project name
+# DEFINE PROJECT
 project(team053)
 
 ###########################################################################
@@ -29,11 +29,10 @@ ELSE()
   SET(OPENEXR_LIBS IlmImf Imath Half)
 ENDIF()
 
-# add the executable
+###########################################################################
+# EXECUTABLE
 add_executable(exe main.cpp flt.c tsc_x86.h flt.h denoise.h exrload.cpp exrload.h)
-# add_executable(denoise_test flt.h tests.hpp flt.c tests.cpp)
+#add_executable(denoise_test flt.h tests.hpp flt.c tests.cpp)
 
-# Et pour que l'exécutable fonctionne, il faut lui indiquer la bibliothèque dont il dépend
-target_link_libraries(exe ${OPENEXR_LIBS}) cmake_minimum_required(VERSION 3.10)
-
+target_link_libraries(exe ${OPENEXR_LIBS})
 

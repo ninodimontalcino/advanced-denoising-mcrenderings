@@ -23,21 +23,26 @@ using namespace IMF;
 using namespace std;
 using namespace IMATH_NAMESPACE;
 
-void
-load_image (const char fileName[],
-	   buffer* &pixels,
-	   int &width,
-	   int &height);
 
-void
-readRgba1 (const char fileName[],
-	   Array2D<Rgba> &pixels,
-	   int &width,
-	   int &height);
+/*! ------------------------------------
+	EXR LOADING
+	------------------------------------
+    \param filename EXR-Filename
+    \param pixels 	Destination Buffer
+	\param width 	Image Width
+	\param height	Image Height
 
-void
-readGZ1 (const char fileName[],
-	 Array2D<float> &rPixels,
-	 Array2D<float> &gPixels,
-	 Array2D<float> &zPixels,
-	 int &width, int &height);
+    \return void --> fills pixels-buffer 
+*/
+void load_image(const char fileName[],		
+	   			buffer* &pixels,			
+	   			int &width,					
+	   			int &height);				
+
+
+void readGZ1 (const char fileName[],
+	 		  Array2D<float> &rPixels,
+			  Array2D<float> &gPixels,
+	 		  Array2D<float> &zPixels,
+	 		  int &width, 
+			  int &height);

@@ -40,7 +40,7 @@ vector<string> funcNames;
 vector<int> funcFlops;
 int numFuncs = 0;
 
-void rands(double * m, size_t row, size_t col)
+/* void rands(double * m, size_t row, size_t col)
 {
     std::random_device rd;
     std::mt19937 gen{rd()};
@@ -48,6 +48,7 @@ void rands(double * m, size_t row, size_t col)
   for (size_t i = 0; i < row*col; ++i)  
     m[i] = dist(gen);
 }
+*/
 
 /*
 * Main driver routine - calls register_funcs to get student functions, then
@@ -61,7 +62,14 @@ int main(int argc, char **argv)
 
   //register_functions();
 
-  // Build inputs
+  // ---------------------------
+  // (..) DEBUG VARIABLES
+  // ---------------------------
+  bool debug_EXR_loading = false;
+
+  // ---------------------------
+  // (..) VARIABLE DEFINITION
+  // ---------------------------
   buffer *c, *svar_c, *features, *svar_f;
   c = new buffer[3];
   svar_c = new buffer[3];
@@ -69,6 +77,9 @@ int main(int argc, char **argv)
   svar_f = new buffer[3];
   int r, w, h;
 
+  // ---------------------------
+  // (..) FILENAME DEFINITION
+  // ---------------------------
   const char filename_c[] = "../renderings/100spp/scene_Coateddiffuse.exr";
   const char filename_varc[] = "../renderings/100spp/scene_Coateddiffuse_variance.exr";
   const char filename_albeido[] = "../renderings/100spp/scene_Coateddiffuse_albedo.exr";
@@ -78,23 +89,33 @@ int main(int argc, char **argv)
   const char filename_normal[] = "../renderings/100spp/scene_Coateddiffuse_normal.exr";
   const char filename_normal_variance[] = "../renderings/100spp/scene_Coateddiffuse_normal_variance.exr";
   
+  // ---------------------------  
+  // (..) LOADING 
+  // --------------------------- 
   load_image(filename_c, c, w, h);
   load_image(filename_varc, svar_c, w, h);
   load_image(filename_albeido, features, w, h);
   load_image(filename_varalbeido, svar_f, w, h);
 
-  for (int i = 0; i < h; i ++) {
-    for (int j = 0; j < w; j ++) {
-      cout << c[0][j][i] << " " << c[1][j][i] << " " << c[2][j][i] << " ";
+  if(debug_EXR_loading){
+    for (int i = 0; i < h; i ++) {
+      for (int j = 0; j < w; j ++) {
+        cout << c[0][j][i] << " " << c[1][j][i] << " " << c[2][j][i] << " ";
+      }
+      cout << "\n";
     }
-    cout << "\n";
   }
+  
+  // ---------------------------
+  // (..) ...
+  // ---------------------------
+
 
   if (numFuncs == 0){ 
-    // cout << endl;
-    // cout << "No functions registered - nothing for driver to do" << endl;
-    // cout << "Register functions by calling register_func(f, name)" << endl;
-    // cout << "in register_funcs()" << endl;
+    cout << endl;
+    cout << "No functions registered - nothing for driver to do" << endl;
+    cout << "Register functions by calling register_func(f, name)" << endl;
+    cout << "in register_funcs()" << endl;
 
     return 0;
   }
@@ -136,7 +157,7 @@ int main(int argc, char **argv)
 void add_function(denoise_func f, string name, int flops)
 {
   userFuncs.push_back(f);
-  funcNames.emplace_back(name);
+  funcNames.__emplace_back(name);
   funcFlops.push_back(flops);
 
   numFuncs++;

@@ -2,7 +2,7 @@
 #define FLT_H
 
 typedef float scalar;
-typedef scalar*** buffer;
+typedef scalar** buffer;
 #define IMG_W 800
 #define IMG_H 600
 
