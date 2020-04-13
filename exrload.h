@@ -28,16 +28,16 @@ using namespace IMATH_NAMESPACE;
 	EXR LOADING
 	------------------------------------
     \param filename EXR-Filename
-    \param pixels 	Destination Buffer
-	\param width 	Image Width
-	\param height	Image Height
+    \param buf 	    Pointer to destination buffer
+	\param img_width 	Image Width
+	\param img_height	Image Height
 
     \return void --> fills pixels-buffer 
 */
 void load_image(const char fileName[],		
-	   			buffer* &pixels,			
-	   			int &width,					
-	   			int &height);				
+	   			buffer* buf,			
+	   			int &img_width,					
+	   			int &img_eight);				
 
 
 void readGZ1 (const char fileName[],

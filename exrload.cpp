@@ -55,32 +55,32 @@ readGZ1 (const char fileName[],
 }
 
 void load_image(const char fileName[],
-                buffer* &c,
-	            int &width, 
-                int &height) 
+                buffer* buf,
+	            int &img_width, 
+                int &img_height) 
 {
         
         // Read RGB Channels
         Array2D<float> pixelsR, pixelsG, pixelsB;
-        readGZ1(fileName, pixelsR, pixelsG, pixelsB, width, height);
+        readGZ1(fileName, pixelsR, pixelsG, pixelsB, img_width, img_height);
 
-        // Init buffer channels (R,G,B)
-        c[0] = new scalar*[width];
-        c[1] = new scalar*[width];
-        c[2] = new scalar*[width];
+        // Init buffer channels
+        (*buf)[0] = (channel)malloc(img_width*sizeof(void*));  
+        (*buf)[1] = (channel)malloc(img_width*sizeof(void*));
+        (*buf)[2] = (channel)malloc(img_width*sizeof(void*));
 
         // Fill buffer with corresponding values -> c[channel][x][y]
-        for (int i = 0; i < width; i ++) {
+        for (int i = 0; i < img_width; i ++) {
 
-            c[0][i] = new scalar[height];
-            c[1][i] = new scalar[height];
-            c[2][i] = new scalar[height];
+            (*buf)[0][i] = (scalar*)malloc(img_height*sizeof(scalar));
+            (*buf)[1][i] = (scalar*)malloc(img_height*sizeof(scalar));
+            (*buf)[2][i] = (scalar*)malloc(img_height*sizeof(scalar));
 
-            for (int j=0; j<height; j ++) {
+            for (int j=0; j<img_height; j ++) {
 
-                c[0][i][j] = pixelsR[j][i];
-                c[1][i][j] = pixelsG[j][i];
-                c[2][i][j] = pixelsB[j][i];
+                (*buf)[0][i][j] = pixelsR[j][i];
+                (*buf)[1][i][j] = pixelsG[j][i];
+                (*buf)[2][i][j] = pixelsB[j][i];
             }
         }
 }
