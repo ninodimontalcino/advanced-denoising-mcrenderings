@@ -1,8 +1,145 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
-#include "flt.h"
+#include "flt.hpp"
 
-void flt(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, channel *f, channel *var_f, Flt_parameters p) {
+
+
+void sure(channel output, buffer c, buffer c_var, buffer cand, buffer cand_d, int img_width, int img_height){
+
+    double d, v;
+    
+    for (int x = 0; x < img_width; x++){
+        for (int y = 0; y < img_height; y++){
+
+            double sure = 0;
+
+            // Sum over color channels
+            for (int i = 0; i < 3; i++){    
+
+                // Calculate terms
+                d = cand[i][x][y] - c[i][x][y];
+                d *= d;
+                v = c_var[i][x][y];
+                v *= v;
+                
+                // Summing up
+                sure += d - v + (v * cand_d[i][x][y]);
+
+            }
+            // Store sure error estimate
+            output[x][y] = sure;
+        }
+    }
+}
+
+
+
+void flt_buffer_basic(buffer output, buffer input, buffer u, buffer var_u, Flt_parameters p){
+
+    double sum_weights, wc, w;
+
+    // Handling Border Cases (border section)
+    for(int i = 0; i < 3; ++i) {
+        for(int xp = 0; xp < p.r+p.f; ++xp) {
+            for(int yp = 0; yp < p.r+p.f; ++yp)
+                output[i][xp][yp] = input[i][xp][yp];
+            for(int yp = IMG_H-p.r-p.f; yp < IMG_H; ++yp)
+                output[i][xp][yp] = input[i][xp][yp];
+        }
+        for(int xp = IMG_W-p.r-p.f; xp < IMG_W; ++xp) {
+            for(int yp=0;yp<p.r+p.f;++yp)
+                output[i][xp][yp] = input[i][xp][yp];
+            for(int yp = IMG_H-p.r-p.f; yp < IMG_H; ++yp)
+                output[i][xp][yp] = input[i][xp][yp];
+        }
+    }
+
+    // General Pre-Filtering
+    for(int xp = p.r+p.f; xp < IMG_W-p.r-p.f; ++xp) {
+        for(int yp = p.r+p.f; yp < IMG_H-p.r-p.f; ++yp) {
+
+            sum_weights = 0;
+
+            // Init output to 0 => TODO: maybe we can do this with calloc
+            for(int i=0;i<3;++i)
+                output[i][xp][yp] = 0;
+
+            for(int xq = xp-p.r; xq <= xp+p.r; xq++) {
+                for(int yq = yp-p.r; yq <= yp+p.r; yq++) {
+                    
+                    // Compute color Weight
+                    wc = color_weight(u, var_u, p, xp, yp, xq, yq);
+                    sum_weights += w;
+
+                    // Add contribution term
+                    for(int i=0;i<3;++i)
+                        output[i][xp][yp] += input[i][xq][yq] * w;
+                }
+            }
+
+            // Normalization step
+            for(int i=0;i<3;++i)
+                output[i][xp][yp] /= sum_weights;
+        }
+    }
+
+
+}
+
+
+void flt_channel_basic(channel output, channel input, buffer u, buffer var_u, Flt_parameters p){
+
+    double sum_weights, wc, w;
+
+    // Handling Border Cases (border section)
+    for(int i = 0; i < 3; ++i) {
+        for(int xp = 0; xp < p.r+p.f; ++xp) {
+            for(int yp = 0; yp < p.r+p.f; ++yp)
+                output[xp][yp] = input[xp][yp];
+            for(int yp = IMG_H-p.r-p.f; yp < IMG_H; ++yp)
+                output[xp][yp] = input[xp][yp];
+        }
+        for(int xp = IMG_W-p.r-p.f; xp < IMG_W; ++xp) {
+            for(int yp=0;yp<p.r+p.f;++yp)
+                output[xp][yp] = input[xp][yp];
+            for(int yp = IMG_H-p.r-p.f; yp < IMG_H; ++yp)
+                output[xp][yp] = input[xp][yp];
+        }
+    }
+
+    // General Pre-Filtering
+    for(int xp = p.r+p.f; xp < IMG_W-p.r-p.f; ++xp) {
+        for(int yp = p.r+p.f; yp < IMG_H-p.r-p.f; ++yp) {
+
+            sum_weights = 0;
+
+            // Init output to 0 => TODO: maybe we can do this with calloc
+            output[xp][yp] = 0;
+
+            for(int xq = xp-p.r; xq <= xp+p.r; xq++) {
+                for(int yq = yp-p.r; yq <= yp+p.r; yq++) {
+                    
+                    // Compute color Weight
+                    wc = color_weight(u, var_u, p, xp, yp, xq, yq);
+                    sum_weights += w;
+
+                    // Add contribution term
+                    output[xp][yp] += input[xq][yq] * w;
+                }
+            }
+
+            // Normalization step
+            for(int i=0;i<3;++i)
+                output[xp][yp] /= sum_weights;
+        }
+    }
+
+
+}
+
+
+void flt(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, buffer f, buffer var_f, Flt_parameters p) {
     double wc, wf, w;
     double sum_weights;
 

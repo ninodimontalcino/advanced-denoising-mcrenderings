@@ -7,7 +7,7 @@
 #include <ImfInputFile.h>
 #include <ImfChannelList.h>
 #include <ImfArray.h>
-#include "flt.h"
+#include "flt.hpp"
 
 //#include "drawImage.h"
 //#include "namespaceAlias.h"
@@ -25,14 +25,19 @@ using namespace IMATH_NAMESPACE;
 
 
 /*! ------------------------------------
-	EXR LOADING
-	------------------------------------
-    \param filename EXR-Filename
-    \param buf 	    Pointer to destination buffer
-	\param img_width 	Image Width
-	\param img_height	Image Height
+	EXR Loading 
+	-> Loads and return an EXR image
+	-> Access-Pattern buf[{r,g,b}][x][y]
+    
+	Parameters:
+		- filename 		EXR-Filename
+    	- buf 	    	Pointer to destination buffer
+		- img_width 	Image Width
+		- img_height	Image Height
 
-    \return void --> fills pixels-buffer 
+	Returns
+		- buf			buffer containing loaded EXR image
+
 */
 void load_image(const char fileName[],		
 	   			buffer* buf,			

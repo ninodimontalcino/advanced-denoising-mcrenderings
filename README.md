@@ -17,24 +17,32 @@ https://onlinelibrary.wiley.com/doi/full/10.1111/cgf.12219
 ### Folder Structure
 
     .
+    |── implementations               # Implemented Denoising Algorithms
+    │   ├──  basic.cpp                      # Vanilla Implementation of referenced denoising algorithm
+    │   ├──  <...>.cpp                      # Optimized Version (mention technique)
     ├── reference_implementation      # Joint Non-Local Means Implementation (Matlab)
     ├── renderings                    # Extracted Buffers of Monte Carlo Renderings
-    │   ├──  100spp                       # MC-Rendering using 100 samples per pixel
-    │   ├──  500spp_GT                    # MC-Rendering using 500 samples per pixel (Claimed Grountd-Truth)
-    ├── src/ext                       # Openexr and zlib repositories
+    │   ├──  100spp                         # MC-Rendering using 100 samples per pixel
+    │   ├──  500spp_GT                      # MC-Rendering using 500 samples per pixel (Claimed Grountd-Truth)
+    ├── src                           # Libraries
+    │   ├── ext                             # External Libraries    
+    │   ├── ├── openexr                             # OpenEXR (used for Data Loading)
+    │   ├── ├── zlib                                # zlib (data compression used by OpenEXR)
     ├── tests                         # Testing directory
     |   ├──  test_generation              # Modified reference_implementation to create test data
     |   ├──  test_data                    # Generated test data
 
 
-### EXR Loading
+### Building
 
+```bash
 mkdir build
 cd build
 git submodule update --init --recursive
 cmake ..
 make
 ./exe
+```
 
 ### Tests
 

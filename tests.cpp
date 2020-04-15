@@ -2,9 +2,8 @@
 #include <fstream>
 #include <string>
 #include <cmath>
-extern "C" {
-    #include "flt.h"
-}
+
+#include "flt.hpp"
 #include "tests.hpp"
 
 void allocate_buffer(buffer *buf) {

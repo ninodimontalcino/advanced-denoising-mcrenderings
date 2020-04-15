@@ -1,9 +1,7 @@
 #ifndef TESTS_H
 #define TESTS_H
 
-extern "C" {
-    #include "flt.h"
-}
+#include "flt.hpp"
 
 #define TEST_FILES "tests/test_data/scene_Coateddiffuse"
 

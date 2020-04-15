@@ -1,5 +1,6 @@
 cmake_minimum_required (VERSION 3.10)
 
+# #########################################################################
 # DEFINE PROJECT
 project(team053)
 
@@ -30,9 +31,38 @@ ELSE()
 ENDIF()
 
 ###########################################################################
-# EXECUTABLE
-add_executable(exe main.cpp flt.c tsc_x86.h flt.h denoise.h exrload.cpp exrload.h)
-#add_executable(denoise_test flt.h tests.hpp flt.c tests.cpp)
+# EXECUTABLES
+# -------------------------------------------------------------------------
 
-target_link_libraries(exe ${OPENEXR_LIBS})
+# --------------------------
+# (1) Main Executable
+# --------------------------
+add_executable(main 
+
+              # Header Files
+              tsc_x86.h 
+              exrload.h
+              memory_mgmt.hpp
+              denoise.h
+              flt.hpp 
+
+              # General Source Files
+              main.cpp 
+              exrload.cpp
+              memory_mgmt.cpp 
+              flt.cpp 
+
+              # Implementations (BASIC and OPTIMIZED)
+              implementations/basic.cpp
+              
+              )
+
+# --------------------------
+# (2) Testing Executable
+# --------------------------
+add_executable(denoise_test flt.hpp tests.hpp flt.cpp tests.cpp)
+
+
+# Link to dependency libraries (e.g. OPENEXR)
+target_link_libraries(main ${OPENEXR_LIBS})
 
