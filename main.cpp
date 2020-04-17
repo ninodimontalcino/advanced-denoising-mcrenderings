@@ -13,10 +13,13 @@
 #include <time.h>
 #include <math.h>
 #include <string.h>
+#include <cfloat>
+
 #include "denoise.h"
 #include "tsc_x86.h"
-#include "exrload.h"
-#include <cfloat>
+#include "exr.h"
+#include "memory_mgmt.hpp"
+#include "validation.hpp"
 
 
 #define CYCLES_REQUIRED 1e7
@@ -77,19 +80,14 @@ int main(int argc, char **argv)
   // (..) BUFFER INIT AND VARIABLE DEF.
   // ------------------------------------
 
+  // Ground Truth buffer
+  buffer gt;
+
   // Color Buffers and Variance
   buffer c, c_var;
-  c = (buffer) malloc(3*sizeof(void*));
-  c_var = (buffer) malloc(3*sizeof(void*));
 
   // Feature Buffers and Variance
   buffer f_albedo, f_albedo_var, f_depth, f_depth_var, f_normal, f_normal_var;
-  f_albedo = (buffer) malloc(3*sizeof(void*));
-  f_albedo_var = (buffer) malloc(3*sizeof(void*));
-  f_depth = (buffer) malloc(3*sizeof(void*));
-  f_depth_var = (buffer) malloc(3*sizeof(void*));
-  f_normal = (buffer) malloc(3*sizeof(void*));
-  f_normal_var = (buffer) malloc(3*sizeof(void*));
 
   // Other parameters
   int r, img_width, img_height;
@@ -100,6 +98,7 @@ int main(int argc, char **argv)
   // ------------------------------------
   // TODO: EXR-Loading based on string input such that we can use path + "<..>.exr"
   const string path = "../renderings/100spp/";
+  const char filename_GT[] = "../renderings/5000spp_GT/scene_CoateddiffuseGT.exr";
   const char filename_c[] = "../renderings/100spp/scene_Coateddiffuse.exr";
   const char filename_varc[] = "../renderings/100spp/scene_Coateddiffuse_variance.exr";
   const char filename_albedo[] = "../renderings/100spp/scene_Coateddiffuse_albedo.exr";
@@ -113,39 +112,35 @@ int main(int argc, char **argv)
   // (..) EXR LOADING 
   // ------------------------------------
 
+ 
   // (1) Load main image and its variance
-  load_image(filename_c, &c, img_width, img_height);
-  load_image(filename_varc, &c_var, img_width, img_height);
-  // printf("Width: %d, Height: %d \n", w, h);
+  load_exr(filename_c, &c, img_width, img_height);
+  load_exr(filename_varc, &c_var, img_width, img_height);
 
   // (2) Load individual features
-  load_image(filename_albedo, &f_albedo, img_width, img_height);
-  load_image(filename_albedo_variance, &f_albedo_var, img_width, img_height);
-  load_image(filename_depth, &f_depth, img_width, img_height);
-  load_image(filename_depth_variance, &f_depth_var, img_width, img_height);
-  load_image(filename_normal, &f_normal, img_width, img_height);
-  load_image(filename_normal_variance, &f_normal_var, img_width, img_height);
+  load_exr(filename_albedo, &f_albedo, img_width, img_height);
+  load_exr(filename_albedo_variance, &f_albedo_var, img_width, img_height);
+  load_exr(filename_depth, &f_depth, img_width, img_height);
+  load_exr(filename_depth_variance, &f_depth_var, img_width, img_height);
+  load_exr(filename_normal, &f_normal, img_width, img_height);
+  load_exr(filename_normal_variance, &f_normal_var, img_width, img_height);
 
+  // (3) Load GT
+  load_exr(filename_GT, &gt, img_width, img_height);
 
   // (3) Feature Stacking
   // => Access Pattern: features[i][x][y] where i in (1:= albedo, 2:= depth, 3:= normal)
   // => TODO: Fix input features to one channel => or duplicated channel
   buffer features, features_var;
-  features = (buffer) malloc(3*sizeof(void*));
-  features_var = (buffer) malloc(3*sizeof(void*));
+  allocate_buffer(&features, img_width, img_height);
+  allocate_buffer(&features_var, img_width, img_height);
 
   // (a) Features
-  features[0] = (channel)malloc(img_width*sizeof(void*));
-  features[1] = (channel)malloc(img_width*sizeof(void*));
-  features[2] = (channel)malloc(img_width*sizeof(void*));
   features[0] = f_albedo[0];
   features[1] = f_depth[0];
   features[2] = f_normal[0];
 
   // (b) Feature Variances
-  features_var[0] = (channel)malloc(img_width*sizeof(void*));
-  features_var[1] = (channel)malloc(img_width*sizeof(void*));
-  features_var[2] = (channel)malloc(img_width*sizeof(void*));
   features_var[0] = f_albedo_var[0];
   features_var[1] = f_depth_var[0];
   features_var[2] = f_normal_var[0];
@@ -175,22 +170,29 @@ int main(int argc, char **argv)
   }
   cout << numFuncs << " functions registered." << endl;
    
-
-  // TODO @Nino => Work in Progress
-
   // Call correct function and check output
   buffer out_img;
-
-  
+  allocate_buffer(&out_img, img_width, img_height);
   denoise_func f = userFuncs[0];
   f(out_img, c, c_var, features, features_var, r, img_width, img_height);
-  
-  // Store out_img somewhere
+
+  // Compute RMSE between denoised image and GT (of Vanilla Implementation)
+  scalar _rmse = rmse(out_img, gt, img_width, img_height);
+  printf("RMSE: %f \n", _rmse);
+
+
+  // Run functions and check if they produce the same output as the Vanilla Implementation 
+  buffer out_img_f;
+  allocate_buffer(&out_img_f, img_width, img_height);
 
   for (i = 0; i < numFuncs; i++) {
     denoise_func f = userFuncs[i];
-    f(out_img, c, c_var, features, features_var, r, img_width, img_height);
-    // TODO: Compute "DENOISING SCORE" and check if above some define threshhold (in work @Nino )
+    f(out_img_f, c, c_var, features, features_var, r, img_width, img_height);
+
+    // Compare out_img_f with out_img_f
+    //if (!compare_buffers(out_img, out_img_f)){
+    //  printf("Function %d produces a different result! \n", i);
+    //}
 
   }
 

@@ -4,6 +4,9 @@ cmake_minimum_required (VERSION 3.10)
 # DEFINE PROJECT
 project(team053)
 
+
+set(CMAKE_BUILD_TYPE Debug)
+
 ###########################################################################
 # OpenEXR (taken from https://github.com/mmp/pbrt-v3/blob/master/CMakeLists.txt)
 
@@ -41,16 +44,18 @@ add_executable(main
 
               # Header Files
               tsc_x86.h 
-              exrload.h
+              exr.h
               memory_mgmt.hpp
               denoise.h
               flt.hpp 
+              validation.hpp
 
               # General Source Files
               main.cpp 
-              exrload.cpp
+              exr.cpp
               memory_mgmt.cpp 
               flt.cpp 
+              validation.cpp
 
               # Implementations (BASIC and OPTIMIZED)
               implementations/basic.cpp

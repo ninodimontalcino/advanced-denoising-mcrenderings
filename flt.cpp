@@ -22,7 +22,7 @@ void sure(channel output, buffer c, buffer c_var, buffer cand, buffer cand_d, in
                 d *= d;
                 v = c_var[i][x][y];
                 v *= v;
-                
+
                 // Summing up
                 sure += d - v + (v * cand_d[i][x][y]);
 
@@ -37,10 +37,10 @@ void sure(channel output, buffer c, buffer c_var, buffer cand, buffer cand_d, in
 
 void flt_buffer_basic(buffer output, buffer input, buffer u, buffer var_u, Flt_parameters p){
 
-    double sum_weights, wc, w;
+    double sum_weights, wc;
 
     // Handling Border Cases (border section)
-    for(int i = 0; i < 3; ++i) {
+    for(int i = 0; i < 3; i++) {
         for(int xp = 0; xp < p.r+p.f; ++xp) {
             for(int yp = 0; yp < p.r+p.f; ++yp)
                 output[i][xp][yp] = input[i][xp][yp];
@@ -53,8 +53,10 @@ void flt_buffer_basic(buffer output, buffer input, buffer u, buffer var_u, Flt_p
             for(int yp = IMG_H-p.r-p.f; yp < IMG_H; ++yp)
                 output[i][xp][yp] = input[i][xp][yp];
         }
+        
     }
 
+    
     // General Pre-Filtering
     for(int xp = p.r+p.f; xp < IMG_W-p.r-p.f; ++xp) {
         for(int yp = p.r+p.f; yp < IMG_H-p.r-p.f; ++yp) {
@@ -70,11 +72,11 @@ void flt_buffer_basic(buffer output, buffer input, buffer u, buffer var_u, Flt_p
                     
                     // Compute color Weight
                     wc = color_weight(u, var_u, p, xp, yp, xq, yq);
-                    sum_weights += w;
+                    sum_weights += wc;
 
                     // Add contribution term
                     for(int i=0;i<3;++i)
-                        output[i][xp][yp] += input[i][xq][yq] * w;
+                        output[i][xp][yp] += input[i][xq][yq] * wc;
                 }
             }
 
@@ -83,6 +85,7 @@ void flt_buffer_basic(buffer output, buffer input, buffer u, buffer var_u, Flt_p
                 output[i][xp][yp] /= sum_weights;
         }
     }
+    
 
 
 }
@@ -90,7 +93,7 @@ void flt_buffer_basic(buffer output, buffer input, buffer u, buffer var_u, Flt_p
 
 void flt_channel_basic(channel output, channel input, buffer u, buffer var_u, Flt_parameters p){
 
-    double sum_weights, wc, w;
+    double sum_weights, wc;
 
     // Handling Border Cases (border section)
     for(int i = 0; i < 3; ++i) {
@@ -122,10 +125,10 @@ void flt_channel_basic(channel output, channel input, buffer u, buffer var_u, Fl
                     
                     // Compute color Weight
                     wc = color_weight(u, var_u, p, xp, yp, xq, yq);
-                    sum_weights += w;
+                    sum_weights += wc;
 
                     // Add contribution term
-                    output[xp][yp] += input[xq][yq] * w;
+                    output[xp][yp] += input[xq][yq] * wc;
                 }
             }
 

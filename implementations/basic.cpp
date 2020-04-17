@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cmath>
+#include "../exr.h"
 #include "../flt.hpp"
 #include "../memory_mgmt.hpp"
 
@@ -28,7 +29,11 @@ using namespace std;
  */
  void basic_implementation(buffer out_img, buffer c, buffer c_var, buffer f, buffer f_var, int R, int img_width, int img_height){
 
-     // ----------------------------------------------
+    cout << "--------------------------------------------------" << endl;
+    cout << " Start Algorithm " << endl;
+    cout << "--------------------------------------------------" << endl;
+
+    // ----------------------------------------------
     // (1) Sample Variance Scaling
     // ----------------------------------------------
     // !!! => not necessary in our case since sample variance is already computed in renderer
@@ -42,6 +47,11 @@ using namespace std;
     allocate_buffer(&f_var_filtered, img_width, img_height);
     flt_buffer_basic(f_filtered, f, f, f_var, p_pre);
     flt_buffer_basic(f_var_filtered, f_var, f, f_var, p_pre);
+    write_channel_exr("temp/albedo_filtered.exr", &f_filtered[0], img_width, img_height);
+    write_channel_exr("temp/depth_filtered.exr", &f_filtered[1], img_width, img_height);
+    write_channel_exr("temp/normal_filtered.exr", &f_filtered[2], img_width, img_height);
+
+    cout << "\t - Feature Prefiltering done" << endl;
 
     // ----------------------------------------------   
     // (3) Computation of Candidate Filters
@@ -52,6 +62,9 @@ using namespace std;
     allocate_buffer(&r, img_width, img_height);
     allocate_buffer(&d_r, img_width, img_height);
     flt(r, d_r, c, c, c_var, f_filtered, f_var_filtered, p_r);
+    write_buffer_exr("temp/candidate_FIRST.exr", &r, img_width, img_height);
+
+    cout << "\t - Candidate FIRST done" << endl;
 
     // (b) Candidate Filter: SECOND
     Flt_parameters p_g = { .kc = 0.45, .kf = 0.6, .tau = 0.001, .f = 3, .r=R};
@@ -59,6 +72,9 @@ using namespace std;
     allocate_buffer(&g, img_width, img_height);
     allocate_buffer(&d_g, img_width, img_height);
     flt(g, d_g, c, c, c_var, f_filtered, f_var_filtered, p_g);
+    write_buffer_exr("temp/candidate_SECOND.exr", &g, img_width, img_height);
+
+    cout << "\t - Candidate SECOND done" << endl;
 
     // (c) Candidate Filter: THIRD
     Flt_parameters p_b = { .kc = INFINITY, .kf = 0.6, .tau = 0.0001, .f = 1, .r=R};
@@ -66,6 +82,9 @@ using namespace std;
     allocate_buffer(&b, img_width, img_height);
     allocate_buffer(&d_b, img_width, img_height);
     flt(b, d_b, c, c, c_var, f_filtered, f_var_filtered, p_b);
+    write_buffer_exr("temp/candidate_THIRD.exr", &b, img_width, img_height);
+
+    cout << "\t - Candidate THIRD done" << endl;
 
     // ----------------------------------------------
     // (4) Filtering SURE error estimates
@@ -79,9 +98,15 @@ using namespace std;
     sure(sure_r, c, c_var, r, d_r, img_width, img_height);
     sure(sure_g, c, c_var, g, d_g, img_width, img_height);
     sure(sure_b, c, c_var, b, d_b, img_width, img_height);
+    write_channel_exr("temp/sure_r.exr", &sure_r, img_width, img_height);
+    write_channel_exr("temp/sure_g.exr", &sure_g, img_width, img_height);
+    write_channel_exr("temp/sure_b.exr", &sure_b, img_width, img_height);
+
+    cout << "\t - Sure Error Estimates done" << endl;
+
 
     // (b) Filter error estimates
-    Flt_parameters p_sure = { .kc = 1.0, .kf = INFINITY, .tau = 0.0001, .f = 1, .r=R};
+    Flt_parameters p_sure = { .kc = 1.0, .kf = INFINITY, .tau = 0.001, .f = 1, .r=1};
     channel e_r, e_g, e_b;
     allocate_channel(&e_r, img_width, img_height);
     allocate_channel(&e_g, img_width, img_height);
@@ -89,6 +114,12 @@ using namespace std;
     flt_channel_basic(e_r, sure_r, c, c_var, p_sure);
     flt_channel_basic(e_g, sure_g, c, c_var, p_sure);
     flt_channel_basic(e_b, sure_b, c, c_var, p_sure);
+    write_channel_exr("temp/e_r.exr", &e_r, img_width, img_height);
+    write_channel_exr("temp/e_g.exr", &e_g, img_width, img_height);
+    write_channel_exr("temp/e_b.exr", &e_b, img_width, img_height);
+
+    cout << "\t - Filtered Sure Error Estimates done" << endl;
+
 
     // ----------------------------------------------
     // (5) Compute Binary Selection Maps
@@ -101,11 +132,18 @@ using namespace std;
     // Compute selection maps
     for (int x = 0; x < img_width; x++){
         for (int y = 0; y < img_height; y++){
-                sel_r[x][y] = e_r[x][y] < e_g[x][y] && e_r[x][y] < e_b[x][y] && d_r[0][x][y] < d_g[0][x][y];
+                sel_r[x][y] = e_r[x][y] < e_g[x][y] && e_r[x][y] < e_b[x][y]; // && d_r[0][x][y] < d_g[0][x][y];
                 sel_g[x][y] = e_g[x][y] < e_r[x][y] && e_g[x][y] < e_b[x][y];
                 sel_b[x][y] = e_b[x][y] < e_r[x][y] && e_g[x][y] < e_b[x][y];
         }
     }
+
+    write_channel_exr("temp/sel_r.exr", &sel_r, img_width, img_height);
+    write_channel_exr("temp/sel_g.exr", &sel_g, img_width, img_height);
+    write_channel_exr("temp/sel_b.exr", &sel_b, img_width, img_height);
+
+    cout << "\t - Selection Maps done" << endl;
+
 
     // ----------------------------------------------
     // (6) Filter Selection Maps
@@ -119,26 +157,40 @@ using namespace std;
     flt_channel_basic(sel_g_filtered, sel_g, c, c_var, p_sel);
     flt_channel_basic(sel_b_filtered, sel_b, c, c_var, p_sel);
 
+    write_channel_exr("temp/sel_r_filtered.exr", &sel_r_filtered, img_width, img_height);
+    write_channel_exr("temp/sel_g_filtered.exr", &sel_g_filtered, img_width, img_height);
+    write_channel_exr("temp/sel_b_filtered.exr", &sel_b_filtered, img_width, img_height);
+
+    cout << "\t - Filter Selection Maps done" << endl;
+
     // ----------------------------------------------
     // (7) Candidate Filter averaging
     // ----------------------------------------------
     buffer pass1;
     allocate_buffer(&pass1, img_width, img_height); 
+
     for (int i = 0; i < 3; i++){
         for (int x = 0; x < img_width; x++){
             for (int y = 0; y < img_height; y++){
-                pass1[i][x][y] = sel_r_filtered[x][y] * r[i][x][y] 
-                                + sel_g_filtered[x][y] * g[i][x][y] 
-                                + sel_b_filtered[x][y] * b[i][x][y];
+                pass1[i][x][y] = r[i][x][y];
+                if (sel_r[x][y] + sel_g[x][y] + sel_b[x][y] == 1){
+                    pass1[i][x][y] =  sel_r[x][y] * r[i][x][y] 
+                                    + sel_g[x][y] * g[i][x][y] 
+                                    + sel_b[x][y] * b[i][x][y];
+                }
             }
         }
     }
+
+     write_buffer_exr("temp/pass1.exr", &pass1, img_width, img_height);
+
+    cout << "\t - Pass1 done" << endl;
 
 
     // ----------------------------------------------
     // (8) Second Pass-Filtering
     // ----------------------------------------------
-    // => not necessary since we use only one buffer at the moment
+    // => not necessary since we use a one buffer approach (due to independet MC samples in the renderer) at the moment
     // Therefore we can use pass1 as output
     out_img = pass1;
 
