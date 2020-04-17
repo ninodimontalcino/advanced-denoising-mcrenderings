@@ -91,7 +91,7 @@ int main(int argc, char **argv)
 
   // Other parameters
   int r, img_width, img_height;
-  r = 10; // Fixing r=10 for test purposes
+  r = 5; // Fixing r=10 for test purposes
 
   // ------------------------------------
   // (..) FILENAME DEFINITION
@@ -177,7 +177,7 @@ int main(int argc, char **argv)
   f(out_img, c, c_var, features, features_var, r, img_width, img_height);
 
   // Compute RMSE between denoised image and GT (of Vanilla Implementation)
-  scalar _rmse = rmse(out_img, gt, img_width, img_height);
+  double _rmse = rmse(out_img, gt, img_width, img_height);
   printf("RMSE: %f \n", _rmse);
 
 

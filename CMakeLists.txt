@@ -65,7 +65,7 @@ add_executable(main
 # --------------------------
 # (2) Testing Executable
 # --------------------------
-add_executable(denoise_test flt.hpp tests.hpp flt.cpp tests.cpp)
+add_executable(denoise_test flt.hpp tests.hpp memory_mgmt.hpp flt.cpp tests.cpp memory_mgmt.cpp )
 
 
 # Link to dependency libraries (e.g. OPENEXR)
