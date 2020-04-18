@@ -14,7 +14,7 @@ void sure(channel output, buffer c, buffer c_var, buffer cand, buffer cand_d, in
     for (int x = 0; x < img_width; x++){
         for (int y = 0; y < img_height; y++){
 
-            scalar sure = 0;
+            scalar sure = 0.f;
 
             // Sum over color channels
             for (int i = 0; i < 3; i++){    
@@ -26,7 +26,7 @@ void sure(channel output, buffer c, buffer c_var, buffer cand, buffer cand_d, in
                 v *= v;
 
                 // Summing up
-                sure += d - v + (v * cand_d[i][x][y]);
+                sure += d - v + (v * cand_d[i][x][y]); 
 
             }
             // Store sure error estimate
@@ -37,54 +37,37 @@ void sure(channel output, buffer c, buffer c_var, buffer cand, buffer cand_d, in
 
 
 
-void flt_buffer_basic(buffer output, buffer input, buffer u, buffer var_u, Flt_parameters p){
+void flt_buffer_basic(buffer output, buffer input, buffer u, buffer var_u, Flt_parameters p, int img_width, int img_height){
 
     scalar sum_weights, wc;
 
     // Handling Border Cases (border section)
     for (int i = 0; i < 3; i++){
-        for (int xp = 0; xp < IMG_W; xp++){
+        for (int xp = 0; xp < img_width; xp++){
             for(int yp = 0; yp < p.r+p.f; yp++){
                 output[i][xp][yp] = input[i][xp][yp];
-                output[i][xp][IMG_H - yp - 1] = input[i][xp][IMG_H - yp - 1];
+                output[i][xp][img_height - yp - 1] = input[i][xp][img_height - yp - 1];
             }
         }
-        for (int yp = 0; yp < IMG_H; yp++){
+        for (int yp = 0; yp < img_height; yp++){
             for(int xp = 0; xp < p.r+p.f; xp++){
                 output[i][xp][yp] = input[i][xp][yp];
-                output[i][IMG_W - xp - 1][yp] = input[i][IMG_W - xp - 1][yp];
+                output[i][img_width - xp - 1][yp] = input[i][img_width - xp - 1][yp];
             }
         }
 
     }
-    /*
-    for(int i = 0; i < 3; i++) {
-        for(int xp = 0; xp < p.r+p.f; ++xp) {
-            for(int yp = 0; yp < p.r+p.f; ++yp)
-                output[i][xp][yp] = input[i][xp][yp];
-            for(int yp = IMG_H-p.r-p.f; yp < IMG_H; ++yp)
-                output[i][xp][yp] = input[i][xp][yp];
-        }
-        for(int xp = IMG_W-p.r-p.f; xp < IMG_W; ++xp) {
-            for(int yp=0;yp<p.r+p.f;++yp)
-                output[i][xp][yp] = input[i][xp][yp];
-            for(int yp = IMG_H-p.r-p.f; yp < IMG_H; ++yp)
-                output[i][xp][yp] = input[i][xp][yp];
-        }
-        
-    }
-    */
 
     
     // General Pre-Filtering
-    for(int xp = p.r+p.f; xp < IMG_W-p.r-p.f; ++xp) {
-        for(int yp = p.r+p.f; yp < IMG_H-p.r-p.f; ++yp) {
+    for(int xp = p.r+p.f; xp < img_width - p.r-p.f; ++xp) {
+        for(int yp = p.r+p.f; yp < img_height - p.r-p.f; ++yp) {
 
-            sum_weights = 0.000000001;
+            sum_weights = 0.f;
 
             // Init output to 0 => TODO: maybe we can do this with calloc
-            for(int i=0;i<3;++i)
-                output[i][xp][yp] = 0;
+            for(int i = 0; i < 3; ++i)
+                output[i][xp][yp] = 0.f;
 
             for(int xq = xp-p.r; xq <= xp+p.r; xq++) {
                 for(int yq = yp-p.r; yq <= yp+p.r; yq++) {
@@ -101,7 +84,7 @@ void flt_buffer_basic(buffer output, buffer input, buffer u, buffer var_u, Flt_p
 
             // Normalization step
             for(int i=0;i<3;++i)
-                output[i][xp][yp] /= sum_weights;
+                output[i][xp][yp] /= (sum_weights + EPSILON);
         }
     }
     
@@ -110,33 +93,33 @@ void flt_buffer_basic(buffer output, buffer input, buffer u, buffer var_u, Flt_p
 }
 
 
-void flt_channel_basic(channel output, channel input, buffer u, buffer var_u, Flt_parameters p){
+void flt_channel_basic(channel output, channel input, buffer u, buffer var_u, Flt_parameters p, int img_width, int img_height){
 
     scalar sum_weights, wc;
 
     // Handling Border Cases (border section)
-    for (int xp = 0; xp < IMG_W; xp++){
+    for (int xp = 0; xp < img_width; xp++){
         for(int yp = 0; yp < p.r+p.f; yp++){
             output[xp][yp] = input[xp][yp];
-            output[xp][IMG_H - yp - 1] = input[xp][IMG_H - yp - 1];
+            output[xp][img_height - yp - 1] = input[xp][img_height - yp - 1];
         }
     }
-    for (int yp = 0; yp < IMG_H; yp++){
+    for (int yp = 0; yp < img_height; yp++){
         for(int xp = 0; xp < p.r+p.f; xp++){
             output[xp][yp] = input[xp][yp];
-            output[IMG_W - xp - 1][yp] = input[IMG_W - xp - 1][yp];
+            output[img_width - xp - 1][yp] = input[img_width - xp - 1][yp];
         }
     }
 
 
     // General Pre-Filtering
-    for(int xp = p.r+p.f; xp < IMG_W-p.r-p.f; ++xp) {
-        for(int yp = p.r+p.f; yp < IMG_H-p.r-p.f; ++yp) {
+    for(int xp = p.r+p.f; xp < img_width-p.r-p.f; ++xp) {
+        for(int yp = p.r+p.f; yp < img_height-p.r-p.f; ++yp) {
 
-            sum_weights = 0.000000001;
+            sum_weights = 0.f;
 
             // Init output to 0 => TODO: maybe we can do this with calloc
-            output[xp][yp] = 0;
+            output[xp][yp] = 0.f;
 
             for(int xq = xp-p.r; xq <= xp+p.r; xq++) {
                 for(int yq = yp-p.r; yq <= yp+p.r; yq++) {
@@ -152,7 +135,7 @@ void flt_channel_basic(channel output, channel input, buffer u, buffer var_u, Fl
 
             // Normalization step
             for(int i=0;i<3;++i)
-                output[xp][yp] /= sum_weights;
+                output[xp][yp] /= (sum_weights + EPSILON);
         }
     }
 
@@ -160,34 +143,34 @@ void flt_channel_basic(channel output, channel input, buffer u, buffer var_u, Fl
 }
 
 
-void flt(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, buffer f, buffer var_f, Flt_parameters p) {
+void flt(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, buffer f, buffer var_f, Flt_parameters p, int img_width, int img_height) {
     scalar wc, wf, w;
     scalar sum_weights;
 
     buffer gradients;
     if(f != NULL) {
-        //gradients = (channel *)malloc(NB_FEATURES*sizeof(void*));
-        allocate_buffer(&gradients, IMG_W, IMG_H);
+        allocate_buffer(&gradients, img_width, img_height);
         for(int i=0; i<NB_FEATURES;++i) {
-            //gradients[i] = (channel)malloc(IMG_W*sizeof(void *));
-            //for(int j=0; j<IMG_W;++j)
-            //    gradients[i][j] = (scalar*)malloc(IMG_H*sizeof(scalar));
-            compute_gradient(gradients[i], f[i], p.r+p.f);
+            compute_gradient(gradients[i], f[i], p.r+p.f, img_width, img_height);
         }
     }
 
     // For edges, just copy in output the input
       for (int i = 0; i < 3; i++){
-        for (int xp = 0; xp < IMG_W; xp++){
+        for (int xp = 0; xp < img_width; xp++){
             for(int yp = 0; yp < p.r+p.f; yp++){
                 out[i][xp][yp] = input[i][xp][yp];
-                out[i][xp][IMG_H - yp - 1] = input[i][xp][IMG_H - yp - 1];
+                out[i][xp][img_height - yp - 1] = input[i][xp][img_height - yp - 1];
+                d_out_d_in[i][xp][yp] = 0.f;
+                d_out_d_in[i][xp][img_height - yp - 1] = 0.f;
             }
         }
-        for (int yp = 0; yp < IMG_H; yp++){
+        for (int yp = 0; yp < img_height; yp++){
             for(int xp = 0; xp < p.r+p.f; xp++){
                 out[i][xp][yp] = input[i][xp][yp];
-                out[i][IMG_W - xp - 1][yp] = input[i][IMG_W - xp - 1][yp];
+                out[i][img_width - xp - 1][yp] = input[i][img_width - xp - 1][yp];
+                d_out_d_in[i][xp][yp] = 0.f;
+                d_out_d_in[i][img_width - xp - 1][yp] = 0.f;
             }
         }
 
@@ -195,49 +178,48 @@ void flt(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, bu
 
     // Real computation
     sum_weights = 0;
-    for(int xp=p.r+p.f;xp<IMG_W-p.r-p.f;++xp) {
-        for(int yp=p.r+p.f;yp<IMG_H-p.r-p.f;++yp) {
-            sum_weights = 0.000000001;
+    for(int xp = p.r+p.f; xp < img_width-p.r-p.f; ++xp) {
+        for(int yp = p.r+p.f; yp < img_height-p.r-p.f; ++yp) {
+            
+            sum_weights = 0.f;
+            
             for(int i=0;i<3;++i)
-                out[i][xp][yp] = 0;
-            for(int xq = xp-p.r; xq <= xp+p.r; xq++) {
-                for(int yq = yp-p.r; yq <= yp+p.r; yq++) {
-                    wc = color_weight(u, var_u, p, xp, yp, xq, yq);
-                    if(f != NULL)
-                        wf = feature_weight(f, var_f, gradients, p, xp, yp, xq, yq);
-                    else
-                        wf = wc;
-                    w = fmin(wc, wf);
-                    sum_weights += w;
-                    for(int i=0;i<3;++i)
-                        out[i][xp][yp] += input[i][xq][yq] * w;
+                out[i][xp][yp] = 0; 
+                for(int xq = xp-p.r; xq <= xp+p.r; xq++) {
+                    for(int yq = yp-p.r; yq <= yp+p.r; yq++) {
+                        wc = color_weight(u, var_u, p, xp, yp, xq, yq);
+                        if(f != NULL)
+                            wf = feature_weight(f, var_f, gradients, p, xp, yp, xq, yq);
+                        else
+                            wf = wc;
+                        w = fmin(wc, wf);
+                        sum_weights += w;
+                        for(int i=0;i<3;++i){
+                            out[i][xp][yp] += input[i][xq][yq] * w;
+                        }
+                    }
                 }
+            for(int i=0;i<3;++i){
+                out[i][xp][yp] /= (sum_weights + EPSILON);
+
+                // ToDo: Fix derivatives => Use formula from paper
+                d_out_d_in[i][xp][yp] = 0.f;
             }
-            for(int i=0;i<3;++i)
-                out[i][xp][yp] /= sum_weights;
         }
     }
 
     if(f != NULL) {
-        free_buffer(&gradients, IMG_W);
-        /*
-        for(int i=0; i<NB_FEATURES;++i) {
-            for(int j=0; j<IMG_W;++j)
-                free(gradients[i][j]);
-            free(gradients[i]);
-        }
-        free(gradients);
-        */
+        free_buffer(&gradients, img_width);
     }
 }
 
 scalar color_weight(buffer u, buffer var_u, Flt_parameters p, int xp, int yp, int xq, int yq) {
     scalar nlmean = nl_means_weights(u, var_u, p, xp, yp, xq, yq);
-    return exp(-fmax(0, nlmean));
+    return exp(-fmax(0.f, nlmean));
 }
 
 scalar nl_means_weights(buffer u, buffer var_u, Flt_parameters p, int xp, int yp, int xq, int yq) {
-    scalar distance = 0;
+    scalar distance = 0.f;
     for(int xn = -p.f; xn <= p.f; xn++) {
         for(int yn = -p.f; yn <= p.f; yn++) {
             for(int i=0;i<3;++i) {
@@ -256,9 +238,9 @@ scalar per_pixel_distance(channel u, channel var_u, scalar kc, int xp, int yp, i
     return (sqdist - var_cancel) / normalization;
 }
 
-void compute_gradient(channel gradient, channel u, int d) {
-    for(int x=d; x<IMG_W-d; ++x) {
-        for(int y=d; y<IMG_H-d; ++y) {
+void compute_gradient(channel gradient, channel u, int d, int img_width, int img_height) {
+    for(int x = d; x < img_width-d; ++x) {
+        for(int y = d; y < img_height-d; ++y) {
             scalar diffL = u[x][y] - u[x-1][y];
             scalar diffR = u[x][y] - u[x+1][y];
             scalar diffU = u[x][y] - u[x][y-1];
@@ -270,7 +252,7 @@ void compute_gradient(channel gradient, channel u, int d) {
 }
 
 scalar feature_weight(channel *f, channel *var_f, channel *gradients, Flt_parameters p, int xp, int yp, int xq, int yq) {
-    scalar df = 0;
+    scalar df = 0.f;
     for(int j=0; j<NB_FEATURES;++j)
         df = fmax(df, feature_distance(f[j], var_f[j], gradients[j], p, xp, yp, xq, yq));
     return exp(-df);

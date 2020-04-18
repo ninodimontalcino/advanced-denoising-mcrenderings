@@ -91,7 +91,7 @@ int main(int argc, char **argv)
 
   // Other parameters
   int r, img_width, img_height;
-  r = 5; // Fixing r=10 for test purposes
+  r = 10; // Fixing r=10 for test purposes
 
   // ------------------------------------
   // (..) FILENAME DEFINITION
@@ -112,7 +112,6 @@ int main(int argc, char **argv)
   // (..) EXR LOADING 
   // ------------------------------------
 
- 
   // (1) Load main image and its variance
   load_exr(filename_c, &c, img_width, img_height);
   load_exr(filename_varc, &c_var, img_width, img_height);
@@ -130,7 +129,7 @@ int main(int argc, char **argv)
 
   // (3) Feature Stacking
   // => Access Pattern: features[i][x][y] where i in (1:= albedo, 2:= depth, 3:= normal)
-  // => TODO: Fix input features to one channel => or duplicated channel
+  // => TODO: Fix input features (albedo) to one channel => or duplicated channel
   buffer features, features_var;
   allocate_buffer(&features, img_width, img_height);
   allocate_buffer(&features_var, img_width, img_height);
@@ -189,10 +188,13 @@ int main(int argc, char **argv)
     denoise_func f = userFuncs[i];
     f(out_img_f, c, c_var, features, features_var, r, img_width, img_height);
 
-    // Compare out_img_f with out_img_f
-    //if (!compare_buffers(out_img, out_img_f)){
-    //  printf("Function %d produces a different result! \n", i);
-    //}
+    double _rmse = rmse(out_img, gt, img_width, img_height);
+    printf("RMSE: %f \n", _rmse);
+
+    //Compare out_img_f with out_img_f
+    if (!compare_buffers(out_img, out_img_f, img_width, img_height)){
+      printf("Function %d produces a different result! \n", i);
+    }
 
   }
 

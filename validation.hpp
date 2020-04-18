@@ -24,7 +24,7 @@ scalar rmse(buffer denoised, buffer gt, int img_width, int img_height);
 
 
 bool compare_scalar(scalar x, scalar y);
-bool compare_buffers(buffer buf1, buffer buf2);
+bool compare_buffers(buffer buf1, buffer buf2, int img_width, int img_height);
 
 
 #endif //VALIDATION_H

@@ -117,7 +117,7 @@ bool test_flt() {
 
     std::cout << "\t- Launching function" << std::endl;
 
-    flt(out, out_d, c, c, c_var, features, f_var, p);
+    flt(out, out_d, c, c, c_var, features, f_var, p, IMG_W, IMG_H);
 
     std::cout << "\t- Comparing results" << std::endl;
     load_buffer_from_txt(&out_ref, base_file + "_fltoutput.txt");

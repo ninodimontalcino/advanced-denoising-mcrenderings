@@ -5,6 +5,9 @@
 
 #define TEST_FILES "tests/test_data/scene_Coateddiffuse"
 
+#define IMG_H 600
+#define IMG_W 800
+
 #define TEST_F 3
 #define TEST_R 10
 #define TEST_KC 1.0

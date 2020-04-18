@@ -4,10 +4,8 @@
 typedef float scalar;
 typedef scalar** channel;
 typedef scalar*** buffer;
-#define IMG_W 800
-#define IMG_H 600
 
-#define EPSILON 0.01
+#define EPSILON 0.0000000001
 #define NB_FEATURES 3
 
 typedef struct
@@ -49,7 +47,7 @@ void sure(channel output, buffer c, buffer c_var, buffer cand, buffer cand_d, in
         - output (buffer):  filtered image in buffer output
    
 */
-void flt_buffer_basic(buffer output, buffer input, buffer u, buffer var_u, Flt_parameters p);
+void flt_buffer_basic(buffer output, buffer input, buffer u, buffer var_u, Flt_parameters p, int img_width, int img_height);
 
 
 /* -------------------------------------------------------
@@ -66,7 +64,7 @@ void flt_buffer_basic(buffer output, buffer input, buffer u, buffer var_u, Flt_p
         - output (buffer):  filtered image in buffer output
    
 */
-void flt_channel_basic(channel output, channel input, buffer u, buffer var_u, Flt_parameters p);
+void flt_channel_basic(channel output, channel input, buffer u, buffer var_u, Flt_parameters p, int img_width, int img_height);
 
 /* -------------------------------------------------------
     Main Filtering (color and feature input)
@@ -86,13 +84,13 @@ void flt_channel_basic(channel output, channel input, buffer u, buffer var_u, Fl
         - d_out_d_in (buffer)    Corresponding derrivative "d_out_d_in" 
         
 */        
-void flt(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, buffer f, buffer var_f, Flt_parameters p);
+void flt(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, buffer f, buffer var_f, Flt_parameters p, int img_width, int img_height);
 
 scalar per_pixel_distance(channel u, channel var_u, scalar kc, int xp, int yp, int xq, int yq);
 scalar nl_means_weights(buffer u, buffer var_u, Flt_parameters p, int xp, int yp, int xq, int yq);
 scalar color_weight(buffer u, buffer var_u, Flt_parameters p, int xp, int yp, int xq, int yq);
 
-void compute_gradient(channel gradient, channel u, int d);
+void compute_gradient(channel gradient, channel u, int d, int img_width, int img_height);
 scalar feature_distance(channel f, channel var_f, channel gradient, Flt_parameters p, int xp, int yp, int xq, int yq);
 scalar feature_weight(channel *f, channel *var_f, channel *gradients, Flt_parameters p, int xp, int yp, int xq, int yq);
 
