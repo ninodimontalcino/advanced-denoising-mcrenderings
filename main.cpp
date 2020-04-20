@@ -43,15 +43,11 @@ vector<string> funcNames;
 vector<int> funcFlops;
 int numFuncs = 0;
 
-/* void rands(double * m, size_t row, size_t col)
-{
-    std::random_device rd;
-    std::mt19937 gen{rd()};
-    std::uniform_real_distribution<double> dist(1.0, 5.0);
-  for (size_t i = 0; i < row*col; ++i)  
-    m[i] = dist(gen);
+char* stringToCharArray(string string_name){
+  char * tab2 = new char [string_name.length()+1];
+  strcpy (tab2, string_name.c_str());
+  return tab2;
 }
-*/
 
 /*
 * Main driver routine - calls register_funcs to get student functions, then
@@ -70,6 +66,7 @@ int main(int argc, char **argv)
   // (..) DEBUG VARIABLES
   // ------------------------------------
   bool debug_EXR_loading = false;
+  bool RMSE = true;
 
   // ------------------------------------
   // (..) PARAMETER PARSING -> from argv
@@ -91,41 +88,48 @@ int main(int argc, char **argv)
 
   // Other parameters
   int r, img_width, img_height;
-  r = 10; // Fixing r=10 for test purposes
+  r = 10; // ToDo: Read it as argument
 
   // ------------------------------------
   // (..) FILENAME DEFINITION
   // ------------------------------------
   // TODO: EXR-Loading based on string input such that we can use path + "<..>.exr"
-  const string path = "../renderings/100spp/";
-  const char filename_GT[] = "../renderings/5000spp_GT/scene_CoateddiffuseGT.exr";
-  const char filename_c[] = "../renderings/100spp/scene_Coateddiffuse.exr";
-  const char filename_varc[] = "../renderings/100spp/scene_Coateddiffuse_variance.exr";
-  const char filename_albedo[] = "../renderings/100spp/scene_Coateddiffuse_albedo.exr";
-  const char filename_albedo_variance[] = "../renderings/100spp/scene_Coateddiffuse_albedo_variance.exr";
-  const char filename_depth[] = "../renderings/100spp/scene_Coateddiffuse_depth.exr";
-  const char filename_depth_variance[] = "../renderings/100spp/scene_Coateddiffuse_depth_variance.exr";
-  const char filename_normal[] = "../renderings/100spp/scene_Coateddiffuse_normal.exr";
-  const char filename_normal_variance[] = "../renderings/100spp/scene_Coateddiffuse_normal_variance.exr";
+  const string img_size = "1024";
+  const string path = "../renderings/100spp/" + img_size;
+  const string filename_c = path + "/scene_Coateddiffuse.exr";
+  const string filename_varc = path + "/scene_Coateddiffuse_variance.exr";
+  const string filename_albedo = path + "/scene_Coateddiffuse_albedo.exr";
+  const string filename_albedo_variance = path + "/scene_Coateddiffuse_albedo_variance.exr";
+  const string filename_depth = path + "/scene_Coateddiffuse_depth.exr";
+  const string filename_depth_variance = path + "/scene_Coateddiffuse_depth_variance.exr";
+  const string filename_normal = path + "/scene_Coateddiffuse_normal.exr";
+  const string filename_normal_variance = path + "/scene_Coateddiffuse_normal_variance.exr";
+
+  // GT Definition
+  const string path_GT = "../renderings/5000spp_GT/" + img_size;
+  const string filename_GT = path_GT + "/scene_CoateddiffuseGT.exr";
   
   // ------------------------------------
   // (..) EXR LOADING 
   // ------------------------------------
 
   // (1) Load main image and its variance
-  load_exr(filename_c, &c, img_width, img_height);
-  load_exr(filename_varc, &c_var, img_width, img_height);
+  load_exr(stringToCharArray(filename_c), &c, img_width, img_height);
+  load_exr(stringToCharArray(filename_varc), &c_var, img_width, img_height);
 
   // (2) Load individual features
-  load_exr(filename_albedo, &f_albedo, img_width, img_height);
-  load_exr(filename_albedo_variance, &f_albedo_var, img_width, img_height);
-  load_exr(filename_depth, &f_depth, img_width, img_height);
-  load_exr(filename_depth_variance, &f_depth_var, img_width, img_height);
-  load_exr(filename_normal, &f_normal, img_width, img_height);
-  load_exr(filename_normal_variance, &f_normal_var, img_width, img_height);
+  load_exr(stringToCharArray(filename_albedo), &f_albedo, img_width, img_height);
+  load_exr(stringToCharArray(filename_albedo_variance), &f_albedo_var, img_width, img_height);
+  load_exr(stringToCharArray(filename_depth), &f_depth, img_width, img_height);
+  load_exr(stringToCharArray(filename_depth_variance), &f_depth_var, img_width, img_height);
+  load_exr(stringToCharArray(filename_normal), &f_normal, img_width, img_height);
+  load_exr(stringToCharArray(filename_normal_variance), &f_normal_var, img_width, img_height);
 
-  // (3) Load GT
-  load_exr(filename_GT, &gt, img_width, img_height);
+  // (3) Load GT 
+  // => load only if RMSE computation is done (only available for 800x600, 256x256, 512x512, 1024x1024) 
+  if (RMSE){
+    load_exr(stringToCharArray(filename_GT), &gt, img_width, img_height);
+  }
 
   // (3) Feature Stacking
   // => Access Pattern: features[i][x][y] where i in (1:= albedo, 2:= depth, 3:= normal)
@@ -175,9 +179,12 @@ int main(int argc, char **argv)
   denoise_func f = userFuncs[0];
   f(out_img, c, c_var, features, features_var, r, img_width, img_height);
 
-  // Compute RMSE between denoised image and GT (of Vanilla Implementation)
-  double _rmse = rmse(out_img, gt, img_width, img_height);
-  printf("RMSE: %f \n", _rmse);
+  // Compute RMSE if flag RMSE is enabled (GT is only available for 800x600, 256x256, 512x512, 1024x1024) 
+  if (RMSE){
+    // Compute RMSE between denoised image and GT (of Vanilla Implementation)
+    double _rmse = rmse(out_img, gt, img_width, img_height);
+    printf("RMSE: %f \n", _rmse);
+  }
 
 
   // Run functions and check if they produce the same output as the Vanilla Implementation 
@@ -188,8 +195,10 @@ int main(int argc, char **argv)
     denoise_func f = userFuncs[i];
     f(out_img_f, c, c_var, features, features_var, r, img_width, img_height);
 
-    double _rmse = rmse(out_img, gt, img_width, img_height);
-    printf("RMSE: %f \n", _rmse);
+    if (RMSE){
+      double _rmse = rmse(out_img, gt, img_width, img_height);
+      printf("RMSE: %f \n", _rmse);
+    }
 
     //Compare out_img_f with out_img_f
     if (!compare_buffers(out_img, out_img_f, img_width, img_height)){

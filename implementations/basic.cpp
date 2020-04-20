@@ -168,6 +168,10 @@ using namespace std;
     buffer pass1;
     allocate_buffer(&pass1, img_width, img_height); 
 
+    scalar w_r, w_g, w_b, norm;
+
+    /*
+    // Approach using unfiltered selection maps
     for (int i = 0; i < 3; i++){
         for (int x = 0; x < img_width; x++){
             for (int y = 0; y < img_height; y++){
@@ -176,6 +180,31 @@ using namespace std;
                     pass1[i][x][y] =  sel_r[x][y] * r[i][x][y] 
                                     + sel_g[x][y] * g[i][x][y] 
                                     + sel_b[x][y] * b[i][x][y];
+                }
+            }
+        }
+    }
+    */
+
+    for (int i = 0; i < 3; i++){
+        for (int x = 0; x < img_width; x++){
+            for (int y = 0; y < img_height; y++){
+
+                // Retrieve weights and normalization term => such that weights sum up to 1
+                w_r = sel_r_filtered[x][y];
+                w_g = sel_g_filtered[x][y];
+                w_b = sel_b_filtered[x][y];
+
+                norm = w_r + w_g + w_b;
+
+                // Set candidate r as base => for boundary parts and pixels with norm == 0
+                pass1[i][x][y] = r[i][x][y];
+
+                // Averaging of candidate filters
+                if (norm > EPSILON){
+                    pass1[i][x][y] =  (w_r * r[i][x][y] / norm) 
+                                    + (w_g * g[i][x][y] / norm)
+                                    + (w_b * b[i][x][y] / norm);
                 }
             }
         }
@@ -191,7 +220,7 @@ using namespace std;
     // ----------------------------------------------
     // => not necessary since we use a one buffer approach (due to independet MC samples in the renderer) at the moment
     // Therefore we can use pass1 as output
-    //out_img = pass1;
+
     for (int i = 0; i < 3; i++){
         for (int x = 0; x < img_width; x++){
             for (int y = 0; y < img_height; y++){

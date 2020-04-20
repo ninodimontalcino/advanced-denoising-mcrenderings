@@ -23,11 +23,16 @@ https://onlinelibrary.wiley.com/doi/full/10.1111/cgf.12219
     ├── reference_implementation      # Joint Non-Local Means Implementation (Matlab)
     ├── renderings                    # Extracted Buffers of Monte Carlo Renderings
     │   ├──  100spp                         # MC-Rendering using 100 samples per pixel
-    │   ├──  500spp_GT                      # MC-Rendering using 500 samples per pixel (Claimed Grountd-Truth)
+    |   |    ├── _800x600                            # 800x600 (used for validation)
+    │   |    ├── 256                                 # 256x256
+    │   |    ├── 512                                 # 512x512
+    │   |    ├── 1024                                # 1024x1024
+    │   |    ├── 2048                                # 2048x2048
+    │   ├──  5000spp_GT                      # MC-Rendering using 5000 samples per pixel (Claimed Grountd-Truth)
     ├── src                           # Libraries
     │   ├── ext                             # External Libraries    
-    │   ├── ├── openexr                             # OpenEXR (used for Data Loading)
-    │   ├── ├── zlib                                # zlib (data compression used by OpenEXR)
+    │   |   ├── openexr                             # OpenEXR (used for Data Loading)
+    │   |   ├── zlib                                # zlib (data compression used by OpenEXR)
     ├── tests                         # Testing directory
     |   ├──  test_generation              # Modified reference_implementation to create test data
     |   ├──  test_data                    # Generated test data

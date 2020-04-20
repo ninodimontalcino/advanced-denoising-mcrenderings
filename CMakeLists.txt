@@ -5,7 +5,7 @@ cmake_minimum_required (VERSION 3.10)
 project(team053)
 
 
-set(CMAKE_BUILD_TYPE Debug)
+# set(CMAKE_BUILD_TYPE Debug)
 
 ###########################################################################
 # OpenEXR (taken from https://github.com/mmp/pbrt-v3/blob/master/CMakeLists.txt)
