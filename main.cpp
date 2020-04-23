@@ -23,7 +23,7 @@
 
 
 #define CYCLES_REQUIRED 1e7
-#define REP 10
+#define REP 1
 #define MAX_FUNCS 32
 // TODO: define number of flops
 #define FLOPS (4.)
@@ -34,7 +34,7 @@ using namespace std;
 //headers
 double get_perf_score(denoise_func f);
 void register_functions();
-double perf_test(denoise_func f, string desc, int flops, int img_width, int img_height);
+double perf_test(denoise_func f, string desc, int flops, buffer c, buffer c_var, buffer features, buffer features_var, int r, int img_width, int img_height);
 void add_function(denoise_func f, string name, int flop);
 
 /* Global vars, used to keep track of student functions */
@@ -94,7 +94,7 @@ int main(int argc, char **argv)
   // (..) FILENAME DEFINITION
   // ------------------------------------
   // TODO: EXR-Loading based on string input such that we can use path + "<..>.exr"
-  const string img_size = "1024";
+  const string img_size = "_800x600";
   const string path = "../renderings/100spp/" + img_size;
   const string filename_c = path + "/scene_Coateddiffuse.exr";
   const string filename_varc = path + "/scene_Coateddiffuse_variance.exr";
@@ -191,6 +191,7 @@ int main(int argc, char **argv)
   buffer out_img_f;
   allocate_buffer(&out_img_f, img_width, img_height);
 
+  // Only run for optimized functions => don't repeat vanilla computation
   for (i = 1; i < numFuncs; i++) {
     denoise_func f = userFuncs[i];
     f(out_img_f, c, c_var, features, features_var, r, img_width, img_height);
@@ -208,14 +209,13 @@ int main(int argc, char **argv)
   }
 
   // Performance Testing
-  /*
   for (i = 0; i < numFuncs; i++)
   {
-    perf = perf_test(userFuncs[i], funcNames[i], funcFlops[i], img_width, img_height);
+    perf = perf_test(userFuncs[i], funcNames[i], funcFlops[i], c, c_var, features, features_var, r, img_width, img_height);
     cout << endl << "Running: " << funcNames[i] << endl;
     cout << perf << " cycles" << endl;
   }
-  */
+  
   return 0;
 }
 
@@ -237,18 +237,17 @@ void add_function(denoise_func f, string name, int flops)
 * Checks the given function for validity. If valid, then computes and
 * reports and returns the number of cycles required per iteration
 */
-double perf_test(denoise_func f, string desc, int flops, int img_width, int img_height)
+double perf_test(denoise_func f, string desc, int flops, buffer c, buffer svar_c, buffer features, buffer svar_f, int r, int img_width, int img_height)
 {
   double cycles = 0.;
   double perf = 0.0;
-  long num_runs = 16;
+  long num_runs = 1;
   double multiplier = 1;
   myInt64 start, end;
 
-  buffer c, svar_c, features, svar_f;
-  int r;
+  // Init Buffer for output
   buffer out_img;
-  // TODO: build inputs
+  allocate_buffer(&out_img, img_width, img_height);
 
   // Warm-up phase: we determine a number of executions that allows
   // the code to be executed for at least CYCLES_REQUIRED cycles.
