@@ -191,12 +191,12 @@ int main(int argc, char **argv)
   buffer out_img_f;
   allocate_buffer(&out_img_f, img_width, img_height);
 
-  for (i = 0; i < numFuncs; i++) {
+  for (i = 1; i < numFuncs; i++) {
     denoise_func f = userFuncs[i];
     f(out_img_f, c, c_var, features, features_var, r, img_width, img_height);
 
     if (RMSE){
-      double _rmse = rmse(out_img, gt, img_width, img_height);
+      double _rmse = rmse(out_img_f, gt, img_width, img_height);
       printf("RMSE: %f \n", _rmse);
     }
 
@@ -227,7 +227,7 @@ int main(int argc, char **argv)
 void add_function(denoise_func f, string name, int flops)
 {
   userFuncs.push_back(f);
-  funcNames.__emplace_back(name);
+  funcNames.emplace_back(name);
   funcFlops.push_back(flops);
 
   numFuncs++;

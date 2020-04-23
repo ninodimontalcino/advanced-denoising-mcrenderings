@@ -26,7 +26,7 @@ void sure(channel output, buffer c, buffer c_var, buffer cand, buffer cand_d, in
                 v *= v;
 
                 // Summing up
-                sure += d - v + (v * cand_d[i][x][y]); 
+                sure += d - v + (2 * v * cand_d[i][x][y]); 
 
             }
             // Store sure error estimate
@@ -134,8 +134,7 @@ void flt_channel_basic(channel output, channel input, buffer u, buffer var_u, Fl
             }
 
             // Normalization step
-            for(int i=0;i<3;++i)
-                output[xp][yp] /= (sum_weights + EPSILON);
+            output[xp][yp] /= (sum_weights + EPSILON);
         }
     }
 
