@@ -20,6 +20,7 @@
 #include "exr.h"
 #include "memory_mgmt.hpp"
 #include "validation.hpp"
+#include "implementations/register.hpp"
 
 
 #define CYCLES_REQUIRED 1e7
@@ -33,9 +34,7 @@ using namespace std;
 
 //headers
 double get_perf_score(denoise_func f);
-void register_functions();
 double perf_test(denoise_func f, string desc, int flops, buffer c, buffer c_var, buffer features, buffer features_var, int r, int img_width, int img_height);
-void add_function(denoise_func f, string name, int flop);
 
 /* Global vars, used to keep track of student functions */
 vector<denoise_func> userFuncs;

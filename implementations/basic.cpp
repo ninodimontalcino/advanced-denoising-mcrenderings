@@ -277,15 +277,3 @@ using namespace std;
     //free_buffer(&pass1, img_width);
 
  }
-
-
-
-
-/* -------------------------------------------------------------------------
- * FUNCTION REGISTRATION
- * ------------------------------------------------------------------------- */ 
-void register_functions()
-{
-    add_function(&basic_implementation, "Basic Implementation", 1);
-
-}

@@ -58,6 +58,7 @@ add_executable(main
               validation.cpp
 
               # Implementations (BASIC and OPTIMIZED)
+              implementations/register.hpp
               implementations/basic.cpp
               
               )
