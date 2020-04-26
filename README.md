@@ -6,8 +6,8 @@ https://onlinelibrary.wiley.com/doi/full/10.1111/cgf.12219
 
 
  **Team Members**
-> - Alexandre Binning (binninga@student.ethz.ch)
-> - Félicité Lordon--de Bonniol du Trémont (ftremont@student.ethz.ch)
+> - Alexandre Binninger (binninga@student.ethz.ch)
+> - Félicité Lordon--de Bonniol du Trémont (tremont@student.ethz.ch)
 > - Alexandre Poirrier (apoirrier@student.ethz.ch)
 > - Nino Scherrer (ninos@student.ethz.ch)
 > 
