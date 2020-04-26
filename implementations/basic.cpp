@@ -171,27 +171,7 @@ using namespace std;
     // ----------------------------------------------
     // (7) Candidate Filter averaging
     // ----------------------------------------------
-    //buffer pass1;
-    //allocate_buffer(&pass1, img_width, img_height); 
-
     scalar w_r, w_g, w_b, norm;
-
-    /*
-    // Approach using unfiltered selection maps
-    // ----------------------------------------
-    for (int i = 0; i < 3; i++){
-        for (int x = 0; x < img_width; x++){
-            for (int y = 0; y < img_height; y++){
-                pass1[i][x][y] = r[i][x][y];
-                if (sel_r[x][y] + sel_g[x][y] + sel_b[x][y] == 1){
-                    pass1[i][x][y] =  sel_r[x][y] * r[i][x][y] 
-                                    + sel_g[x][y] * g[i][x][y] 
-                                    + sel_b[x][y] * b[i][x][y];
-                }
-            }
-        }
-    }
-    */
 
     for (int i = 0; i < 3; i++){
         for (int x = 0; x < img_width; x++){
@@ -229,18 +209,7 @@ using namespace std;
     // Therefore we can use pass1 as output
     
     // Flt_parameters p_final= { .kc = 0.45, .kf = INFINITY, .tau = 0.0001, .f = 1, .r = R};
-    // flt_buffer_basic(out_img, pass1, pass1, c_var, p_final, img_width, img_height);
-
-    /*
-    for (int i = 0; i < 3; i++){
-        for (int x = 0; x < img_width; x++){
-            for (int y = 0; y < img_height; y++){
-                out_img[i][x][y] = pass1[i][x][y];
-            }
-        }
-    }
-    */
-    
+    // flt_buffer_basic(out_img, pass1, pass1, c_var, p_final, img_width, img_height);    
 
     // ----------------------------------------------
     // (9) Memory Deallocation
@@ -273,7 +242,5 @@ using namespace std;
     free_channel(&sel_g_filtered, img_width);
     free_channel(&sel_b_filtered, img_width);
 
-    // Free pass1
-    //free_buffer(&pass1, img_width);
 
  }

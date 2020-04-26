@@ -93,7 +93,7 @@ int main(int argc, char **argv)
   // (..) FILENAME DEFINITION
   // ------------------------------------
   // TODO: EXR-Loading based on string input such that we can use path + "<..>.exr"
-  const string img_size = "_800x600";
+  const string img_size = "512";
   const string path = "../renderings/100spp/" + img_size;
   const string filename_c = path + "/scene_Coateddiffuse.exr";
   const string filename_varc = path + "/scene_Coateddiffuse_variance.exr";

@@ -3,3 +3,4 @@ Makefile
 build/
 src/ext/
 .vscode/
+.DS_Store

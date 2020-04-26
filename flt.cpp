@@ -49,7 +49,7 @@ void flt_buffer_basic(buffer output, buffer input, buffer u, buffer var_u, Flt_p
                 output[i][xp][img_height - yp - 1] = input[i][xp][img_height - yp - 1];
             }
         }
-        for (int yp = 0; yp < img_height; yp++){
+        for (int yp = p.r+p.f ; yp < img_height - p.r+p.f; yp++){
             for(int xp = 0; xp < p.r+p.f; xp++){
                 output[i][xp][yp] = input[i][xp][yp];
                 output[i][img_width - xp - 1][yp] = input[i][img_width - xp - 1][yp];
@@ -104,7 +104,7 @@ void flt_channel_basic(channel output, channel input, buffer u, buffer var_u, Fl
             output[xp][img_height - yp - 1] = input[xp][img_height - yp - 1];
         }
     }
-    for (int yp = 0; yp < img_height; yp++){
+    for (int yp = p.r+p.f; yp < img_height - p.r+p.f; yp++){
         for(int xp = 0; xp < p.r+p.f; xp++){
             output[xp][yp] = input[xp][yp];
             output[img_width - xp - 1][yp] = input[img_width - xp - 1][yp];
@@ -164,7 +164,7 @@ void flt(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, bu
                 d_out_d_in[i][xp][img_height - yp - 1] = 0.f;
             }
         }
-        for (int yp = 0; yp < img_height; yp++){
+        for (int yp = p.r+p.f; yp < img_height - p.r+p.f; yp++){
             for(int xp = 0; xp < p.r+p.f; xp++){
                 out[i][xp][yp] = input[i][xp][yp];
                 out[i][img_width - xp - 1][yp] = input[i][img_width - xp - 1][yp];
@@ -184,20 +184,27 @@ void flt(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, bu
             
             for(int i=0;i<3;++i)
                 out[i][xp][yp] = 0; 
-                for(int xq = xp-p.r; xq <= xp+p.r; xq++) {
-                    for(int yq = yp-p.r; yq <= yp+p.r; yq++) {
-                        wc = color_weight(u, var_u, p, xp, yp, xq, yq);
-                        if(f != NULL)
-                            wf = feature_weight(f, var_f, gradients, p, xp, yp, xq, yq);
-                        else
-                            wf = wc;
-                        w = fmin(wc, wf);
-                        sum_weights += w;
-                        for(int i=0;i<3;++i){
-                            out[i][xp][yp] += input[i][xq][yq] * w;
-                        }
+
+            for(int xq = xp-p.r; xq <= xp+p.r; xq++) {
+                for(int yq = yp-p.r; yq <= yp+p.r; yq++) {
+                    
+                    wc = color_weight(u, var_u, p, xp, yp, xq, yq);
+
+                    if(f != NULL)
+                        wf = feature_weight(f, var_f, gradients, p, xp, yp, xq, yq);
+                    else
+                        wf = wc;
+
+                    w = fmin(wc, wf);
+                    sum_weights += w;
+
+                    for(int i=0;i<3;++i){
+                         out[i][xp][yp] += input[i][xq][yq] * w;
                     }
+
                 }
+            }
+
             for(int i=0;i<3;++i){
                 out[i][xp][yp] /= (sum_weights + EPSILON);
 
