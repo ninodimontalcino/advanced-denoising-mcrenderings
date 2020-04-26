@@ -227,7 +227,7 @@ int main(int argc, char **argv)
 void add_function(denoise_func f, string name, int flops)
 {
   userFuncs.push_back(f);
-  funcNames.__emplace_back(name);
+  funcNames.emplace_back(name);
   funcFlops.push_back(flops);
 
   numFuncs++;
