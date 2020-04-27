@@ -225,7 +225,7 @@ void precompute_colors(bufferweightset allcolors, buffer u, buffer var_u, buffer
 
 }
 
-void precompute_features(bufferweightset allfeatures, buffer f, buffer f_var, buffer f_filtered, buffer f_var_filtered, int img_width, int img_height, Flt_parameters* all_params) {
+void precompute_features(bufferweightset allfeatures, buffer f, buffer f_var, int img_width, int img_height, Flt_parameters* all_params) {
     // compute all feature weights (allfeatures) for all configurations of parameters (all_params)
 
 

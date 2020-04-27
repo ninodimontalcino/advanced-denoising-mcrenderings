@@ -93,7 +93,7 @@ scalar nl_means_weights(buffer u, buffer var_u, Flt_parameters p, int xp, int yp
 scalar color_weight(buffer u, buffer var_u, Flt_parameters p, int xp, int yp, int xq, int yq);
 
 void precompute_colors(bufferweightset allcolors, buffer u, buffer var_u, buffer f, buffer f_var, int img_width, int img_height, Flt_parameters* all_params);
-void precompute_features(bufferweightset allfeatures, buffer u, buffer var_u, buffer f_filtered, buffer f_var_filtered, int img_width, int img_height, Flt_parameters* all_params);
+void precompute_features(bufferweightset allfeatures, buffer f_filtered, buffer f_var_filtered, int img_width, int img_height, Flt_parameters* all_params);
 scalar color_weight(bufferweightset allcolors, int xp, int yp, int xq, int yq, int config);
 scalar feature_weight(bufferweightset allfeatures, int xp, int yp, int xq, int yq, int config);
 

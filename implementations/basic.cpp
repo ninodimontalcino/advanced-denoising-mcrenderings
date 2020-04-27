@@ -34,7 +34,7 @@ using namespace std;
         cout << " Starting Algorithm " << endl;
     }
 
-    Flt_parameters all_params[5];
+    Flt_parameters all_params[6];
     all_params[0] = { .kc = 1., .kf = INFINITY, .tau = 0., .f = 3, .r = 5}; // Prefiltering
     all_params[1] = { .kc = 2.0, .kf = 0.6, .tau = 0.001, .f = 1, .r = R}; // candidate FIRST
     all_params[2] = { .kc = 2.0, .kf = 0.6, .tau = 0.001, .f = 3, .r = R}; // candidate SECOND
@@ -70,8 +70,8 @@ using namespace std;
     bufferweightset color_weights, feature_weights;
     allocate_buffer_weights(&color_weights, img_width, img_height);
     allocate_buffer_weights(&feature_weights, img_width, img_height);
-    precompute_colors(color_weights, c, c_var, f_filtered, f_var_filtered, img_width, img_height, all_params);
-    precompute_features(feature_weights, f, f_var, f_filtered, f_var_filtered, img_width, img_height, all_params);
+    precompute_colors(color_weights, c, c_var, f, f_var, img_width, img_height, all_params);
+    precompute_features(feature_weights, f_filtered, f_var_filtered, img_width, img_height, all_params);
 
     // ----------------------------------------------   
     // (3) Computation of Candidate Filters
