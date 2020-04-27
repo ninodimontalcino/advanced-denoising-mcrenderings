@@ -12,6 +12,7 @@
  * -----------------------------------------------------------------*/
 
 // MEMORY ALLOCATION
+void allocate_buffer_weights(bufferweightset *buf, int img_width, int img_height);
 void allocate_buffer(buffer *buf, int img_width, int img_height);
 void allocate_channel(channel *buf, int img_width, int img_height);
 

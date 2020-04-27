@@ -34,6 +34,14 @@ using namespace std;
         cout << " Starting Algorithm " << endl;
     }
 
+    Flt_parameters all_params[5];
+    all_params[0] = { .kc = 1., .kf = INFINITY, .tau = 0., .f = 3, .r = 5}; // Prefiltering
+    all_params[1] = { .kc = 2.0, .kf = 0.6, .tau = 0.001, .f = 1, .r = R}; // candidate FIRST
+    all_params[2] = { .kc = 2.0, .kf = 0.6, .tau = 0.001, .f = 3, .r = R}; // candidate SECOND
+    all_params[3] = { .kc = INFINITY, .kf = 0.6, .tau = 0.0001, .f = 1, .r = R}; // candidate THIRD
+    all_params[4] = { .kc = 1.0, .kf = INFINITY, .tau = 0.001, .f = 1, .r = 1}; // filter error estimate
+    all_params[5] = { .kc = 1.0, .kf = INFINITY, .tau = 0.0001, .f = 1, .r = 5}; // filter selection map
+
     // ----------------------------------------------
     // (1) Sample Variance Scaling
     // ----------------------------------------------
@@ -42,7 +50,7 @@ using namespace std;
     // ----------------------------------------------
     // (2) Feature Prefiltering
     // ----------------------------------------------
-    Flt_parameters p_pre = { .kc = 1., .kf = INFINITY, .tau = 0., .f = 3, .r = 5};
+    Flt_parameters p_pre = all_params[0];
     buffer f_filtered, f_var_filtered;
     allocate_buffer(&f_filtered, img_width, img_height);
     allocate_buffer(&f_var_filtered, img_width, img_height);
@@ -50,24 +58,26 @@ using namespace std;
     flt_buffer_basic(f_var_filtered, f_var, f, f_var, p_pre, img_width, img_height);
     
     // DEBUGGING PART
-    if(DEBUG) {
-        write_channel_exr("temp/albedo_filtered.exr", &f_filtered[0], img_width, img_height);
-        write_channel_exr("temp/depth_filtered.exr", &f_filtered[1], img_width, img_height);
-        write_channel_exr("temp/normal_filtered.exr", &f_filtered[2], img_width, img_height);
-        cout << "\t - Feature Prefiltering done" << endl;
-    }
+    write_channel_exr("temp/albedo_filtered.exr", &f_filtered[0], img_width, img_height);
+    write_channel_exr("temp/depth_filtered.exr", &f_filtered[1], img_width, img_height);
+    write_channel_exr("temp/normal_filtered.exr", &f_filtered[2], img_width, img_height);
+    cout << "\t - Feature Prefiltering done" << endl;
     
     // ----------------------------------------------
-    // Weights precomputation for other stages
+    // Weights precomputation
     // ----------------------------------------------
-    allocate_buffer_weights(&weights, img_width, img_height, 2); // need 5 but my laptop freezes 
-    precompute_weights(weights, weights_sums, c, c_var, f_filtered, f_var_filtered, img_width, img_height, all_params);
+
+    bufferweightset color_weights, feature_weights;
+    allocate_buffer_weights(&color_weights, img_width, img_height);
+    allocate_buffer_weights(&feature_weights, img_width, img_height);
+    precompute_colors(color_weights, c, c_var, f_filtered, f_var_filtered, img_width, img_height, all_params);
+    precompute_features(feature_weights, f, f_var, f_filtered, f_var_filtered, img_width, img_height, all_params);
 
     // ----------------------------------------------   
     // (3) Computation of Candidate Filters
     // ----------------------------------------------
     // (a) Candidate Filter: FIRST
-    Flt_parameters p_r = { .kc = 2.0, .kf = 0.6, .tau = 0.001, .f = 1, .r = R};
+    Flt_parameters p_r = all_params[1];
     buffer r, d_r;
     allocate_buffer(&r, img_width, img_height);
     allocate_buffer(&d_r, img_width, img_height);
@@ -80,7 +90,7 @@ using namespace std;
     }
 
     // (b) Candidate Filter: SECOND
-    Flt_parameters p_g = { .kc = 2.0, .kf = 0.6, .tau = 0.001, .f = 3, .r = R};
+    Flt_parameters p_g = all_params[2];
     buffer g, d_g;
     allocate_buffer(&g, img_width, img_height);
     allocate_buffer(&d_g, img_width, img_height);
@@ -93,7 +103,7 @@ using namespace std;
     }
 
     // (c) Candidate Filter: THIRD
-    Flt_parameters p_b = { .kc = INFINITY, .kf = 0.6, .tau = 0.0001, .f = 1, .r = R};
+    Flt_parameters p_b = all_params[3];
     buffer b, d_b;
     allocate_buffer(&b, img_width, img_height);
     allocate_buffer(&d_b, img_width, img_height);
@@ -127,7 +137,7 @@ using namespace std;
     }
 
     // (b) Filter error estimates
-    Flt_parameters p_sure = { .kc = 1.0, .kf = INFINITY, .tau = 0.001, .f = 1, .r = 1};
+    Flt_parameters p_sure = all_params[4];
     channel e_r, e_g, e_b;
     allocate_channel(&e_r, img_width, img_height);
     allocate_channel(&e_g, img_width, img_height);
@@ -172,7 +182,7 @@ using namespace std;
     // ----------------------------------------------
     // (6) Filter Selection Maps
     // ----------------------------------------------
-    Flt_parameters p_sel = { .kc = 1.0, .kf = INFINITY, .tau = 0.0001, .f = 1, .r = 5};
+    Flt_parameters p_sel = all_params[5];
     channel sel_r_filtered, sel_g_filtered,  sel_b_filtered;
     allocate_channel(&sel_r_filtered, img_width, img_height);
     allocate_channel(&sel_g_filtered, img_width, img_height);

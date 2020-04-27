@@ -204,7 +204,6 @@ void flt(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, bu
 
                 }
             }
-
             for(int i=0;i<3;++i){
                 out[i][xp][yp] /= (sum_weights + EPSILON);
 
@@ -218,6 +217,29 @@ void flt(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, bu
         free_buffer(&gradients, img_width);
     }
 }
+
+void precompute_colors(bufferweightset allcolors, buffer u, buffer var_u, buffer f, buffer f_var, int img_width, int img_height, Flt_parameters* all_params) {
+    // compute all color weights (allcolors) for all configuration of parameters (all_params)
+
+
+
+}
+
+void precompute_features(bufferweightset allfeatures, buffer f, buffer f_var, buffer f_filtered, buffer f_var_filtered, int img_width, int img_height, Flt_parameters* all_params) {
+    // compute all feature weights (allfeatures) for all configurations of parameters (all_params)
+
+
+
+}
+
+scalar color_weight(bufferweightset allcolors, int xp, int yp, int xq, int yq, int config) {
+    return allcolors[config][xp][yp][xq][yq];
+}
+
+scalar feature_weight(bufferweightset allfeatures, int xp, int yp, int xq, int yq, int config) {
+    return allfeatures[config][xp][yp][xq][yq];
+}
+
 
 scalar color_weight(buffer u, buffer var_u, Flt_parameters p, int xp, int yp, int xq, int yq) {
     scalar nlmean = nl_means_weights(u, var_u, p, xp, yp, xq, yq);

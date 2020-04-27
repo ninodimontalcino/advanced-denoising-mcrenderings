@@ -4,6 +4,8 @@
 typedef float scalar;
 typedef scalar** channel;
 typedef scalar*** buffer;
+typedef scalar**** bufferweight;
+typedef scalar ***** bufferweightset;
 
 #define EPSILON 0.0000000001
 #define NB_FEATURES 3
@@ -89,6 +91,11 @@ void flt(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, bu
 scalar per_pixel_distance(channel u, channel var_u, scalar kc, int xp, int yp, int xq, int yq);
 scalar nl_means_weights(buffer u, buffer var_u, Flt_parameters p, int xp, int yp, int xq, int yq);
 scalar color_weight(buffer u, buffer var_u, Flt_parameters p, int xp, int yp, int xq, int yq);
+
+void precompute_colors(bufferweightset allcolors, buffer u, buffer var_u, buffer f, buffer f_var, int img_width, int img_height, Flt_parameters* all_params);
+void precompute_features(bufferweightset allfeatures, buffer u, buffer var_u, buffer f_filtered, buffer f_var_filtered, int img_width, int img_height, Flt_parameters* all_params);
+scalar color_weight(bufferweightset allcolors, int xp, int yp, int xq, int yq, int config);
+scalar feature_weight(bufferweightset allfeatures, int xp, int yp, int xq, int yq, int config);
 
 void compute_gradient(channel gradient, channel u, int d, int img_width, int img_height);
 scalar feature_distance(channel f, channel var_f, channel gradient, Flt_parameters p, int xp, int yp, int xq, int yq);
