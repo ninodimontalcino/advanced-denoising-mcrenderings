@@ -212,14 +212,13 @@ int main(int argc, char **argv)
 
   }
 
-  // Performance Testing
-  for (i = 0; i < numFuncs; i++)
-  {
-    perf = perf_test(userFuncs[i], funcNames[i], funcFlops[i], c, c_var, features, features_var, r, img_width, img_height);
-    cout << endl << "Running: " << funcNames[i] << endl;
-    cout << perf << " cycles" << endl;
-  }
-  
+  // // Performance Testing
+  // for (i = 0; i < numFuncs; i++)
+  // {
+  //   perf = perf_test(userFuncs[i], funcNames[i], funcFlops[i], c, c_var, features, features_var, r, img_width, img_height);
+  //   cout << endl << "Running: " << funcNames[i] << endl;
+  //   cout << perf << " cycles" << endl;
+  // }
   return 0;
 }
 
@@ -274,7 +273,6 @@ double perf_test(denoise_func f, string desc, int flops, buffer c, buffer svar_c
   // Actual performance measurements repeated REP times.
   // We simply store all results and compute medians during post-processing.
   for (size_t j = 0; j < REP; j++) {
-
     start = start_tsc();
     for (size_t i = 0; i < num_runs; ++i) {
       f(out_img, c, svar_c, features, svar_f, r, img_width, img_height);

@@ -47,6 +47,17 @@ using namespace std;
     // ----------------------------------------------
     // !!! => not necessary in our case since sample variance is already computed in renderer (only 1 buffer output due to uniform random MC sampling)
 
+
+    // ----------------------------------------------
+    // Weights precomputation for prefiltering
+    // ----------------------------------------------
+
+    bufferweightset weights;
+    scalar weights_sums[6];
+    allocate_buffer_weights(&weights, img_width, img_height);
+    precompute_colors_pref(weights, weights_sums, f, f_var, img_width, img_height, all_params[0]);
+    cout << "\t - Precomputation of prefiltering weights done" << endl;
+
     // ----------------------------------------------
     // (2) Feature Prefiltering
     // ----------------------------------------------
@@ -54,8 +65,8 @@ using namespace std;
     buffer f_filtered, f_var_filtered;
     allocate_buffer(&f_filtered, img_width, img_height);
     allocate_buffer(&f_var_filtered, img_width, img_height);
-    flt_buffer_basic(f_filtered, f, f, f_var, p_pre, img_width, img_height);
-    flt_buffer_basic(f_var_filtered, f_var, f, f_var, p_pre, img_width, img_height);
+    flt_buffer_basic(f_filtered, f, f, f_var, all_params, 0, img_width, img_height, weights);
+    flt_buffer_basic(f_var_filtered, f_var, f, f_var, all_params, 0, img_width, img_height, weights);
     
     // DEBUGGING PART
     write_channel_exr("temp/albedo_filtered.exr", &f_filtered[0], img_width, img_height);
@@ -64,14 +75,10 @@ using namespace std;
     cout << "\t - Feature Prefiltering done" << endl;
     
     // ----------------------------------------------
-    // Weights precomputation
+    // Weights precomputation for other stages
     // ----------------------------------------------
 
-    bufferweightset color_weights, feature_weights;
-    allocate_buffer_weights(&color_weights, img_width, img_height);
-    allocate_buffer_weights(&feature_weights, img_width, img_height);
-    precompute_colors(color_weights, c, c_var, f, f_var, img_width, img_height, all_params);
-    precompute_features(feature_weights, f_filtered, f_var_filtered, img_width, img_height, all_params);
+    precompute_weights(weights, weights_sums, c, c_var, f_filtered, f_var_filtered, img_width, img_height, all_params);
 
     // ----------------------------------------------   
     // (3) Computation of Candidate Filters

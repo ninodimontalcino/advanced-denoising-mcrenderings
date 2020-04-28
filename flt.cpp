@@ -3,7 +3,7 @@
 #include <math.h>
 #include "flt.hpp"
 #include "memory_mgmt.hpp"
-
+#include <iostream>
 
 
 
@@ -37,9 +37,11 @@ void sure(channel output, buffer c, buffer c_var, buffer cand, buffer cand_d, in
 
 
 
-void flt_buffer_basic(buffer output, buffer input, buffer u, buffer var_u, Flt_parameters p, int img_width, int img_height){
+void flt_buffer_basic(buffer output, buffer input, buffer u, buffer var_u, Flt_parameters* allparams, int config, int img_width, int img_height, bufferweightset weights){
 
+    std::cout << "enter\n";
     scalar sum_weights, wc;
+    Flt_parameters p = allparams[config];
 
     // Handling Border Cases (border section)
     for (int i = 0; i < 3; i++){
@@ -57,23 +59,20 @@ void flt_buffer_basic(buffer output, buffer input, buffer u, buffer var_u, Flt_p
         }
 
     }
-
     
     // General Pre-Filtering
     for(int xp = p.r+p.f; xp < img_width - p.r-p.f; ++xp) {
         for(int yp = p.r+p.f; yp < img_height - p.r-p.f; ++yp) {
 
-            sum_weights = 0.f;
-
             // Init output to 0 => TODO: maybe we can do this with calloc
             for(int i = 0; i < 3; ++i)
                 output[i][xp][yp] = 0.f;
 
+            sum_weights = 0;
             for(int xq = xp-p.r; xq <= xp+p.r; xq++) {
                 for(int yq = yp-p.r; yq <= yp+p.r; yq++) {
-                    
                     // Compute color Weight
-                    wc = color_weight(u, var_u, p, xp, yp, xq, yq);
+                    wc = color_weight(weights, xp, yp, xq, yq, config);
                     sum_weights += wc;
 
                     // Add contribution term
@@ -81,7 +80,6 @@ void flt_buffer_basic(buffer output, buffer input, buffer u, buffer var_u, Flt_p
                         output[i][xp][yp] += input[i][xq][yq] * wc;
                 }
             }
-
             // Normalization step
             for(int i=0;i<3;++i)
                 output[i][xp][yp] /= (sum_weights + EPSILON);
@@ -218,22 +216,40 @@ void flt(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, bu
     }
 }
 
-void precompute_colors(bufferweightset allcolors, buffer u, buffer var_u, buffer f, buffer f_var, int img_width, int img_height, Flt_parameters* all_params) {
-    // compute all color weights (allcolors) for all configuration of parameters (all_params)
+void precompute_colors_pref(bufferweightset allweights, scalar* allsums, buffer u, buffer var_u, int img_width, int img_height, Flt_parameters p) {
+    // compute colors weights for prefiltering in allweights[0] and allsums[0] for all_params[0]
+
+    scalar sum_weights, wc;
+    sum_weights = 0;
+    for(int xp = p.r+p.f; xp < 10; ++xp) {
+        for(int yp = p.r+p.f; yp < 10; ++yp) {
+
+            sum_weights = 0.f;
+            for(int xq = xp-p.r; xq <= xp+p.r; xq++) {
+                for(int yq = yp-p.r; yq <= yp+p.r; yq++) {
+                    
+                    // Compute color Weight and store
+                    wc = color_weight(u, var_u, p, xp, yp, xq, yq);
+                    sum_weights += wc;
+                    allweights[0][xp][yp][xq][yq] = wc;
+                }
+            }
+        }
+    }
+    // store sum of weights
+    //allsums[0] = sum_weights;
+}
+
+void precompute_weights(bufferweightset allweights, scalar* allsums, buffer u, buffer var_u,  buffer f, buffer var_f, int img_width, int img_height, Flt_parameters* all_params) {
+    // compute all color weights (allweights) for all configuration of parameters (all_params)
 
 
 
 }
 
-void precompute_features(bufferweightset allfeatures, buffer f, buffer f_var, int img_width, int img_height, Flt_parameters* all_params) {
-    // compute all feature weights (allfeatures) for all configurations of parameters (all_params)
 
-
-
-}
-
-scalar color_weight(bufferweightset allcolors, int xp, int yp, int xq, int yq, int config) {
-    return allcolors[config][xp][yp][xq][yq];
+scalar color_weight(bufferweightset allweights, int xp, int yp, int xq, int yq, int config) {
+    return allweights[config][xp][yp][xq][yq];
 }
 
 scalar feature_weight(bufferweightset allfeatures, int xp, int yp, int xq, int yq, int config) {
