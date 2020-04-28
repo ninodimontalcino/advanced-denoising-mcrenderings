@@ -220,8 +220,8 @@ void precompute_colors_pref(bufferweightset allweights, scalar* allsums, buffer 
 
     scalar sum_weights, wc;
     sum_weights = 0;
-    for(int xp = p.r+p.f; xp < 10; ++xp) {
-        for(int yp = p.r+p.f; yp < 10; ++yp) {
+    for(int xp = p.r+p.f; xp < img_width-p.r-p.f; ++xp) {
+        for(int yp = p.r+p.f; yp < img_height-p.r-p.f; ++yp) {
 
             sum_weights = 0.f;
             for(int xq = xp-p.r; xq <= xp+p.r; xq++) {
@@ -247,12 +247,8 @@ void precompute_weights(bufferweightset allweights, scalar* allsums, buffer u, b
 }
 
 
-scalar color_weight(bufferweightset allweights, int xp, int yp, int xq, int yq, int config) {
-    return allweights[config][xp][yp][xq][yq];
-}
-
-scalar feature_weight(bufferweightset allfeatures, int xp, int yp, int xq, int yq, int config) {
-    return allfeatures[config][xp][yp][xq][yq];
+scalar access_weight(bufferweightset weights, int xp, int yp, int xq, int yq, int config) {
+    return weights[config][xp][yp][xq][yq];
 }
 
 
