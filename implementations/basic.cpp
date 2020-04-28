@@ -56,6 +56,12 @@ using namespace std;
         write_channel_exr("temp/normal_filtered.exr", &f_filtered[2], img_width, img_height);
         cout << "\t - Feature Prefiltering done" << endl;
     }
+    
+    // ----------------------------------------------
+    // Weights precomputation for other stages
+    // ----------------------------------------------
+    allocate_buffer_weights(&weights, img_width, img_height, 2); // need 5 but my laptop freezes 
+    precompute_weights(weights, weights_sums, c, c_var, f_filtered, f_var_filtered, img_width, img_height, all_params);
 
     // ----------------------------------------------   
     // (3) Computation of Candidate Filters
