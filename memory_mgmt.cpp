@@ -3,6 +3,7 @@
 
 #include "memory_mgmt.hpp"
 #include "flt.hpp"
+#include "fltopcount.hpp"
 
 void allocate_buffer_weights(bufferweightset *buf, int img_width, int img_height, int nsets) {
 

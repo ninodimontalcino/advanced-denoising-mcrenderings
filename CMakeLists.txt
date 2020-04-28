@@ -49,6 +49,7 @@ add_executable(main
               memory_mgmt.hpp
               denoise.h
               flt.hpp 
+              fltopcount.hpp
               validation.hpp
 
               # General Source Files
@@ -56,12 +57,14 @@ add_executable(main
               exr.cpp
               memory_mgmt.cpp 
               flt.cpp 
+              fltopcount.cpp
               validation.cpp
+              
 
               # Implementations (BASIC and OPTIMIZED)
               implementations/register.hpp
               implementations/basic.cpp
-              
+              implementations/optcount.cpp
               )
 
 # --------------------------

@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "flt.hpp"
-
+#include "fltopcount.hpp"
 /* ------------------------------------------------------------------
  * MEMORY MANAGEMENT
  * -> Allocation / Freeing

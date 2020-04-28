@@ -4,8 +4,6 @@
 typedef float scalar;
 typedef scalar** channel;
 typedef scalar*** buffer;
-typedef scalar**** bufferweight;
-typedef scalar ***** bufferweightset;
 
 #define EPSILON 0.0000000001
 #define NB_FEATURES 3
@@ -49,20 +47,18 @@ void sure(channel output, buffer c, buffer c_var, buffer cand, buffer cand_d, in
         - output (buffer):  filtered image in buffer output
    
 */
-void flt_buffer_basic(buffer output, buffer input, buffer u, buffer var_u, Flt_parameters* allparams, int config, int img_width, int img_height, bufferweightset weights);
+void flt_buffer_basic(buffer output, buffer input, buffer u, buffer var_u, Flt_parameters p, int img_width, int img_height);
 
 
 /* -------------------------------------------------------
     Basic Filtering (Channel)
 
     Parameters:
-        - output (channel):                 channel for filtered image (OUTPUT)
-        - input (channel):                  input channel => to be filtered
-        - u (buffer):                       color buffer
-        - var_u (buffer):                   variance of u
-        - allparams (array of struct):      pre-filtering parameters 
-        - config (int):                     number of struct in allparams
-        - weights (bufferweightset):        buffer with all weights to be precomputed
+        - output (channel): channel for filtered image (OUTPUT)
+        - input (channel):  input channel => to be filtered
+        - u (buffer):       color buffer
+        - var_u (buffer):   variance of u
+        - p (struct):       pre-filtering parameters 
 
     Returns:
         - output (buffer):  filtered image in buffer output
@@ -93,11 +89,6 @@ void flt(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, bu
 scalar per_pixel_distance(channel u, channel var_u, scalar kc, int xp, int yp, int xq, int yq);
 scalar nl_means_weights(buffer u, buffer var_u, Flt_parameters p, int xp, int yp, int xq, int yq);
 scalar color_weight(buffer u, buffer var_u, Flt_parameters p, int xp, int yp, int xq, int yq);
-
-void precompute_colors_pref(bufferweightset allcolors, scalar* allsums, buffer u, buffer var_u, int img_width, int img_height, Flt_parameters params);
-void precompute_weights(bufferweightset allweights, scalar* allsums, buffer u, buffer var_u, buffer f, buffer var_f, int img_width, int img_height, Flt_parameters* all_params);
-scalar color_weight(bufferweightset allcolors, int xp, int yp, int xq, int yq, int config);
-scalar feature_weight(bufferweightset allfeatures, int xp, int yp, int xq, int yq, int config);
 
 void compute_gradient(channel gradient, channel u, int d, int img_width, int img_height);
 scalar feature_distance(channel f, channel var_f, channel gradient, Flt_parameters p, int xp, int yp, int xq, int yq);

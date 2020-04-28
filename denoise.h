@@ -2,6 +2,7 @@
 #define DENOISE_H
 
 #include "flt.hpp"
+#include "fltopcount.hpp"
 
 #define DEBUG 0
 
