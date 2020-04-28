@@ -39,7 +39,6 @@ void sure(channel output, buffer c, buffer c_var, buffer cand, buffer cand_d, in
 
 void flt_buffer_basic(buffer output, buffer input, buffer u, buffer var_u, Flt_parameters* allparams, int config, int img_width, int img_height, bufferweightset weights){
 
-    std::cout << "enter\n";
     scalar sum_weights, wc;
     Flt_parameters p = allparams[config];
 

@@ -56,7 +56,8 @@ using namespace std;
     scalar weights_sums[6];
     allocate_buffer_weights(&weights_pref, img_width, img_height, 1);
     precompute_colors_pref(weights_pref, weights_sums, f, f_var, img_width, img_height, all_params[0]);
-    cout << "\t - Precomputation of prefiltering weights done" << endl;
+    if(DEBUG)
+        cout << "\t - Precomputation of prefiltering weights done" << endl;
 
     // ----------------------------------------------
     // (2) Feature Prefiltering
@@ -71,10 +72,12 @@ using namespace std;
     free_buffer_weights(&weights_pref, img_width, img_height, 1);
 
     // DEBUGGING PART
-    write_channel_exr("temp/albedo_filtered.exr", &f_filtered[0], img_width, img_height);
-    write_channel_exr("temp/depth_filtered.exr", &f_filtered[1], img_width, img_height);
-    write_channel_exr("temp/normal_filtered.exr", &f_filtered[2], img_width, img_height);
-    cout << "\t - Feature Prefiltering done" << endl;
+    if(DEBUG) {
+        write_channel_exr("temp/albedo_filtered.exr", &f_filtered[0], img_width, img_height);
+        write_channel_exr("temp/depth_filtered.exr", &f_filtered[1], img_width, img_height);
+        write_channel_exr("temp/normal_filtered.exr", &f_filtered[2], img_width, img_height);
+        cout << "\t - Feature Prefiltering done" << endl;
+    }
     
     // ----------------------------------------------
     // Weights precomputation for other stages
