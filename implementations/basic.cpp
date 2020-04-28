@@ -52,10 +52,10 @@ using namespace std;
     // Weights precomputation for prefiltering
     // ----------------------------------------------
 
-    bufferweightset weights;
+    bufferweightset weights_pref, weights;
     scalar weights_sums[6];
-    allocate_buffer_weights(&weights, img_width, img_height);
-    precompute_colors_pref(weights, weights_sums, f, f_var, img_width, img_height, all_params[0]);
+    allocate_buffer_weights(&weights_pref, img_width, img_height, 1);
+    precompute_colors_pref(weights_pref, weights_sums, f, f_var, img_width, img_height, all_params[0]);
     cout << "\t - Precomputation of prefiltering weights done" << endl;
 
     // ----------------------------------------------
@@ -65,9 +65,11 @@ using namespace std;
     buffer f_filtered, f_var_filtered;
     allocate_buffer(&f_filtered, img_width, img_height);
     allocate_buffer(&f_var_filtered, img_width, img_height);
-    flt_buffer_basic(f_filtered, f, f, f_var, all_params, 0, img_width, img_height, weights);
-    flt_buffer_basic(f_var_filtered, f_var, f, f_var, all_params, 0, img_width, img_height, weights);
+    flt_buffer_basic(f_filtered, f, f, f_var, all_params, 0, img_width, img_height, weights_pref);
+    flt_buffer_basic(f_var_filtered, f_var, f, f_var, all_params, 0, img_width, img_height, weights_pref);
     
+    free_buffer_weights(&weights_pref, img_width, img_height, 1);
+
     // DEBUGGING PART
     write_channel_exr("temp/albedo_filtered.exr", &f_filtered[0], img_width, img_height);
     write_channel_exr("temp/depth_filtered.exr", &f_filtered[1], img_width, img_height);
@@ -77,7 +79,7 @@ using namespace std;
     // ----------------------------------------------
     // Weights precomputation for other stages
     // ----------------------------------------------
-
+    allocate_buffer_weights(&weights, img_width, img_height, 2); // need 5 but my laptop freezes 
     precompute_weights(weights, weights_sums, c, c_var, f_filtered, f_var_filtered, img_width, img_height, all_params);
 
     // ----------------------------------------------   

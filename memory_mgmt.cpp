@@ -4,11 +4,11 @@
 #include "memory_mgmt.hpp"
 #include "flt.hpp"
 
-void allocate_buffer_weights(bufferweightset *buf, int img_width, int img_height) {
+void allocate_buffer_weights(bufferweightset *buf, int img_width, int img_height, int nsets) {
 
-    *buf = (bufferweightset) malloc(6*sizeof(void*));
+    *buf = (bufferweightset) malloc(nsets*sizeof(void*));
 
-    for(int i=0;i<6;++i) {
+    for(int i=0;i<nsets;++i) {
         (*buf)[i] = (bufferweight)malloc(img_width*sizeof(void*));
 
         for(int x=0;x<img_width;++x) {
@@ -40,6 +40,21 @@ void allocate_channel(channel *buf, int img_width, int img_height) {
     for(int i=0;i<img_width;++i) {
         (*buf)[i] = (scalar*)malloc(img_height*sizeof(void*));
     }
+}
+void free_buffer_weights(bufferweightset *buf, int img_width, int img_height, int nsets) {
+    for(int i=0;i<nsets;++i) {
+        for(int x=0;x<img_width;++x) {
+            for (int y=0; y<img_height; ++y) {
+                for (int x1 = 0; x1 < img_width; ++ x1) {
+                    free((*buf)[i][x][y][x1]);
+                }
+                free((*buf)[i][x][y]);
+            }
+            free((*buf)[i][x]);
+        }
+        free((*buf)[i]);
+    }
+    free(*buf);
 }
 
 void free_buffer(buffer *buf, int img_width) {
