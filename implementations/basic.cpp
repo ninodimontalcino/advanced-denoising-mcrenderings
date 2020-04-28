@@ -29,8 +29,10 @@ using namespace std;
  */
  void basic_implementation(buffer out_img, buffer c, buffer c_var, buffer f, buffer f_var, int R, int img_width, int img_height){
 
-    cout << "--------------------------------------------------" << endl;
-    cout << " Starting Algorithm " << endl;
+    if(DEBUG) {
+        cout << "--------------------------------------------------" << endl;
+        cout << " Starting Algorithm " << endl;
+    }
 
     // ----------------------------------------------
     // (1) Sample Variance Scaling
@@ -48,10 +50,12 @@ using namespace std;
     flt_buffer_basic(f_var_filtered, f_var, f, f_var, p_pre, img_width, img_height);
     
     // DEBUGGING PART
-    write_channel_exr("temp/albedo_filtered.exr", &f_filtered[0], img_width, img_height);
-    write_channel_exr("temp/depth_filtered.exr", &f_filtered[1], img_width, img_height);
-    write_channel_exr("temp/normal_filtered.exr", &f_filtered[2], img_width, img_height);
-    cout << "\t - Feature Prefiltering done" << endl;
+    if(DEBUG) {
+        write_channel_exr("temp/albedo_filtered.exr", &f_filtered[0], img_width, img_height);
+        write_channel_exr("temp/depth_filtered.exr", &f_filtered[1], img_width, img_height);
+        write_channel_exr("temp/normal_filtered.exr", &f_filtered[2], img_width, img_height);
+        cout << "\t - Feature Prefiltering done" << endl;
+    }
 
     // ----------------------------------------------   
     // (3) Computation of Candidate Filters
@@ -64,8 +68,10 @@ using namespace std;
     flt(r, d_r, c, c, c_var, f_filtered, f_var_filtered, p_r, img_width, img_height);
     
     // DEBUGGING PART
-    write_buffer_exr("temp/candidate_FIRST.exr", &r, img_width, img_height);
-    cout << "\t - Candidate FIRST done" << endl;
+    if(DEBUG) {
+        write_buffer_exr("temp/candidate_FIRST.exr", &r, img_width, img_height);
+        cout << "\t - Candidate FIRST done" << endl;
+    }
 
     // (b) Candidate Filter: SECOND
     Flt_parameters p_g = { .kc = 2.0, .kf = 0.6, .tau = 0.001, .f = 3, .r = R};
@@ -75,8 +81,10 @@ using namespace std;
     flt(g, d_g, c, c, c_var, f_filtered, f_var_filtered, p_g, img_width, img_height);
     
     // DEBUGGING PART
-    write_buffer_exr("temp/candidate_SECOND.exr", &g, img_width, img_height);
-    cout << "\t - Candidate SECOND done" << endl;
+    if(DEBUG) {
+        write_buffer_exr("temp/candidate_SECOND.exr", &g, img_width, img_height);
+        cout << "\t - Candidate SECOND done" << endl;
+    }
 
     // (c) Candidate Filter: THIRD
     Flt_parameters p_b = { .kc = INFINITY, .kf = 0.6, .tau = 0.0001, .f = 1, .r = R};
@@ -86,8 +94,10 @@ using namespace std;
     flt(b, d_b, c, c, c_var, f_filtered, f_var_filtered, p_b, img_width, img_height);
     
     // DEBUGGING PART
-    write_buffer_exr("temp/candidate_THIRD.exr", &b, img_width, img_height);
-    cout << "\t - Candidate THIRD done" << endl;
+    if(DEBUG) {
+        write_buffer_exr("temp/candidate_THIRD.exr", &b, img_width, img_height);
+        cout << "\t - Candidate THIRD done" << endl;
+    }
 
     // ----------------------------------------------
     // (4) Filtering SURE error estimates
@@ -103,11 +113,12 @@ using namespace std;
     sure(sure_b, c, c_var, b, d_b, img_width, img_height);
     
     // DEBUGGING PART
-    write_channel_exr("temp/sure_r.exr", &sure_r, img_width, img_height);
-    write_channel_exr("temp/sure_g.exr", &sure_g, img_width, img_height);
-    write_channel_exr("temp/sure_b.exr", &sure_b, img_width, img_height);   
-    cout << "\t - Sure Error Estimates done" << endl;
-
+    if(DEBUG) {
+        write_channel_exr("temp/sure_r.exr", &sure_r, img_width, img_height);
+        write_channel_exr("temp/sure_g.exr", &sure_g, img_width, img_height);
+        write_channel_exr("temp/sure_b.exr", &sure_b, img_width, img_height);   
+        cout << "\t - Sure Error Estimates done" << endl;
+    }
 
     // (b) Filter error estimates
     Flt_parameters p_sure = { .kc = 1.0, .kf = INFINITY, .tau = 0.001, .f = 1, .r = 1};
@@ -120,11 +131,12 @@ using namespace std;
     flt_channel_basic(e_b, sure_b, c, c_var, p_sure, img_width, img_height);
     
     // DEBUG PART
-    write_channel_exr("temp/e_r.exr", &e_r, img_width, img_height);
-    write_channel_exr("temp/e_g.exr", &e_g, img_width, img_height);
-    write_channel_exr("temp/e_b.exr", &e_b, img_width, img_height);
-    cout << "\t - Filtered Sure Error Estimates done" << endl;
-
+    if(DEBUG) {
+        write_channel_exr("temp/e_r.exr", &e_r, img_width, img_height);
+        write_channel_exr("temp/e_g.exr", &e_g, img_width, img_height);
+        write_channel_exr("temp/e_b.exr", &e_b, img_width, img_height);
+        cout << "\t - Filtered Sure Error Estimates done" << endl;
+    }
 
     // ----------------------------------------------
     // (5) Compute Binary Selection Maps
@@ -144,11 +156,12 @@ using namespace std;
     }
 
     // DEBUG PART
-    write_channel_exr("temp/sel_r.exr", &sel_r, img_width, img_height);
-    write_channel_exr("temp/sel_g.exr", &sel_g, img_width, img_height);
-    write_channel_exr("temp/sel_b.exr", &sel_b, img_width, img_height);
-    cout << "\t - Selection Maps done" << endl;
-
+    if(DEBUG) {
+        write_channel_exr("temp/sel_r.exr", &sel_r, img_width, img_height);
+        write_channel_exr("temp/sel_g.exr", &sel_g, img_width, img_height);
+        write_channel_exr("temp/sel_b.exr", &sel_b, img_width, img_height);
+        cout << "\t - Selection Maps done" << endl;
+    }
 
     // ----------------------------------------------
     // (6) Filter Selection Maps
@@ -163,10 +176,12 @@ using namespace std;
     flt_channel_basic(sel_b_filtered, sel_b, c, c_var, p_sel, img_width, img_height);
 
     // DEBUG PART
-    write_channel_exr("temp/sel_r_filtered.exr", &sel_r_filtered, img_width, img_height);
-    write_channel_exr("temp/sel_g_filtered.exr", &sel_g_filtered, img_width, img_height);
-    write_channel_exr("temp/sel_b_filtered.exr", &sel_b_filtered, img_width, img_height);
-    cout << "\t - Filter Selection Maps done" << endl;
+    if(DEBUG) {
+        write_channel_exr("temp/sel_r_filtered.exr", &sel_r_filtered, img_width, img_height);
+        write_channel_exr("temp/sel_g_filtered.exr", &sel_g_filtered, img_width, img_height);
+        write_channel_exr("temp/sel_b_filtered.exr", &sel_b_filtered, img_width, img_height);
+        cout << "\t - Filter Selection Maps done" << endl;
+    }
 
     // ----------------------------------------------
     // (7) Candidate Filter averaging
@@ -198,9 +213,10 @@ using namespace std;
     }
 
     // DEBUG PART 
-    write_buffer_exr("temp/pass1.exr", &out_img, img_width, img_height);
-    cout << "\t - Pass1 done" << endl;
-
+    if(DEBUG) {
+        write_buffer_exr("temp/pass1.exr", &out_img, img_width, img_height);
+        cout << "\t - Pass1 done" << endl;
+    }
 
     // ----------------------------------------------
     // (8) Second Pass-Filtering

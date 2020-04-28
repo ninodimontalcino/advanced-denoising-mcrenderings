@@ -70,7 +70,15 @@ int main(int argc, char **argv)
   // ------------------------------------
   // (..) PARAMETER PARSING -> from argv
   // ------------------------------------
-  // TODO: Read all input parameters
+  int r;
+  string img_size;
+  if(argc <= 2) {
+    std::cout << "Missing arguments.\nUsage: ./main img_size r" << std::endl;
+    return 1;
+  }
+
+  r = atoi(argv[2]);
+  img_size = argv[1];
 
   // ------------------------------------
   // (..) BUFFER INIT AND VARIABLE DEF.
@@ -86,14 +94,11 @@ int main(int argc, char **argv)
   buffer f_albedo, f_albedo_var, f_depth, f_depth_var, f_normal, f_normal_var;
 
   // Other parameters
-  int r, img_width, img_height;
-  r = 10; // ToDo: Read it as argument
+  int img_width, img_height;
 
   // ------------------------------------
   // (..) FILENAME DEFINITION
   // ------------------------------------
-  // TODO: EXR-Loading based on string input such that we can use path + "<..>.exr"
-  const string img_size = "512";
   const string path = "../renderings/100spp/" + img_size;
   const string filename_c = path + "/scene_Coateddiffuse.exr";
   const string filename_varc = path + "/scene_Coateddiffuse_variance.exr";
