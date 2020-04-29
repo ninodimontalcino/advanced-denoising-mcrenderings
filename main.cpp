@@ -137,7 +137,6 @@ int main(int argc, char **argv)
 
   // (3) Feature Stacking
   // => Access Pattern: features[i][x][y] where i in (1:= albedo, 2:= depth, 3:= normal)
-  // => TODO: Fix input features (albedo) to one channel => or duplicated channel
   buffer features, features_var;
   allocate_buffer(&features, img_width, img_height);
   allocate_buffer(&features_var, img_width, img_height);
