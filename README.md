@@ -17,6 +17,7 @@ https://onlinelibrary.wiley.com/doi/full/10.1111/cgf.12219
 ### Folder Structure
 
     .
+    |── analysis                      # Scripts for automated performance evaluation and plotting
     |── implementations               # Implemented Denoising Algorithms
     │   ├──  basic.cpp                      # Vanilla Implementation of referenced denoising algorithm
     │   ├──  <...>.cpp                      # Optimized Version (mention technique)
@@ -24,10 +25,7 @@ https://onlinelibrary.wiley.com/doi/full/10.1111/cgf.12219
     ├── renderings                    # Extracted Buffers of Monte Carlo Renderings
     │   ├──  100spp                         # MC-Rendering using 100 samples per pixel
     |   |    ├── _800x600                            # 800x600 (used for validation)
-    │   |    ├── 256                                 # 256x256
-    │   |    ├── 512                                 # 512x512
-    │   |    ├── 1024                                # 1024x1024
-    │   |    ├── 2048                                # 2048x2048
+    │   |    ├── <size>                              # <size> x <size> rendering
     │   ├──  5000spp_GT                      # MC-Rendering using 5000 samples per pixel (Claimed Grountd-Truth)
     ├── src                           # Libraries
     │   ├── ext                             # External Libraries    
