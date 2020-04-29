@@ -4,7 +4,7 @@
 #include "flt.hpp"
 #include "fltopcount.hpp"
 
-#define DEBUG 0
+#define DEBUG 1
 
 // Signature of the denoise algorithm
 typedef void(*denoise_func)(buffer , buffer , buffer, buffer , buffer, int, int, int);

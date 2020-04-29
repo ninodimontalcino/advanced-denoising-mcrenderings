@@ -35,14 +35,8 @@ using namespace std;
         cout << " Starting Algorithm " << endl;
     }
 
-    Flt_parameters all_params[6];
-    all_params[0] = { .kc = 1., .kf = INFINITY, .tau = 0., .f = 3, .r = 5}; // Prefiltering
-    all_params[1] = { .kc = 2.0, .kf = 0.6, .tau = 0.001, .f = 1, .r = R}; // candidate FIRST
-    all_params[2] = { .kc = 2.0, .kf = 0.6, .tau = 0.001, .f = 3, .r = R}; // candidate SECOND
-    all_params[3] = { .kc = INFINITY, .kf = 0.6, .tau = 0.0001, .f = 1, .r = R}; // candidate THIRD
-    all_params[4] = { .kc = 1.0, .kf = INFINITY, .tau = 0.001, .f = 1, .r = 1}; // filter error estimate
-    all_params[5] = { .kc = 1.0, .kf = INFINITY, .tau = 0.0001, .f = 1, .r = 5}; // filter selection map
-
+    int maxr = max(5, R);
+    
     // ----------------------------------------------
     // (1) Sample Variance Scaling
     // ----------------------------------------------
@@ -53,24 +47,24 @@ using namespace std;
     // Weights precomputation for prefiltering
     // ----------------------------------------------
 
+    Flt_parameters p_pre = { .kc = 1., .kf = INFINITY, .tau = 0., .f = 3, .r = 5};
     bufferweightset weights_pref, weights;
     scalar weights_sums[6];
-    allocate_buffer_weights(&weights_pref, img_width, img_height, 1);
-    precompute_colors_pref(weights_pref, weights_sums, f, f_var, img_width, img_height, all_params[0]);
+    allocate_buffer_weights(&weights_pref, img_width, img_height, 1, maxr);
+    precompute_colors_pref(weights_pref, weights_sums, f, f_var, img_width, img_height, p_pre);
     if(DEBUG)
         cout << "\t - Precomputation of prefiltering weights done" << endl;
 
     // ----------------------------------------------
     // (2) Feature Prefiltering
     // ----------------------------------------------
-    Flt_parameters p_pre = all_params[0];
+    
     buffer f_filtered, f_var_filtered;
     allocate_buffer(&f_filtered, img_width, img_height);
     allocate_buffer(&f_var_filtered, img_width, img_height);
-    flt_buffer_opcount(f_filtered, f, f, f_var, all_params, 0, img_width, img_height, weights_pref);
-    flt_buffer_opcount(f_var_filtered, f_var, f, f_var, all_params, 0, img_width, img_height, weights_pref);
-    
-    free_buffer_weights(&weights_pref, img_width, img_height, 1);
+    flt_buffer_opcount(f_filtered, f, f, f_var, p_pre, img_width, img_height, weights_pref);
+    flt_buffer_opcount(f_var_filtered, f_var, f, f_var, p_pre, img_width, img_height, weights_pref);
+    free_buffer_weights(&weights_pref, img_width, img_height, 1, maxr);
 
     // DEBUGGING PART
     if(DEBUG) {
@@ -83,18 +77,26 @@ using namespace std;
     // ----------------------------------------------
     // Weights precomputation for other stages
     // ----------------------------------------------
-    allocate_buffer_weights(&weights, img_width, img_height, 2); // need 5 but my laptop freezes 
+    Flt_parameters all_params[5];
+    all_params[0] = { .kc = 2.0, .kf = 0.6, .tau = 0.001, .f = 1, .r = R}; // candidate FIRST
+    all_params[1] = { .kc = 2.0, .kf = 0.6, .tau = 0.001, .f = 3, .r = R}; // candidate SECOND
+    all_params[2] = { .kc = INFINITY, .kf = 0.6, .tau = 0.0001, .f = 1, .r = R}; // candidate THIRD
+    all_params[3] = { .kc = 1.0, .kf = INFINITY, .tau = 0.001, .f = 1, .r = 1}; // filter error estimate
+    all_params[4] = { .kc = 1.0, .kf = INFINITY, .tau = 0.0001, .f = 1, .r = 5}; // filter selection map
+    
+    allocate_buffer_weights(&weights, img_width, img_height, 5, maxr); // need 5 but my laptop freezes 
     precompute_weights(weights, weights_sums, c, c_var, f_filtered, f_var_filtered, img_width, img_height, all_params);
+
 
     // ----------------------------------------------   
     // (3) Computation of Candidate Filters
     // ----------------------------------------------
     // (a) Candidate Filter: FIRST
-    Flt_parameters p_r = all_params[1];
+    Flt_parameters p_r = all_params[0];
     buffer r, d_r;
     allocate_buffer(&r, img_width, img_height);
     allocate_buffer(&d_r, img_width, img_height);
-    flt(r, d_r, c, c, c_var, f_filtered, f_var_filtered, p_r, img_width, img_height);
+    flt_opcount(r, d_r, c, c, c_var, f_filtered, f_var_filtered, p_r, 0, img_width, img_height, weights);
     
     // DEBUGGING PART
     if(DEBUG) {
@@ -103,11 +105,11 @@ using namespace std;
     }
 
     // (b) Candidate Filter: SECOND
-    Flt_parameters p_g = all_params[2];
+    Flt_parameters p_g = all_params[1];
     buffer g, d_g;
     allocate_buffer(&g, img_width, img_height);
     allocate_buffer(&d_g, img_width, img_height);
-    flt(g, d_g, c, c, c_var, f_filtered, f_var_filtered, p_g, img_width, img_height);
+    flt_opcount(g, d_g, c, c, c_var, f_filtered, f_var_filtered, p_g, 1, img_width, img_height, weights);
     
     // DEBUGGING PART
     if(DEBUG) {
@@ -116,11 +118,11 @@ using namespace std;
     }
 
     // (c) Candidate Filter: THIRD
-    Flt_parameters p_b = all_params[3];
+    Flt_parameters p_b = all_params[2];
     buffer b, d_b;
     allocate_buffer(&b, img_width, img_height);
     allocate_buffer(&d_b, img_width, img_height);
-    flt(b, d_b, c, c, c_var, f_filtered, f_var_filtered, p_b, img_width, img_height);
+    flt_opcount(b, d_b, c, c, c_var, f_filtered, f_var_filtered, p_b, 2, img_width, img_height, weights);
     
     // DEBUGGING PART
     if(DEBUG) {
@@ -150,14 +152,14 @@ using namespace std;
     }
 
     // (b) Filter error estimates
-    Flt_parameters p_sure = all_params[4];
+    Flt_parameters p_sure = all_params[3];
     channel e_r, e_g, e_b;
     allocate_channel(&e_r, img_width, img_height);
     allocate_channel(&e_g, img_width, img_height);
     allocate_channel(&e_b, img_width, img_height);
-    flt_channel_basic(e_r, sure_r, c, c_var, p_sure, img_width, img_height);
-    flt_channel_basic(e_g, sure_g, c, c_var, p_sure, img_width, img_height);
-    flt_channel_basic(e_b, sure_b, c, c_var, p_sure, img_width, img_height);
+    flt_channel_opcount(e_r, sure_r, c, c_var, p_sure, 3, img_width, img_height, weights);
+    flt_channel_opcount(e_g, sure_g, c, c_var, p_sure, 3, img_width, img_height, weights);
+    flt_channel_opcount(e_b, sure_b, c, c_var, p_sure, 3, img_width, img_height, weights);
     
     // DEBUG PART
     if(DEBUG) {
@@ -195,14 +197,14 @@ using namespace std;
     // ----------------------------------------------
     // (6) Filter Selection Maps
     // ----------------------------------------------
-    Flt_parameters p_sel = all_params[5];
+    Flt_parameters p_sel = all_params[4];
     channel sel_r_filtered, sel_g_filtered,  sel_b_filtered;
     allocate_channel(&sel_r_filtered, img_width, img_height);
     allocate_channel(&sel_g_filtered, img_width, img_height);
     allocate_channel(&sel_b_filtered, img_width, img_height);
-    flt_channel_basic(sel_r_filtered, sel_r, c, c_var, p_sel, img_width, img_height);
-    flt_channel_basic(sel_g_filtered, sel_g, c, c_var, p_sel, img_width, img_height);
-    flt_channel_basic(sel_b_filtered, sel_b, c, c_var, p_sel, img_width, img_height);
+    flt_channel_opcount(sel_r_filtered, sel_r, c, c_var, p_sel, 4, img_width, img_height, weights);
+    flt_channel_opcount(sel_g_filtered, sel_g, c, c_var, p_sel, 4, img_width, img_height, weights);
+    flt_channel_opcount(sel_b_filtered, sel_b, c, c_var, p_sel, 4, img_width, img_height, weights);
 
     // DEBUG PART
     if(DEBUG) {
@@ -287,5 +289,7 @@ using namespace std;
     free_channel(&sel_g_filtered, img_width);
     free_channel(&sel_b_filtered, img_width);
 
+    // Free weights
+    free_buffer_weights(&weights, img_width, img_height, 5, maxr);
 
  }
