@@ -48,10 +48,10 @@ using namespace std;
     // ----------------------------------------------
 
     Flt_parameters p_pre = { .kc = 1., .kf = INFINITY, .tau = 0., .f = 3, .r = 5};
-    bufferweightset weights_pref, weights;
-    scalar weights_sums[6];
+    bufferweightset weights_pref;
+
     allocate_buffer_weights(&weights_pref, img_width, img_height, 1, maxr);
-    precompute_colors_pref(weights_pref, weights_sums, f, f_var, img_width, img_height, p_pre);
+    precompute_colors_pref(weights_pref[0], f, f_var, img_width, img_height, p_pre);
     if(DEBUG)
         cout << "\t - Precomputation of prefiltering weights done" << endl;
 
@@ -62,8 +62,8 @@ using namespace std;
     buffer f_filtered, f_var_filtered;
     allocate_buffer(&f_filtered, img_width, img_height);
     allocate_buffer(&f_var_filtered, img_width, img_height);
-    flt_buffer_opcount(f_filtered, f, f, f_var, p_pre, img_width, img_height, weights_pref);
-    flt_buffer_opcount(f_var_filtered, f_var, f, f_var, p_pre, img_width, img_height, weights_pref);
+    flt_buffer_opcount(f_filtered, f, f, f_var, p_pre, img_width, img_height, weights_pref[0]);
+    flt_buffer_opcount(f_var_filtered, f_var, f, f_var, p_pre, img_width, img_height, weights_pref[0]);
     free_buffer_weights(&weights_pref, img_width, img_height, 1, maxr);
 
     // DEBUGGING PART
@@ -77,6 +77,8 @@ using namespace std;
     // ----------------------------------------------
     // Weights precomputation for other stages
     // ----------------------------------------------
+    bufferweightset weights;
+    scalar weights_sums[5];
     Flt_parameters all_params[5];
     all_params[0] = { .kc = 2.0, .kf = 0.6, .tau = 0.001, .f = 1, .r = R}; // candidate FIRST
     all_params[1] = { .kc = 2.0, .kf = 0.6, .tau = 0.001, .f = 3, .r = R}; // candidate SECOND
