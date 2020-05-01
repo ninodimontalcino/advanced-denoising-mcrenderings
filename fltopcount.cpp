@@ -132,7 +132,7 @@ void flt_opcount(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer v
                 for (int yq = yp - p.r; yq <= yp + p.r; yq++)
                 {
 
-                    w = access_weight(weights, xp, yp, xq - xp + p.r, yq - yp + p.r, config);
+                    w = weights[config][xp][yp][xq - xp + p.r][yq - yp + p.r];
                     sum_weights += w;
 
                     for (int i = 0; i < 3; ++i)
@@ -193,7 +193,7 @@ void flt_channel_opcount(channel output, channel input, buffer u, buffer var_u, 
                 {
 
                     // Compute color Weight
-                    wc = access_weight(weights, xp, yp, xq - xp + p.r, yq - yp + p.r, config);
+                    wc = weights[config][xp][yp][xq - xp + p.r][yq - yp + p.r];
                     sum_weights += wc;
 
                     // Add contribution term
@@ -215,16 +215,24 @@ void precompute_squared_difference(bufferweight output_numerator, bufferweight o
         {
             for (int deltaxq = -deltaMax; deltaxq <= deltaMax; ++deltaxq)
             {
-                for (int deltayq = -deltaMax; deltayq <= deltaMax; ++deltayq)
+                for (int deltayq = 0; deltayq <= deltaMax; ++deltayq)
                 {
                     int xq = xp + deltaxq, yq = yp + deltayq;
-                    if (xq < 0 || xq >= img_width || yq < 0 || yq >= img_height)
+                    if (xq < 0 || xq >= img_width || yq < 0 || yq >= img_height) // deal with border
                         continue;
+                    
                     scalar sqdist = u[xp][yp] - u[xq][yq];
                     sqdist *= sqdist;
-                    scalar var_cancel = var_u[xp][yp] + fmin(var_u[xp][yp], var_u[xq][yq]);
-                    output_numerator[xp][yp][deltaxq + deltaMax][deltayq + deltaMax] = sqdist - var_cancel;
+                    scalar varqp = fmin(var_u[xp][yp], var_u[xq][yq]);
+                    scalar var_cancel_p = var_u[xp][yp] + varqp;
+                    scalar var_cancel_q = var_u[xq][yq] + varqp;
+
+                    output_numerator[xp][yp][deltaxq + deltaMax][deltayq + deltaMax] = sqdist - var_cancel_p;
+                    output_numerator[xq][yq][-deltaxq + deltaMax][-deltayq + deltaMax] = sqdist - var_cancel_q;
+
                     output_denominator[xp][yp][deltaxq + deltaMax][deltayq + deltaMax] = EPSILON + var_u[xp][yp] + var_u[xq][yq];
+                    output_denominator[xq][yq][-deltaxq + deltaMax][-deltayq + deltaMax] = EPSILON + var_u[xp][yp] + var_u[xq][yq];
+
                 }
             }
         }
@@ -289,6 +297,10 @@ void precompute_color_weights(bufferweightset allweights, scalar *allsums, buffe
     precompute_differences(diffs[0], diffs[1], sq_diffs, img_width, img_height, r_max, deltaMax);
 
     scalar wc;
+
+    // precompute division
+    scalar f1 = 1.f / 108.f; // 108 = 3(2*1+1)^2 * 2^2
+    scalar f3 = 1.f / 147.f; // 147 = 3(2^3+1)^2 * 1^2
 
     for (int xp = 2; xp < img_width - 2; ++xp)
     {
@@ -415,9 +427,4 @@ void precompute_weights(bufferweightset allweights, scalar *allsums, buffer u, b
 
     // Free memory
     free_buffer(&gradients, img_width);
-}
-
-scalar access_weight(bufferweightset weights, int xp, int yp, int xq, int yq, int config)
-{
-    return weights[config][xp][yp][xq][yq];
 }

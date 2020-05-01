@@ -11,7 +11,7 @@ void optopcount(buffer out_img, buffer c, buffer c_var, buffer f, buffer f_var, 
  * ------------------------------------------------------------------------- */ 
 void register_functions()
 {
-    add_function(&basic_implementation, "Basic Implementation", 1);
+    //add_function(&basic_implementation, "Basic Implementation", 1);
     add_function(&optopcount, "Optimization of ops count", 1);
 }
 

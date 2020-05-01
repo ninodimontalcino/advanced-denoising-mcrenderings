@@ -212,13 +212,13 @@ int main(int argc, char **argv)
 
   }
 
-  // // Performance Testing
-  // for (i = 0; i < numFuncs; i++)
-  // {
-  //   perf = perf_test(userFuncs[i], funcNames[i], funcFlops[i], c, c_var, features, features_var, r, img_width, img_height);
-  //   cout << endl << "Running: " << funcNames[i] << endl;
-  //   cout << perf << " cycles" << endl;
-  // }
+  // Performance Testing
+  for (i = 0; i < numFuncs; i++)
+  {
+    perf = perf_test(userFuncs[i], funcNames[i], funcFlops[i], c, c_var, features, features_var, r, img_width, img_height);
+    cout << endl << "Running: " << funcNames[i] << endl;
+    cout << perf << " cycles" << endl;
+  }
   return 0;
 }
 
