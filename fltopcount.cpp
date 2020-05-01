@@ -213,6 +213,7 @@ void precompute_squared_difference(bufferweight output_numerator, bufferweight o
     {
         for (int yp = 0; yp < img_height; ++yp)
         {
+            scalar varp = var_u[xp][yp];
             for (int deltaxq = -deltaMax; deltaxq <= deltaMax; ++deltaxq)
             {
                 for (int deltayq = 0; deltayq <= deltaMax; ++deltayq)
@@ -220,18 +221,19 @@ void precompute_squared_difference(bufferweight output_numerator, bufferweight o
                     int xq = xp + deltaxq, yq = yp + deltayq;
                     if (xq < 0 || xq >= img_width || yq < 0 || yq >= img_height) // deal with border
                         continue;
-                    
+                    scalar varq = var_u[xq][yq];
                     scalar sqdist = u[xp][yp] - u[xq][yq];
                     sqdist *= sqdist;
-                    scalar varqp = fmin(var_u[xp][yp], var_u[xq][yq]);
-                    scalar var_cancel_p = var_u[xp][yp] + varqp;
-                    scalar var_cancel_q = var_u[xq][yq] + varqp;
+                    scalar varqp = fmin(varp, varq);
+                    scalar var_cancel_p = varp + varqp;
+                    scalar var_cancel_q = varq + varqp;
 
                     output_numerator[xp][yp][deltaxq + deltaMax][deltayq + deltaMax] = sqdist - var_cancel_p;
                     output_numerator[xq][yq][-deltaxq + deltaMax][-deltayq + deltaMax] = sqdist - var_cancel_q;
 
-                    output_denominator[xp][yp][deltaxq + deltaMax][deltayq + deltaMax] = EPSILON + var_u[xp][yp] + var_u[xq][yq];
-                    output_denominator[xq][yq][-deltaxq + deltaMax][-deltayq + deltaMax] = EPSILON + var_u[xp][yp] + var_u[xq][yq];
+                    scalar denom = EPSILON + varp + varq;
+                    output_denominator[xp][yp][deltaxq + deltaMax][deltayq + deltaMax] = denom;
+                    output_denominator[xq][yq][-deltaxq + deltaMax][-deltayq + deltaMax] = denom;
 
                 }
             }
@@ -241,6 +243,7 @@ void precompute_squared_difference(bufferweight output_numerator, bufferweight o
 
 void precompute_differences(bufferweight diff1, bufferweight diff2, bufferweightset sq_dists, const int img_width, const int img_height, const int maxR, const int deltaMax)
 {
+    scalar current;
     for (int xp = 0; xp < img_width; ++xp)
     {
         for (int yp = 0; yp < img_height; ++yp)
@@ -257,22 +260,113 @@ void precompute_differences(bufferweight diff1, bufferweight diff2, bufferweight
                     diff2[xp][yp][deltaxq + maxR][deltayq + maxR] = 0;
                     for (int i = 0; i < 3; ++i)
                     {
-                        for (int u = -3; u <= 3; ++u)
-                        {
-                            for (int v = -3; v <= 3; ++v)
-                            {
+
+                        // compute sum of perpixel distance for f=1 neighborhood
+                        for (int u = -1; u <= 1; u ++) {
+
+                            for (int v = -1; v <=1; v ++) {
+
                                 if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
-                                    xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
+                                xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
                                     continue;
-                                scalar current = (sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax] /
-                                                  sq_dists[2 * i + 1][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax]);
+                                current = (sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax] /
+                                                    sq_dists[2 * i + 1][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax]);
                                 diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;
-                                if (u >= -1 && u <= 1 && v >= -1 && v <= 1)
-                                {
-                                    diff1[xp][yp][deltaxq + maxR][deltayq + maxR] += current;
-                                }
+                                diff1[xp][yp][deltaxq + maxR][deltayq + maxR] += current;
                             }
                         }
+
+                        // remaining pixels                            
+                        int u, v;
+
+                        u = -3; 
+                        for (int v = -3; v <= 3; v++) {
+                            if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
+                            xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
+                                continue;                            
+                            current = (sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax] /
+                                                sq_dists[2 * i + 1][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax]);
+                            diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
+                        }
+                        u = -2; 
+                        for (int v = -3; v <= 3; v++) {
+                            if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
+                            xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
+                                continue;                                 
+                            current = (sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax] /
+                                                sq_dists[2 * i + 1][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax]);
+                            diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
+                        }
+                        u = 3; 
+                        for (int v = -3; v <= 3; v++) {
+                            if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
+                            xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
+                                continue;                                 
+                            current = (sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax] /
+                                                sq_dists[2 * i + 1][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax]);
+                            diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
+                        }
+                        u = 2; 
+                        for (int v = -3; v <= 3; v++) {
+                            if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
+                            xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
+                                continue;                                 
+                            current = (sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax] /
+                                                sq_dists[2 * i + 1][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax]);
+                            diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
+                        }           
+                        u = -1;
+                        for (int v = -3; v <= -2; v++) {
+                            if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
+                            xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
+                                continue;                                 
+                            current = (sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax] /
+                                                sq_dists[2 * i + 1][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax]);
+                            diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
+                        }  
+                        for (int v = 2; v <= 3; v++) {
+                            if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
+                            xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
+                                continue;                                 
+                            current = (sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax] /
+                                                sq_dists[2 * i + 1][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax]);
+                            diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
+                        }  
+                        u = 0;
+                        for (int v = -3; v <= -2; v++) {
+                            if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
+                            xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
+                                continue;                                 
+                            current = (sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax] /
+                                                sq_dists[2 * i + 1][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax]);
+                            diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
+                        }  
+                        for (int v = 2; v <= 3; v++) {
+                            if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
+                            xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
+                                continue;                                 
+                            current = (sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax] /
+                                                sq_dists[2 * i + 1][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax]);
+                            diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
+                        } 
+                        u = 1;
+                        for (int v = -3; v <= -2; v++) {
+                            if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
+                            xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
+                                continue;                                 
+                            current = (sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax] /
+                                                sq_dists[2 * i + 1][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax]);
+                            diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
+                        }  
+                        for (int v = 2; v <= 3; v++) {
+                            if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
+                            xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
+                                continue;                                 
+                            current = (sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax] /
+                                                sq_dists[2 * i + 1][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax]);
+                            diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
+                        }                                                                                                                                     
+
                     }
                 }
             }
@@ -288,20 +382,25 @@ void precompute_color_weights(bufferweightset allweights, scalar *allsums, buffe
     bufferweightset sq_diffs;
     const int deltaMax = all_params[1].r + 7;
     allocate_buffer_weights(&sq_diffs, img_width, img_height, 6, deltaMax);
+    std::cout << "precompute squared diff\n";
     for (int i = 0; i < 3; ++i)
         precompute_squared_difference(sq_diffs[2 * i], sq_diffs[2 * i + 1], u[i], var_u[i], img_width, img_height, deltaMax);
 
     bufferweightset diffs;
     const int r_max = all_params[0].r;
+    std::cout<< "allocate\n";
     allocate_buffer_weights(&diffs, img_width, img_height, 2, r_max);
+    std::cout << "differences\n";
     precompute_differences(diffs[0], diffs[1], sq_diffs, img_width, img_height, r_max, deltaMax);
 
     scalar wc;
 
     // precompute division
-    scalar f1 = 1.f / 108.f; // 108 = 3(2*1+1)^2 * 2^2
-    scalar f3 = 1.f / 147.f; // 147 = 3(2^3+1)^2 * 1^2
+    scalar f1kc2 = 1.f / 108.f; // 108 = 3(2*1+1)^2 * 2^2
+    scalar f3kc2 = 1.f / 588.f; // 588 = 3(2^3+1)^2 * 2^2
+    scalar f1kc1 = 1.f / 27.f; // 27 = 3(2*1+1)^2 *2^1
 
+    std::cout<< "color weights\n";
     for (int xp = 2; xp < img_width - 2; ++xp)
     {
         for (int yp = 2; yp < img_height - 2; ++yp)
@@ -312,27 +411,43 @@ void precompute_color_weights(bufferweightset allweights, scalar *allsums, buffe
                 for (int yq = yp - r_max; yq <= yp + r_max; yq++)
                 {
 
-                    for (int p = 0; p < n_params; ++p)
-                    {
-                        if ((xp < all_params[p].r + all_params[p].f || xp >= img_width - all_params[p].r - all_params[p].f) ||
-                            (yp < all_params[p].r + all_params[p].f || yp >= img_height - all_params[p].r - all_params[p].f) ||
-                            (xq < xp - all_params[p].r || xq > xp + all_params[p].r) ||
-                            (yq < yp - all_params[p].r || yq > yp + all_params[p].r))
-                            continue;
-                        if (all_params[p].kc == INFINITY)
-                        {
-                            wc = 1;
-                        }
-                        else if (all_params[p].f == 1)
-                        {
-                            wc = exp(-fmax(0.f, diffs[0][xp][yp][xq - xp + r_max][yq - yp + r_max] / (27.f * all_params[p].kc * all_params[p].kc)));
-                        }
-                        else
-                        {
-                            wc = exp(-fmax(0.f, diffs[1][xp][yp][xq - xp + r_max][yq - yp + r_max] / (147.f * all_params[p].kc * all_params[p].kc)));
-                        }
-                        allweights[p][xp][yp][xq - xp + all_params[p].r][yq - yp + all_params[p].r] = wc;
-                        allsums[p] += wc;
+                    //loop unrolling for each param
+
+                    // config 0, candidate FIST
+                    wc = exp(-fmax(0.f, diffs[0][xp][yp][xq - xp + r_max][yq - yp + r_max] * f1kc2));
+                    allweights[0][xp][yp][xq - xp + r_max][yq - yp + r_max] = wc;
+                    allsums[0] += wc;
+
+                    // config 1, candidate SECOND
+                    wc = exp(-fmax(0.f, diffs[1][xp][yp][xq - xp + r_max][yq - yp + r_max] * f3kc2));
+                    allweights[1][xp][yp][xq - xp + r_max][yq - yp + r_max] = wc;
+                    allsums[1] += wc;
+
+                    // config 2, candidate THIRD
+                    wc = 1;
+                    allweights[2][xp][yp][xq - xp + r_max][yq - yp + r_max] = wc;
+                    allsums[2] += wc;
+
+                    // config 3, candidate FIST
+                    if (!((xp < 1 + 1 || xp >= img_width - 1 - 1) ||
+                    (yp < 1 + 1 || yp >= img_height - 1 - 1) ||
+                    (xq < xp - 1 || xq > xp + 1) ||
+                    (yq < yp - 1 || yq > yp + 1))) {
+                        wc = exp(-fmax(0.f, diffs[0][xp][yp][xq - xp + r_max][yq - yp + r_max] * f1kc1));
+                        allweights[3][xp][yp][xq - xp + 1][yq - yp + 1] = wc;
+                        allsums[3] += wc;                        
+                    }                    
+
+
+                    // config 4, candidate FIST
+                    if (!((xp < 5 + 1 || xp >= img_width - 5 - 1) ||
+                    (yp < 5 + 1 || yp >= img_height - 1 - 5) ||
+                    (xq < xp - 5 || xq > xp + 5) ||
+                    (yq < yp - 5 || yq > yp + 5))) {
+                        wc = exp(-fmax(0.f, diffs[0][xp][yp][xq - xp + r_max][yq - yp + r_max] * f1kc1));
+                        allweights[4][xp][yp][xq - xp + 5][yq - yp + 5] = wc;
+                        allsums[4] += wc;
+
                     }
                 }
             }
@@ -350,9 +465,9 @@ void precompute_weights(bufferweightset allweights, scalar *allsums, buffer u, b
     allocate_buffer(&gradients, img_width, img_height);
     for (int i = 0; i < NB_FEATURES; ++i)
         compute_gradient(gradients[i], f[i], 2, img_width, img_height); // 2 because we need almost the whole image for filter error
-
+    std::cout << "begin color\n";
     precompute_color_weights(allweights, allsums, u, var_u, img_width, img_height, all_params, 5);
-
+    std::cout << "done color\n";
     scalar wc, wf, w;
     Flt_parameters p;
 
