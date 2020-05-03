@@ -26,7 +26,7 @@ void flt_buffer_opcount(buffer output, buffer input, buffer u, buffer var_u, Flt
 void flt_opcount(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, buffer f, buffer var_f, Flt_parameters p, int config, int img_width, int img_height, bufferweightset weights);
 void flt_channel_opcount(channel output, channel input, buffer u, buffer var_u, Flt_parameters p, int config, int img_width, int img_height, bufferweightset weights);
 scalar access_weight(bufferweightset weights, int xp, int yp, int xq, int yq, int config);
-void precompute_color_weights(bufferweightset allweights, buffer u, buffer var_u, int img_width, int img_height, Flt_parameters* all_params, int n_params);
-void precompute_weights(bufferweightset allweights, scalar* allsums, buffer u, buffer var_u,  buffer f, buffer var_f, int img_width, int img_height, Flt_parameters* all_params);
+void precompute_color_weights(bufferweightset allweights, buffer u, buffer var_u, int img_width, int img_height, Flt_parameters* all_params, const int offset);
+void precompute_weights(bufferweightset allweights, scalar* allsums, buffer u, buffer var_u,  buffer f, buffer var_f, int img_width, int img_height, Flt_parameters* all_params, const int offset);
 
 #endif //FLT1_H
