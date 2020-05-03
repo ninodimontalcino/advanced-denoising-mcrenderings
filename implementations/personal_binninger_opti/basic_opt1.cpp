@@ -131,16 +131,10 @@ using namespace std;
     // flt_channel_Basic(e_r, sure_r, c, c_var, p_sure, img_width, img_height);
     // flt_channel_Basic(e_g, sure_g, c, c_var, p_sure, img_width, img_height);
     // flt_channel_Basic(e_b, sure_b, c, c_var, p_sure, img_width, img_height);
-    flt_channel_opt1(e_r, sure_r, e_g, sure_g, e_b, sure_b, c, c_var, p_sure, img_width, img_height);
 
+    // The flt_channel is done at the same moment as the selection map computation
     
-    // DEBUG PART
-    if(DEBUG) {
-        write_channel_exr("temp/e_r.exr", &e_r, img_width, img_height);
-        write_channel_exr("temp/e_g.exr", &e_g, img_width, img_height);
-        write_channel_exr("temp/e_b.exr", &e_b, img_width, img_height);
-        cout << "\t - Filtered Sure Error Estimates done" << endl;
-    }
+   
 
     // ----------------------------------------------
     // (5) Compute Binary Selection Maps
@@ -151,14 +145,25 @@ using namespace std;
     allocate_channel(&sel_b, img_width, img_width);
     
     // Compute selection maps
-    for (int x = 0; x < img_width; x++){
-        for (int y = 0; y < img_height; y++){
-                sel_r[x][y] = e_r[x][y] < e_g[x][y] && e_r[x][y] < e_b[x][y]; // && d_r[0][x][y] < d_g[0][x][y];
-                sel_g[x][y] = e_g[x][y] < e_r[x][y] && e_g[x][y] < e_b[x][y];
-                sel_b[x][y] = e_b[x][y] < e_r[x][y] && e_g[x][y] < e_b[x][y];
-        }
-    }
+    // The computation of selection maps is done in dlt_channel_opt1
 
+    // for (int x = 0; x < img_width; x++){
+    //     for (int y = 0; y < img_height; y++){
+    //             sel_r[x][y] = e_r[x][y] < e_g[x][y] && e_r[x][y] < e_b[x][y]; // && d_r[0][x][y] < d_g[0][x][y];
+    //             sel_g[x][y] = e_g[x][y] < e_r[x][y] && e_g[x][y] < e_b[x][y];
+    //             sel_b[x][y] = e_b[x][y] < e_r[x][y] && e_g[x][y] < e_b[x][y];
+    //     }
+    // }
+
+    flt_channel_opt1_sel(e_r, sure_r, e_g, sure_g, e_b, sure_b, sel_r, sel_g, sel_b, c, c_var, p_sure, img_width, img_height);
+    
+    // DEBUG PART
+    if(DEBUG) {
+        write_channel_exr("temp/e_r.exr", &e_r, img_width, img_height);
+        write_channel_exr("temp/e_g.exr", &e_g, img_width, img_height);
+        write_channel_exr("temp/e_b.exr", &e_b, img_width, img_height);
+        cout << "\t - Filtered Sure Error Estimates done" << endl;
+    }
     // DEBUG PART
     if(DEBUG) {
         write_channel_exr("temp/sel_r.exr", &sel_r, img_width, img_height);

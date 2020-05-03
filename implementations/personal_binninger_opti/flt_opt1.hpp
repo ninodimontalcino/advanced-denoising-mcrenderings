@@ -70,6 +70,7 @@ void flt_buffer_opt1(buffer f_filtered, buffer f_var_filtered, buffer f, buffer 
 */
 void flt_channel_Basic(channel output, channel input, buffer u, buffer var_u, Flt_parameters p, int img_width, int img_height);
 void flt_channel_opt1(channel output_1, channel input_1, channel output_2, channel input_2, channel output_3, channel input_3, buffer u, buffer var_u, Flt_parameters p, int img_width, int img_height);
+void flt_channel_opt1_sel(channel output_1, channel input_1, channel output_2, channel input_2, channel output_3, channel input_3, channel sel_r, channel sel_g, channel sel_b, buffer u, buffer var_u, Flt_parameters p, int img_width, int img_height);
 
 /* -------------------------------------------------------
     Main Filtering (color and feature input)
@@ -95,7 +96,9 @@ scalar per_pixel_distance_opt1(channel u, channel var_u, scalar kc, int xp, int 
 scalar nl_means_weights_opt1(buffer u, buffer var_u, Flt_parameters p, int xp, int yp, int xq, int yq);
 scalar color_weight_opt1(buffer u, buffer var_u, Flt_parameters p, int xp, int yp, int xq, int yq);
 
+void compute_gradient_Basic(channel gradient, channel u, int d, int img_width, int img_height);
 void compute_gradient_opt1(channel gradient, channel u, int d, int img_width, int img_height);
+
 scalar feature_distance_opt1(channel f, channel var_f, channel gradient, Flt_parameters p, int xp, int yp, int xq, int yq);
 scalar feature_weight_opt1(channel *f, channel *var_f, channel *gradients, Flt_parameters p, int xp, int yp, int xq, int yq);
 

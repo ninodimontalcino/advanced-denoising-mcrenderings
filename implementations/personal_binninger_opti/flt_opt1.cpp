@@ -300,11 +300,167 @@ void flt_channel_opt1(channel output_1, channel input_1, channel output_2, chann
             output_3[xp][yp] /= sum_weights;
         }
     }
+}
+
+void flt_channel_opt1_sel(channel output_1, channel input_1, channel output_2, channel input_2, channel output_3, channel input_3, channel sel_r, channel sel_g, channel sel_b, buffer u, buffer var_u, Flt_parameters p, int img_width, int img_height){
+
+    scalar sum_weights, wc;
+
+    // Handling Border Cases (border section)
+    for (int xp = 0; xp < img_width; xp++){
+        for(int yp = 0; yp < p.r+p.f; yp++){
+            output_1[xp][yp] = input_1[xp][yp];
+            output_1[xp][img_height - yp - 1] = input_1[xp][img_height - yp - 1];
+            output_2[xp][yp] = input_2[xp][yp];
+            output_2[xp][img_height - yp - 1] = input_2[xp][img_height - yp - 1];
+            output_3[xp][yp] = input_3[xp][yp];
+            output_3[xp][img_height - yp - 1] = input_3[xp][img_height - yp - 1];
+
+            sel_r[xp][yp] = output_1[xp][yp] < output_2[xp][yp] && output_1[xp][yp] < output_3[xp][yp];
+            sel_g[xp][yp] = output_2[xp][yp] < output_1[xp][yp] && output_2[xp][yp] < output_3[xp][yp];
+            sel_b[xp][yp] = output_3[xp][yp] < output_1[xp][yp] && output_2[xp][yp] < output_3[xp][yp];
+
+            sel_r[xp][img_height - yp - 1] = output_1[xp][img_height - yp - 1] < output_2[xp][img_height - yp - 1] && output_1[xp][img_height - yp - 1] < output_3[xp][img_height - yp - 1];
+            sel_g[xp][img_height - yp - 1] = output_2[xp][img_height - yp - 1] < output_1[xp][img_height - yp - 1] && output_2[xp][img_height - yp - 1] < output_3[xp][img_height - yp - 1];
+            sel_b[xp][img_height - yp - 1] = output_3[xp][img_height - yp - 1] < output_1[xp][img_height - yp - 1] && output_2[xp][img_height - yp - 1] < output_3[xp][img_height - yp - 1];
+        }
+    }
+    for (int yp = p.r+p.f; yp < img_height - p.r+p.f; yp++){
+        for(int xp = 0; xp < p.r+p.f; xp++){
+            output_1[xp][yp] = input_1[xp][yp];
+            output_1[img_width - xp - 1][yp] = input_1[img_width - xp - 1][yp];
+            output_2[xp][yp] = input_2[xp][yp];
+            output_2[img_width - xp - 1][yp] = input_2[img_width - xp - 1][yp];
+            output_3[xp][yp] = input_3[xp][yp];
+            output_3[img_width - xp - 1][yp] = input_3[img_width - xp - 1][yp];
+
+            sel_r[xp][yp] = output_1[xp][yp] < output_2[xp][yp] && output_1[xp][yp] < output_3[xp][yp];
+            sel_g[xp][yp] = output_2[xp][yp] < output_1[xp][yp] && output_2[xp][yp] < output_3[xp][yp];
+            sel_b[xp][yp] = output_3[xp][yp] < output_1[xp][yp] && output_2[xp][yp] < output_3[xp][yp];
+            sel_r[img_width - xp - 1][yp] = output_1[img_width - xp - 1][yp] < output_2[img_width - xp - 1][yp] && output_1[img_width - xp - 1][yp] < output_3[img_width - xp - 1][yp];
+            sel_g[img_width - xp - 1][yp] = output_2[img_width - xp - 1][yp] < output_1[img_width - xp - 1][yp] && output_2[img_width - xp - 1][yp] < output_3[img_width - xp - 1][yp];
+            sel_b[img_width - xp - 1][yp] = output_3[img_width - xp - 1][yp] < output_1[img_width - xp - 1][yp] && output_2[img_width - xp - 1][yp] < output_3[img_width - xp - 1][yp];
+        }
+    }
+
+
+    // General Pre-Filtering
+    for(int xp = p.r+p.f; xp < img_width-p.r-p.f; ++xp) {
+        for(int yp = p.r+p.f; yp < img_height-p.r-p.f; ++yp) {
+
+            sum_weights = EPSILON;
+
+            // Init output_1 to 0 => TODO: maybe we can do this with calloc
+            output_1[xp][yp] = 0.f;
+            output_2[xp][yp] = 0.f;
+            output_3[xp][yp] = 0.f;
+
+            for(int xq = xp-p.r; xq <= xp+p.r; xq++) {
+                for(int yq = yp-p.r; yq <= yp+p.r; yq++) {
+                    
+                    // Compute color Weight
+                    wc = color_weight_opt1(u, var_u, p, xp, yp, xq, yq);
+                    sum_weights += wc;
+
+                    // Add contribution term
+                    output_1[xp][yp] += input_1[xq][yq] * wc;
+                    output_2[xp][yp] += input_2[xq][yq] * wc;
+                    output_3[xp][yp] += input_3[xq][yq] * wc;
+                }
+            }
+
+            // Normalization step
+            output_1[xp][yp] /= sum_weights;
+            output_2[xp][yp] /= sum_weights;
+            output_3[xp][yp] /= sum_weights;
+            sel_r[xp][yp] = output_1[xp][yp] < output_2[xp][yp] && output_1[xp][yp] < output_3[xp][yp];
+            sel_g[xp][yp] = output_2[xp][yp] < output_1[xp][yp] && output_2[xp][yp] < output_3[xp][yp];
+            sel_b[xp][yp] = output_3[xp][yp] < output_1[xp][yp] && output_2[xp][yp] < output_3[xp][yp];
+        }
+    }
 
 
 }
 
 void flt_Basic(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, buffer f, buffer var_f, Flt_parameters p, int img_width, int img_height) {
+    scalar wc, wf, w;
+    scalar sum_weights;
+
+    buffer gradients;
+    if(f != NULL) {
+        allocate_buffer(&gradients, img_width, img_height);
+        for(int i=0; i<NB_FEATURES;++i) {
+            compute_gradient_Basic(gradients[i], f[i], p.r+p.f, img_width, img_height);
+        }
+    }
+
+    // For edges, just copy in output the input
+      for (int i = 0; i < 3; i++){
+        for (int xp = 0; xp < img_width; xp++){
+            for(int yp = 0; yp < p.r+p.f; yp++){
+                out[i][xp][yp] = input[i][xp][yp];
+                out[i][xp][img_height - yp - 1] = input[i][xp][img_height - yp - 1];
+                d_out_d_in[i][xp][yp] = 0.f;
+                d_out_d_in[i][xp][img_height - yp - 1] = 0.f;
+            }
+        }
+        for (int yp = p.r+p.f; yp < img_height - p.r+p.f; yp++){
+            for(int xp = 0; xp < p.r+p.f; xp++){
+                out[i][xp][yp] = input[i][xp][yp];
+                out[i][img_width - xp - 1][yp] = input[i][img_width - xp - 1][yp];
+                d_out_d_in[i][xp][yp] = 0.f;
+                d_out_d_in[i][img_width - xp - 1][yp] = 0.f;
+            }
+        }
+
+    }
+
+    // Real computation
+    sum_weights = 0;
+    for(int xp = p.r+p.f; xp < img_width-p.r-p.f; ++xp) {
+        for(int yp = p.r+p.f; yp < img_height-p.r-p.f; ++yp) {
+            
+            sum_weights = EPSILON;
+            
+            for(int i=0;i<3;++i)
+                out[i][xp][yp] = 0; 
+
+            for(int xq = xp-p.r; xq <= xp+p.r; xq++) {
+                for(int yq = yp-p.r; yq <= yp+p.r; yq++) {
+                    
+                    wc = color_weight_opt1(u, var_u, p, xp, yp, xq, yq);
+
+                    if(f != NULL)
+                        wf = feature_weight_opt1(f, var_f, gradients, p, xp, yp, xq, yq);
+                    else
+                        wf = wc;
+
+                    w = fmin(wc, wf);
+                    sum_weights += w;
+
+                    for(int i=0;i<3;++i){
+                         out[i][xp][yp] += input[i][xq][yq] * w;
+                    }
+
+                }
+            }
+
+            for(int i=0;i<3;++i){
+                out[i][xp][yp] /= sum_weights;
+
+                // ToDo: Fix derivatives => Use formula from paper
+                d_out_d_in[i][xp][yp] = 0.f;
+            }
+        }
+    }
+
+    if(f != NULL) {
+        free_buffer(&gradients, img_width);
+    }
+}
+
+
+void flt_opt1(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, buffer f, buffer var_f, Flt_parameters p, int img_width, int img_height) {
     scalar wc, wf, w;
     scalar sum_weights;
 
@@ -406,7 +562,9 @@ scalar per_pixel_distance_opt1(channel u, channel var_u, scalar kc, int xp, int 
     return (sqdist - var_cancel) / normalization;
 }
 
-void compute_gradient_opt1(channel gradient, channel u, int d, int img_width, int img_height) {
+
+void compute_gradient_Basic(channel gradient, channel u, int d, int img_width, int img_height) {
+
     for(int x = d; x < img_width-d; ++x) {
         for(int y = d; y < img_height-d; ++y) {
             scalar diffL = u[x][y] - u[x-1][y];
@@ -415,6 +573,25 @@ void compute_gradient_opt1(channel gradient, channel u, int d, int img_width, in
             scalar diffD = u[x][y] - u[x][y+1];
 
             gradient[x][y] = fmin(diffL*diffL, diffR*diffR) + fmin(diffU*diffU, diffD*diffD);
+        }
+    }
+}
+
+// Optimization possible here since we are only interested in the squared difference
+void compute_gradient_opt1(channel gradient, channel u, int d, int img_width, int img_height) {
+    scalar diffU_squared;
+    scalar diffD_squared;
+    for(int x = d; x < img_width-d; ++x) {
+        diffD_squared = (u[x][d]-u[x][d-1]);
+        diffD_squared *= diffD_squared;
+        for(int y = d; y < img_height-d; ++y) {
+            scalar diffL = u[x][y] - u[x-1][y];
+            scalar diffR = u[x][y] - u[x+1][y];
+            diffU_squared = diffD_squared;
+            diffD_squared = u[x][y] - u[x][y+1];
+            diffD_squared *= diffD_squared;
+
+            gradient[x][y] = fmin(diffL*diffL, diffR*diffR) + fmin(diffU_squared, diffD_squared);
         }
     }
 }
