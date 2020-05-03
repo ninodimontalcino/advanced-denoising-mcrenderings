@@ -61,7 +61,9 @@ add_executable(main
               # Implementations (BASIC and OPTIMIZED)
               implementations/register.hpp
               implementations/basic.cpp
-              
+              implementations/personal_binninger_opti/basic_opt1.cpp
+              implementations/personal_binninger_opti/flt_opt1.cpp
+              implementations/personal_binninger_opti/flt_opt1.hpp
               )
 
 # --------------------------
