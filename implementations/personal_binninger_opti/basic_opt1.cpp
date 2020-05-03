@@ -133,8 +133,6 @@ using namespace std;
     // flt_channel_Basic(e_b, sure_b, c, c_var, p_sure, img_width, img_height);
 
     // The flt_channel is done at the same moment as the selection map computation
-    
-   
 
     // ----------------------------------------------
     // (5) Compute Binary Selection Maps
