@@ -539,23 +539,23 @@ void precompute_color_weights(bufferweightset& allweights, scalar *allsums, buff
     bufferweightset sq_diffs;
     const int deltaMax = all_params[1].r + 7;
     allocate_buffer_weights(&sq_diffs, img_width, img_height, 3, deltaMax);
-    std::cout << "precompute squared diff\n";
+    //std::cout << "precompute squared diff\n";
 
     start = start_tsc();
     for (int i = 0; i < 3; ++i)
         precompute_squared_difference1(sq_diffs[i], u[i], var_u[i], img_width, img_height, deltaMax);
     end = stop_tsc(start);
-    std::cout << end << "\n";
+    //std::cout << end << "\n";
 
     bufferweightset diffs;
     const int r_max = all_params[0].r;
-    std::cout<< "allocate\n";
+    //std::cout<< "allocate\n";
     allocate_buffer_weights(&diffs, img_width, img_height, 2, r_max);
-    std::cout << "differences\n";
+    //std::cout << "differences\n";
     start = start_tsc();
     precompute_differences(diffs[0], diffs[1], sq_diffs, img_width, img_height, r_max, deltaMax);
     end = stop_tsc(start);
-    std::cout << end << "\n";
+    //std::cout << end << "\n";
     scalar wc;
 
     // precompute division
@@ -563,7 +563,7 @@ void precompute_color_weights(bufferweightset& allweights, scalar *allsums, buff
     scalar f3kc2 = 1.f / 588.f; // 588 = 3(2^3+1)^2 * 2^2
     scalar f1kc1 = 1.f / 27.f; // 27 = 3(2*1+1)^2 *2^1
 
-    std::cout<< "color weights\n";
+    //std::cout<< "color weights\n";
     for (int xp = 2; xp < img_width - 2; ++xp)
     {
         for (int yp = 2; yp < img_height - 2; ++yp)
@@ -631,11 +631,11 @@ void precompute_weights(bufferweightset& allweights, scalar *allsums, buffer& u,
     for (int i = 0; i < NB_FEATURES; ++i)
         compute_gradient(gradients[i], f[i], 2, img_width, img_height); // 2 because we need almost the whole image for filter error
     end = stop_tsc(start);
-    std::cout << end << " begin color\n";
+    //std::cout << end << " begin color\n";
     start = start_tsc();
     precompute_color_weights(allweights, allsums, u, var_u, img_width, img_height, all_params, 5);
     end = stop_tsc(start);
-    std::cout << end << " done color\n";
+    //std::cout << end << " done color\n";
     scalar wc, wf, w;
     Flt_parameters p;
 
