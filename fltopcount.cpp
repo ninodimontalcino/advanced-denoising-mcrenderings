@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include "tsc_x86.h"
 #include "fltopcount.hpp"
 #include "flt.hpp"
 #include "memory_mgmt.hpp"
@@ -207,6 +208,30 @@ void flt_channel_opcount(channel output, channel input, buffer u, buffer var_u, 
     }
 }
 
+void precompute_squared_difference1(bufferweight output_numerator, bufferweight output_denominator, channel u, channel var_u, const int img_width, const int img_height, const int deltaMax)
+{
+    for (int xp = 0; xp < img_width; ++xp)
+    {
+        for (int yp = 0; yp < img_height; ++yp)
+        {
+            for (int deltaxq = -deltaMax; deltaxq <= deltaMax; ++deltaxq)
+            {
+                for (int deltayq = -deltaMax; deltayq <= deltaMax; ++deltayq)
+                {
+                    int xq = xp + deltaxq, yq = yp + deltayq;
+                    if (xq < 0 || xq >= img_width || yq < 0 || yq >= img_height)
+                        continue;
+                    scalar sqdist = u[xp][yp] - u[xq][yq];
+                    sqdist *= sqdist;
+                    scalar var_cancel = var_u[xp][yp] + fmin(var_u[xp][yp], var_u[xq][yq]);
+                    output_numerator[xp][yp][deltaxq + deltaMax][deltayq + deltaMax] = (sqdist - var_cancel) / (EPSILON + var_u[xp][yp] + var_u[xq][yq]);
+                    //output_denominator[xp][yp][deltaxq + deltaMax][deltayq + deltaMax] = EPSILON + var_u[xp][yp] + var_u[xq][yq];
+                }
+            }
+        }
+    }
+}
+
 void precompute_squared_difference(bufferweight output_numerator, bufferweight output_denominator, channel u, channel var_u, const int img_width, const int img_height, const int deltaMax)
 {
     for (int xp = 0; xp < img_width; ++xp)
@@ -241,6 +266,48 @@ void precompute_squared_difference(bufferweight output_numerator, bufferweight o
     }
 }
 
+void precompute_differences1(bufferweight diff1, bufferweight diff2, bufferweightset sq_dists, const int img_width, const int img_height, const int maxR, const int deltaMax)
+{
+    for (int xp = 0; xp < img_width; ++xp)
+    {
+        for (int yp = 0; yp < img_height; ++yp)
+        {
+            for (int deltaxq = -maxR; deltaxq <= maxR; deltaxq++)
+            {
+                for (int deltayq = -maxR; deltayq <= maxR; deltayq++)
+                {
+                    int xq = xp + deltaxq, yq = yp + deltayq;
+                    if (xq < 0 || xq >= img_width || yq < 0 || yq >= img_height)
+                        continue;
+                    // Diff1 is the sum for f=1, diff2 for f=3
+                    diff1[xp][yp][deltaxq + maxR][deltayq + maxR] = 0;
+                    diff2[xp][yp][deltaxq + maxR][deltayq + maxR] = 0;
+                    for (int i = 0; i < 3; ++i)
+                    {
+                        for (int u = -3; u <= 3; ++u)
+                        {
+                            for (int v = -3; v <= 3; ++v)
+                            {
+                                if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
+                                    xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
+                                    continue;
+                                scalar current = (sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax] /
+                                                  sq_dists[2 * i + 1][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax]);
+                                diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;
+                                if (u >= -1 && u <= 1 && v >= -1 && v <= 1)
+                                {
+                                    diff1[xp][yp][deltaxq + maxR][deltayq + maxR] += current;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
 void precompute_differences(bufferweight diff1, bufferweight diff2, bufferweightset sq_dists, const int img_width, const int img_height, const int maxR, const int deltaMax)
 {
     scalar current;
@@ -269,8 +336,7 @@ void precompute_differences(bufferweight diff1, bufferweight diff2, bufferweight
                                 if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
                                 xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
                                     continue;
-                                current = (sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax] /
-                                                    sq_dists[2 * i + 1][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax]);
+                                current = sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
                                 diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;
                                 diff1[xp][yp][deltaxq + maxR][deltayq + maxR] += current;
                             }
@@ -284,8 +350,7 @@ void precompute_differences(bufferweight diff1, bufferweight diff2, bufferweight
                             if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
                             xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
                                 continue;                            
-                            current = (sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax] /
-                                                sq_dists[2 * i + 1][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax]);
+                            current = sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
                             diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
                         }
                         u = -2; 
@@ -293,8 +358,7 @@ void precompute_differences(bufferweight diff1, bufferweight diff2, bufferweight
                             if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
                             xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
                                 continue;                                 
-                            current = (sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax] /
-                                                sq_dists[2 * i + 1][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax]);
+                            current = sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
                             diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
                         }
                         u = 3; 
@@ -302,8 +366,7 @@ void precompute_differences(bufferweight diff1, bufferweight diff2, bufferweight
                             if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
                             xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
                                 continue;                                 
-                            current = (sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax] /
-                                                sq_dists[2 * i + 1][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax]);
+                            current = sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
                             diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
                         }
                         u = 2; 
@@ -311,8 +374,7 @@ void precompute_differences(bufferweight diff1, bufferweight diff2, bufferweight
                             if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
                             xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
                                 continue;                                 
-                            current = (sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax] /
-                                                sq_dists[2 * i + 1][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax]);
+                            current = sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
                             diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
                         }           
                         u = -1;
@@ -320,16 +382,14 @@ void precompute_differences(bufferweight diff1, bufferweight diff2, bufferweight
                             if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
                             xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
                                 continue;                                 
-                            current = (sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax] /
-                                                sq_dists[2 * i + 1][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax]);
+                            current = sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
                             diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
                         }  
                         for (int v = 2; v <= 3; v++) {
                             if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
                             xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
                                 continue;                                 
-                            current = (sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax] /
-                                                sq_dists[2 * i + 1][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax]);
+                            current = sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
                             diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
                         }  
                         u = 0;
@@ -337,16 +397,14 @@ void precompute_differences(bufferweight diff1, bufferweight diff2, bufferweight
                             if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
                             xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
                                 continue;                                 
-                            current = (sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax] /
-                                                sq_dists[2 * i + 1][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax]);
+                            current = sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
                             diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
                         }  
                         for (int v = 2; v <= 3; v++) {
                             if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
                             xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
                                 continue;                                 
-                            current = (sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax] /
-                                                sq_dists[2 * i + 1][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax]);
+                            current = sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
                             diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
                         } 
                         u = 1;
@@ -354,16 +412,14 @@ void precompute_differences(bufferweight diff1, bufferweight diff2, bufferweight
                             if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
                             xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
                                 continue;                                 
-                            current = (sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax] /
-                                                sq_dists[2 * i + 1][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax]);
+                            current = sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
                             diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
                         }  
                         for (int v = 2; v <= 3; v++) {
                             if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
                             xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
                                 continue;                                 
-                            current = (sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax] /
-                                                sq_dists[2 * i + 1][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax]);
+                            current = sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
                             diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
                         }                                                                                                                                     
 
@@ -379,20 +435,27 @@ void precompute_color_weights(bufferweightset allweights, scalar *allsums, buffe
     for (int p = 0; p < n_params; ++p)
         allsums[p] = 0.f;
 
+    myInt64 start, end;
     bufferweightset sq_diffs;
     const int deltaMax = all_params[1].r + 7;
     allocate_buffer_weights(&sq_diffs, img_width, img_height, 6, deltaMax);
     std::cout << "precompute squared diff\n";
+
+    start = start_tsc();
     for (int i = 0; i < 3; ++i)
-        precompute_squared_difference(sq_diffs[2 * i], sq_diffs[2 * i + 1], u[i], var_u[i], img_width, img_height, deltaMax);
+        precompute_squared_difference1(sq_diffs[2 * i], sq_diffs[2 * i + 1], u[i], var_u[i], img_width, img_height, deltaMax);
+    end = stop_tsc(start);
+    std::cout << end << "\n";
 
     bufferweightset diffs;
     const int r_max = all_params[0].r;
     std::cout<< "allocate\n";
     allocate_buffer_weights(&diffs, img_width, img_height, 2, r_max);
     std::cout << "differences\n";
+    start = start_tsc();
     precompute_differences(diffs[0], diffs[1], sq_diffs, img_width, img_height, r_max, deltaMax);
-
+    end = stop_tsc(start);
+    std::cout << end << "\n";
     scalar wc;
 
     // precompute division
