@@ -33,7 +33,7 @@
         - img_height (int):     image height
 
 */
-void sure_basic(channel output, buffer c, buffer c_var, buffer cand, buffer cand_d, int img_width, int img_height);
+void sure_Basic(channel output, buffer c, buffer c_var, buffer cand, buffer cand_d, int img_width, int img_height);
 void sure_opt1(channel sure_r, channel sure_g, channel sure_b, buffer c, buffer c_var, buffer r, buffer d_r, buffer g, buffer d_g, buffer b, buffer d_b, int img_width, int img_height);
 
 /* -------------------------------------------------------
@@ -50,7 +50,8 @@ void sure_opt1(channel sure_r, channel sure_g, channel sure_b, buffer c, buffer 
         - output (buffer):  filtered image in buffer output
    
 */
-void flt_buffer_opt1(buffer output, buffer input, buffer u, buffer var_u, Flt_parameters p, int img_width, int img_height);
+void flt_buffer_Basic(buffer output, buffer input, buffer u, buffer var_u, Flt_parameters p, int img_width, int img_height);
+void flt_buffer_opt1(buffer f_filtered, buffer f_var_filtered, buffer f, buffer var_f, Flt_parameters p, int img_width, int img_height);
 
 
 /* -------------------------------------------------------
@@ -67,7 +68,8 @@ void flt_buffer_opt1(buffer output, buffer input, buffer u, buffer var_u, Flt_pa
         - output (buffer):  filtered image in buffer output
    
 */
-void flt_channel_opt1(channel output, channel input, buffer u, buffer var_u, Flt_parameters p, int img_width, int img_height);
+void flt_channel_Basic(channel output, channel input, buffer u, buffer var_u, Flt_parameters p, int img_width, int img_height);
+void flt_channel_opt1(channel output_1, channel input_1, channel output_2, channel input_2, channel output_3, channel input_3, buffer u, buffer var_u, Flt_parameters p, int img_width, int img_height);
 
 /* -------------------------------------------------------
     Main Filtering (color and feature input)

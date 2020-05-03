@@ -46,8 +46,9 @@ using namespace std;
     buffer f_filtered, f_var_filtered;
     allocate_buffer(&f_filtered, img_width, img_height);
     allocate_buffer(&f_var_filtered, img_width, img_height);
-    flt_buffer_opt1(f_filtered, f, f, f_var, p_pre, img_width, img_height);
-    flt_buffer_opt1(f_var_filtered, f_var, f, f_var, p_pre, img_width, img_height);
+    // flt_buffer_Basic(f_filtered, f, f, f_var, p_pre, img_width, img_height);
+    // flt_buffer_Basic(f_var_filtered, f_var, f, f_var, p_pre, img_width, img_height);
+    flt_buffer_opt1(f_filtered, f_var_filtered, f, f_var, p_pre, img_width, img_height);
     
     // DEBUGGING PART
     if(DEBUG) {
@@ -108,9 +109,9 @@ using namespace std;
     allocate_channel(&sure_r, img_width, img_height);
     allocate_channel(&sure_g, img_width, img_height);
     allocate_channel(&sure_b, img_width, img_height);
-    // sure_basic(sure_r, c, c_var, r, d_r, img_width, img_height);
-    // sure_basic(sure_g, c, c_var, g, d_g, img_width, img_height);
-    // sure_basic(sure_b, c, c_var, b, d_b, img_width, img_height);
+    // sure_Basic(sure_r, c, c_var, r, d_r, img_width, img_height);
+    // sure_Basic(sure_g, c, c_var, g, d_g, img_width, img_height);
+    // sure_Basic(sure_b, c, c_var, b, d_b, img_width, img_height);
     sure_opt1(sure_r, sure_g, sure_b, c, c_var, r, d_r, g, d_g, b, d_b, img_width, img_height);
     
     // DEBUGGING PART
@@ -127,9 +128,11 @@ using namespace std;
     allocate_channel(&e_r, img_width, img_height);
     allocate_channel(&e_g, img_width, img_height);
     allocate_channel(&e_b, img_width, img_height);
-    flt_channel_opt1(e_r, sure_r, c, c_var, p_sure, img_width, img_height);
-    flt_channel_opt1(e_g, sure_g, c, c_var, p_sure, img_width, img_height);
-    flt_channel_opt1(e_b, sure_b, c, c_var, p_sure, img_width, img_height);
+    // flt_channel_Basic(e_r, sure_r, c, c_var, p_sure, img_width, img_height);
+    // flt_channel_Basic(e_g, sure_g, c, c_var, p_sure, img_width, img_height);
+    // flt_channel_Basic(e_b, sure_b, c, c_var, p_sure, img_width, img_height);
+    flt_channel_opt1(e_r, sure_r, e_g, sure_g, e_b, sure_b, c, c_var, p_sure, img_width, img_height);
+
     
     // DEBUG PART
     if(DEBUG) {
@@ -172,9 +175,10 @@ using namespace std;
     allocate_channel(&sel_r_filtered, img_width, img_height);
     allocate_channel(&sel_g_filtered, img_width, img_height);
     allocate_channel(&sel_b_filtered, img_width, img_height);
-    flt_channel_opt1(sel_r_filtered, sel_r, c, c_var, p_sel, img_width, img_height);
-    flt_channel_opt1(sel_g_filtered, sel_g, c, c_var, p_sel, img_width, img_height);
-    flt_channel_opt1(sel_b_filtered, sel_b, c, c_var, p_sel, img_width, img_height);
+    // flt_channel_Basic(sel_r_filtered, sel_r, c, c_var, p_sel, img_width, img_height);
+    // flt_channel_Basic(sel_g_filtered, sel_g, c, c_var, p_sel, img_width, img_height);
+    // flt_channel_Basic(sel_b_filtered, sel_b, c, c_var, p_sel, img_width, img_height);
+    flt_channel_opt1(sel_r_filtered, sel_r, sel_g_filtered, sel_g, sel_b_filtered, sel_b, c, c_var, p_sel, img_width, img_height);
 
     // DEBUG PART
     if(DEBUG) {
@@ -226,7 +230,7 @@ using namespace std;
     // Therefore we can use pass1 as output
     
     // Flt_parameters p_final= { .kc = 0.45, .kf = INFINITY, .tau = 0.0001, .f = 1, .r = R};
-    // flt_buffer_opt1(out_img, pass1, pass1, c_var, p_final, img_width, img_height);    
+    // flt_buffer_Basic(out_img, pass1, pass1, c_var, p_final, img_width, img_height);    
 
     // ----------------------------------------------
     // (9) Memory Deallocation

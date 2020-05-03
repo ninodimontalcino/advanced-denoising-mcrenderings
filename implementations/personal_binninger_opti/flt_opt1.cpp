@@ -7,7 +7,7 @@
 
 
 
-void sure_basic(channel output, buffer c, buffer c_var, buffer cand, buffer cand_d, int img_width, int img_height){
+void sure_Basic(channel output, buffer c, buffer c_var, buffer cand, buffer cand_d, int img_width, int img_height){
 
     scalar d, v;
     
@@ -77,7 +77,7 @@ void sure_opt1(channel sure_r, channel sure_g, channel sure_b, buffer c, buffer 
 
 
 
-void flt_buffer_opt1(buffer output, buffer input, buffer u, buffer var_u, Flt_parameters p, int img_width, int img_height){
+void flt_buffer_Basic(buffer output, buffer input, buffer u, buffer var_u, Flt_parameters p, int img_width, int img_height){
 
     scalar sum_weights, wc;
 
@@ -127,13 +127,73 @@ void flt_buffer_opt1(buffer output, buffer input, buffer u, buffer var_u, Flt_pa
                 output[i][xp][yp] /= (sum_weights + EPSILON);
         }
     }
-    
-
-
 }
 
+void flt_buffer_opt1(buffer f_filtered, buffer f_var_filtered, buffer f, buffer var_f, Flt_parameters p, int img_width, int img_height){
 
-void flt_channel_opt1(channel output, channel input, buffer u, buffer var_u, Flt_parameters p, int img_width, int img_height){
+    scalar sum_weights, wc;
+
+    // Handling Border Cases (border section)
+    for (int i = 0; i < 3; i++){
+        for (int xp = 0; xp < img_width; xp++){
+            for(int yp = 0; yp < p.r+p.f; yp++){
+                f_filtered[i][xp][yp] = f[i][xp][yp];
+                f_filtered[i][xp][img_height - yp - 1] = f[i][xp][img_height - yp - 1];
+
+                f_var_filtered[i][xp][yp] = var_f[i][xp][yp];
+                f_var_filtered[i][xp][img_height - yp - 1] = var_f[i][xp][img_height - yp - 1];
+            }
+        }
+        for (int yp = p.r+p.f ; yp < img_height - p.r+p.f; yp++){
+            for(int xp = 0; xp < p.r+p.f; xp++){
+                f_filtered[i][xp][yp] = f[i][xp][yp];
+                f_filtered[i][img_width - xp - 1][yp] = f[i][img_width - xp - 1][yp];
+
+                f_var_filtered[i][xp][yp] = var_f[i][xp][yp];
+                f_var_filtered[i][img_width - xp - 1][yp] = var_f[i][img_width - xp - 1][yp];
+            }
+        }
+
+    }
+
+    
+    // General Pre-Filtering
+    for(int xp = p.r+p.f; xp < img_width - p.r-p.f; ++xp) {
+        for(int yp = p.r+p.f; yp < img_height - p.r-p.f; ++yp) {
+
+            sum_weights = EPSILON;
+
+            // Init output to 0 => TODO: maybe we can do this with calloc
+            for(int i = 0; i < 3; ++i){
+                f_filtered[i][xp][yp] = 0.f;
+                f_var_filtered[i][xp][yp] = 0.f;
+            }
+
+            for(int xq = xp-p.r; xq <= xp+p.r; xq++) {
+                for(int yq = yp-p.r; yq <= yp+p.r; yq++) {
+                    
+                    // Compute color Weight
+                    wc = color_weight_opt1(f, var_f, p, xp, yp, xq, yq);
+                    sum_weights += wc;
+
+                    // Add contribution term
+                    for(int i=0;i<3;++i){
+                        f_filtered[i][xp][yp] += f[i][xq][yq] * wc;
+                        f_var_filtered[i][xp][yp] += var_f[i][xq][yq] * wc;
+                    }
+                }
+            }
+
+            // Normalization step
+            for(int i=0;i<3;++i){
+                f_filtered[i][xp][yp] /= sum_weights;
+                f_var_filtered[i][xp][yp] /= sum_weights;
+            }
+        }
+    }
+}
+
+void flt_channel_Basic(channel output, channel input, buffer u, buffer var_u, Flt_parameters p, int img_width, int img_height){
 
     scalar sum_weights, wc;
 
@@ -181,6 +241,68 @@ void flt_channel_opt1(channel output, channel input, buffer u, buffer var_u, Flt
 
 }
 
+
+void flt_channel_opt1(channel output_1, channel input_1, channel output_2, channel input_2, channel output_3, channel input_3, buffer u, buffer var_u, Flt_parameters p, int img_width, int img_height){
+
+    scalar sum_weights, wc;
+
+    // Handling Border Cases (border section)
+    for (int xp = 0; xp < img_width; xp++){
+        for(int yp = 0; yp < p.r+p.f; yp++){
+            output_1[xp][yp] = input_1[xp][yp];
+            output_1[xp][img_height - yp - 1] = input_1[xp][img_height - yp - 1];
+            output_2[xp][yp] = input_2[xp][yp];
+            output_2[xp][img_height - yp - 1] = input_2[xp][img_height - yp - 1];
+            output_3[xp][yp] = input_3[xp][yp];
+            output_3[xp][img_height - yp - 1] = input_3[xp][img_height - yp - 1];
+        }
+    }
+    for (int yp = p.r+p.f; yp < img_height - p.r+p.f; yp++){
+        for(int xp = 0; xp < p.r+p.f; xp++){
+            output_1[xp][yp] = input_1[xp][yp];
+            output_1[img_width - xp - 1][yp] = input_1[img_width - xp - 1][yp];
+            output_2[xp][yp] = input_2[xp][yp];
+            output_2[img_width - xp - 1][yp] = input_2[img_width - xp - 1][yp];
+            output_3[xp][yp] = input_3[xp][yp];
+            output_3[img_width - xp - 1][yp] = input_3[img_width - xp - 1][yp];
+        }
+    }
+
+
+    // General Pre-Filtering
+    for(int xp = p.r+p.f; xp < img_width-p.r-p.f; ++xp) {
+        for(int yp = p.r+p.f; yp < img_height-p.r-p.f; ++yp) {
+
+            sum_weights = EPSILON;
+
+            // Init output_1 to 0 => TODO: maybe we can do this with calloc
+            output_1[xp][yp] = 0.f;
+            output_2[xp][yp] = 0.f;
+            output_3[xp][yp] = 0.f;
+
+            for(int xq = xp-p.r; xq <= xp+p.r; xq++) {
+                for(int yq = yp-p.r; yq <= yp+p.r; yq++) {
+                    
+                    // Compute color Weight
+                    wc = color_weight_opt1(u, var_u, p, xp, yp, xq, yq);
+                    sum_weights += wc;
+
+                    // Add contribution term
+                    output_1[xp][yp] += input_1[xq][yq] * wc;
+                    output_2[xp][yp] += input_2[xq][yq] * wc;
+                    output_3[xp][yp] += input_3[xq][yq] * wc;
+                }
+            }
+
+            // Normalization step
+            output_1[xp][yp] /= sum_weights;
+            output_2[xp][yp] /= sum_weights;
+            output_3[xp][yp] /= sum_weights;
+        }
+    }
+
+
+}
 
 void flt_opt1(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, buffer f, buffer var_f, Flt_parameters p, int img_width, int img_height) {
     scalar wc, wf, w;
