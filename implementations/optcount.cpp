@@ -11,7 +11,7 @@
 using namespace std;
 
 /*! -------------------------------------------------------
-	Vanilla Denoising Algorithm (without any optimization)
+	Denoising Algorithm that optimizes the computation of weights without vectorization
     
     Parameters:
         - out_img (buffer)      Destination buffer for final denoised image
