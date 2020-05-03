@@ -241,26 +241,23 @@ void precompute_squared_difference(bufferweight& quotient, channel u, channel va
     /*
     Note about this funtion: the denominator and first part of numerator of d(p, q) is the same as d(q, p).
     This allows to reduce the opcount and was tried, but reduces performance.
-    Also tried to compute border separately (cf function above) but does not seem to work
     */
    
-    // to avoid if statements about border cases, first compute path-distances at border pixels (4 zones)
-    // precompute_squared_difference_border(quotient, u, var_u, img_width, img_height, deltaMax, 0, img_width, 0, deltaMax);
-    // precompute_squared_difference_border(quotient, u, var_u, img_width, img_height, deltaMax, 0, deltaMax, deltaMax, img_height);
-    // precompute_squared_difference_border(quotient, u, var_u, img_width, img_height, deltaMax, deltaMax, img_width, img_height-deltaMax, img_height);
-    // precompute_squared_difference_border(quotient, u, var_u, img_width, img_height, img_width - deltaMax, img_width, img_width, deltaMax, img_height - deltaMax);
+    //to avoid if statements about border cases, first compute path-distances at border pixels (4 zones)
+    precompute_squared_difference_border(quotient, u, var_u, img_width, img_height, deltaMax, 0, img_width, 0, deltaMax);
+    precompute_squared_difference_border(quotient, u, var_u, img_width, img_height, deltaMax, 0, deltaMax, deltaMax, img_height);
+    precompute_squared_difference_border(quotient, u, var_u, img_width, img_height, deltaMax, deltaMax, img_width, img_height-deltaMax, img_height);
+    precompute_squared_difference_border(quotient, u, var_u, img_width, img_height, deltaMax, img_width - deltaMax, img_width, deltaMax, img_height - deltaMax);
 
-    for (int xp = 0; xp < img_width; ++xp)
+    for (int xp = deltaMax; xp < img_width-deltaMax; ++xp)
     {
-        for (int yp = 0; yp < img_height; ++yp)
+        for (int yp = deltaMax; yp < img_height-deltaMax; ++yp)
         {
             for (int deltaxq = -deltaMax; deltaxq <= deltaMax; ++deltaxq)
             {
                 for (int deltayq = -deltaMax; deltayq <= deltaMax; ++deltayq)
                 {
                     int xq = xp + deltaxq, yq = yp + deltayq;
-                    if (xq < 0 || xq >= img_width || yq < 0 || yq >= img_height)
-                        continue;
                     scalar sqdist = u[xp][yp] - u[xq][yq];
                     sqdist *= sqdist;
                     scalar var_cancel = var_u[xp][yp] + fmin(var_u[xp][yp], var_u[xq][yq]);
