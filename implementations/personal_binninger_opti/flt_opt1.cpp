@@ -304,7 +304,7 @@ void flt_channel_opt1(channel output_1, channel input_1, channel output_2, chann
 
 }
 
-void flt_opt1(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, buffer f, buffer var_f, Flt_parameters p, int img_width, int img_height) {
+void flt_Basic(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, buffer f, buffer var_f, Flt_parameters p, int img_width, int img_height) {
     scalar wc, wf, w;
     scalar sum_weights;
 

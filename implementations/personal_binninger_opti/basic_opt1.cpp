@@ -66,7 +66,7 @@ using namespace std;
     buffer r, d_r;
     allocate_buffer(&r, img_width, img_height);
     allocate_buffer(&d_r, img_width, img_height);
-    flt_opt1(r, d_r, c, c, c_var, f_filtered, f_var_filtered, p_r, img_width, img_height);
+    flt_Basic(r, d_r, c, c, c_var, f_filtered, f_var_filtered, p_r, img_width, img_height);
     
     // DEBUGGING PART
     if(DEBUG) {
@@ -79,7 +79,7 @@ using namespace std;
     buffer g, d_g;
     allocate_buffer(&g, img_width, img_height);
     allocate_buffer(&d_g, img_width, img_height);
-    flt_opt1(g, d_g, c, c, c_var, f_filtered, f_var_filtered, p_g, img_width, img_height);
+    flt_Basic(g, d_g, c, c, c_var, f_filtered, f_var_filtered, p_g, img_width, img_height);
     
     // DEBUGGING PART
     if(DEBUG) {
@@ -92,7 +92,7 @@ using namespace std;
     buffer b, d_b;
     allocate_buffer(&b, img_width, img_height);
     allocate_buffer(&d_b, img_width, img_height);
-    flt_opt1(b, d_b, c, c, c_var, f_filtered, f_var_filtered, p_b, img_width, img_height);
+    flt_Basic(b, d_b, c, c, c_var, f_filtered, f_var_filtered, p_b, img_width, img_height);
     
     // DEBUGGING PART
     if(DEBUG) {

@@ -89,7 +89,7 @@ void flt_channel_opt1(channel output_1, channel input_1, channel output_2, chann
         - d_out_d_in (buffer)    Corresponding derrivative "d_out_d_in" 
         
 */        
-void flt_opt1(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, buffer f, buffer var_f, Flt_parameters p, int img_width, int img_height);
+void flt_Basic(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, buffer f, buffer var_f, Flt_parameters p, int img_width, int img_height);
 
 scalar per_pixel_distance_opt1(channel u, channel var_u, scalar kc, int xp, int yp, int xq, int yq);
 scalar nl_means_weights_opt1(buffer u, buffer var_u, Flt_parameters p, int xp, int yp, int xq, int yq);
