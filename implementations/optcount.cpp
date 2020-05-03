@@ -4,7 +4,7 @@
 #include "../flt.hpp"
 #include "../fltopcount.hpp"
 #include "../memory_mgmt.hpp"
-//#include "../tsc_x86.h"
+#include "../tsc_x86.h"
 #include "../denoise.h"
 
 

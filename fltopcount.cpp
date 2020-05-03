@@ -208,7 +208,7 @@ void flt_channel_opcount(channel output, channel input, buffer u, buffer var_u, 
     }
 }
 
-void precompute_squared_difference1(bufferweight output_numerator, bufferweight output_denominator, channel u, channel var_u, const int img_width, const int img_height, const int deltaMax)
+void precompute_squared_difference1(bufferweight& output_numerator, channel u, channel var_u, const int img_width, const int img_height, const int deltaMax)
 {
     for (int xp = 0; xp < img_width; ++xp)
     {
@@ -291,7 +291,7 @@ void precompute_differences1(bufferweight diff1, bufferweight diff2, bufferweigh
                                 if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
                                     xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
                                     continue;
-                                scalar current = (sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax] /
+                                scalar current = (sq_dists[i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax] /
                                                   sq_dists[2 * i + 1][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax]);
                                 diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;
                                 if (u >= -1 && u <= 1 && v >= -1 && v <= 1)
@@ -307,13 +307,14 @@ void precompute_differences1(bufferweight diff1, bufferweight diff2, bufferweigh
     }
 }
 
-
-void precompute_differences(bufferweight diff1, bufferweight diff2, bufferweightset sq_dists, const int img_width, const int img_height, const int maxR, const int deltaMax)
+void precompute_differences_border(bufferweight& diff1, bufferweight& diff2, bufferweightset& sq_dists, const int img_width, const int img_height,
+                            const int maxR, const int deltaMax, int xa, int xb, int ya, int yb)
 {
     scalar current;
-    for (int xp = 0; xp < img_width; ++xp)
+
+    for (int xp = xa; xp < xb; ++xp)
     {
-        for (int yp = 0; yp < img_height; ++yp)
+        for (int yp = ya; yp < yb; ++yp)
         {
             for (int deltaxq = -maxR; deltaxq <= maxR; deltaxq++)
             {
@@ -336,7 +337,7 @@ void precompute_differences(bufferweight diff1, bufferweight diff2, bufferweight
                                 if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
                                 xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
                                     continue;
-                                current = sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
+                                current = sq_dists[i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
                                 diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;
                                 diff1[xp][yp][deltaxq + maxR][deltayq + maxR] += current;
                             }
@@ -350,7 +351,7 @@ void precompute_differences(bufferweight diff1, bufferweight diff2, bufferweight
                             if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
                             xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
                                 continue;                            
-                            current = sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
+                            current = sq_dists[i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
                             diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
                         }
                         u = -2; 
@@ -358,7 +359,7 @@ void precompute_differences(bufferweight diff1, bufferweight diff2, bufferweight
                             if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
                             xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
                                 continue;                                 
-                            current = sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
+                            current = sq_dists[i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
                             diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
                         }
                         u = 3; 
@@ -366,7 +367,7 @@ void precompute_differences(bufferweight diff1, bufferweight diff2, bufferweight
                             if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
                             xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
                                 continue;                                 
-                            current = sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
+                            current = sq_dists[i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
                             diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
                         }
                         u = 2; 
@@ -374,7 +375,7 @@ void precompute_differences(bufferweight diff1, bufferweight diff2, bufferweight
                             if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
                             xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
                                 continue;                                 
-                            current = sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
+                            current = sq_dists[i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
                             diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
                         }           
                         u = -1;
@@ -382,14 +383,14 @@ void precompute_differences(bufferweight diff1, bufferweight diff2, bufferweight
                             if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
                             xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
                                 continue;                                 
-                            current = sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
+                            current = sq_dists[i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
                             diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
                         }  
                         for (int v = 2; v <= 3; v++) {
                             if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
                             xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
                                 continue;                                 
-                            current = sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
+                            current = sq_dists[i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
                             diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
                         }  
                         u = 0;
@@ -397,14 +398,14 @@ void precompute_differences(bufferweight diff1, bufferweight diff2, bufferweight
                             if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
                             xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
                                 continue;                                 
-                            current = sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
+                            current = sq_dists[i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
                             diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
                         }  
                         for (int v = 2; v <= 3; v++) {
                             if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
                             xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
                                 continue;                                 
-                            current = sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
+                            current = sq_dists[i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
                             diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
                         } 
                         u = 1;
@@ -412,14 +413,14 @@ void precompute_differences(bufferweight diff1, bufferweight diff2, bufferweight
                             if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
                             xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
                                 continue;                                 
-                            current = sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
+                            current = sq_dists[i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
                             diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
                         }  
                         for (int v = 2; v <= 3; v++) {
                             if (xp + u < 0 || xp + u >= img_height || yp + v < 0 || yp + v >= img_height ||
                             xq + u < 0 || xq + u >= img_height || yq + v < 0 || yq + v >= img_height)
                                 continue;                                 
-                            current = sq_dists[2 * i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
+                            current = sq_dists[i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
                             diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
                         }                                                                                                                                     
 
@@ -430,7 +431,106 @@ void precompute_differences(bufferweight diff1, bufferweight diff2, bufferweight
     }
 }
 
-void precompute_color_weights(bufferweightset allweights, scalar *allsums, buffer u, buffer var_u, int img_width, int img_height, Flt_parameters *all_params, int n_params)
+
+void precompute_differences(bufferweight& diff1, bufferweight& diff2, bufferweightset& sq_dists, const int img_width, const int img_height, const int maxR, const int deltaMax)
+{
+    precompute_differences_border(diff1, diff2, sq_dists, img_width, img_height, maxR, deltaMax,
+                                    0, img_width, 0, maxR+3);
+    precompute_differences_border(diff1, diff2, sq_dists, img_width, img_height, maxR, deltaMax, 
+                                    0, maxR+3, maxR+3, img_height);
+    precompute_differences_border(diff1, diff2, sq_dists, img_width, img_height, maxR, deltaMax, 
+                                    maxR+3, img_width, img_height-maxR-3, img_height);
+    precompute_differences_border(diff1, diff2, sq_dists, img_width, img_height, maxR, deltaMax, 
+                                    img_width-maxR-3, img_width, maxR+3, img_height-maxR-3);                                                                                                            
+
+    scalar current;
+
+    for (int xp = maxR + 3; xp < img_width - maxR - 3; ++xp)
+    {
+        for (int yp = maxR + 3; yp < img_height - maxR - 3; ++yp)
+        {
+            for (int deltaxq = -maxR; deltaxq <= maxR; deltaxq++)
+            {
+                for (int deltayq = -maxR; deltayq <= maxR; deltayq++)
+                {
+                    int xq = xp + deltaxq, yq = yp + deltayq;
+
+                    // Diff1 is the sum for f=1, diff2 for f=3
+                    diff1[xp][yp][deltaxq + maxR][deltayq + maxR] = 0;
+                    diff2[xp][yp][deltaxq + maxR][deltayq + maxR] = 0;
+                    for (int i = 0; i < 3; ++i)
+                    {
+
+                        // compute sum of perpixel distance for f=1 neighborhood
+                        for (int u = -1; u <= 1; u ++) {
+
+                            for (int v = -1; v <=1; v ++) {
+
+                                current = sq_dists[i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
+                                diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;
+                                diff1[xp][yp][deltaxq + maxR][deltayq + maxR] += current;
+                            }
+                        }
+
+                        // remaining pixels                            
+                        int u, v;
+
+                        u = -3; 
+                        for (int v = -3; v <= 3; v++) {                          
+                            current = sq_dists[i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
+                            diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
+                        }
+                        u = -2; 
+                        for (int v = -3; v <= 3; v++) {                           
+                            current = sq_dists[i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
+                            diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
+                        }
+                        u = 3; 
+                        for (int v = -3; v <= 3; v++) {                              
+                            current = sq_dists[i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
+                            diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
+                        }
+                        u = 2; 
+                        for (int v = -3; v <= 3; v++) {                               
+                            current = sq_dists[i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
+                            diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
+                        }           
+                        u = -1;
+                        for (int v = -3; v <= -2; v++) {                            
+                            current = sq_dists[i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
+                            diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
+                        }  
+                        for (int v = 2; v <= 3; v++) {                               
+                            current = sq_dists[i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
+                            diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
+                        }  
+                        u = 0;
+                        for (int v = -3; v <= -2; v++) {                            
+                            current = sq_dists[i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
+                            diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
+                        }  
+                        for (int v = 2; v <= 3; v++) {                              
+                            current = sq_dists[i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
+                            diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
+                        } 
+                        u = 1;
+                        for (int v = -3; v <= -2; v++) {                             
+                            current = sq_dists[i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
+                            diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
+                        }  
+                        for (int v = 2; v <= 3; v++) {                              
+                            current = sq_dists[i][xp + u][yp + v][deltaxq + deltaMax][deltayq + deltaMax];
+                            diff2[xp][yp][deltaxq + maxR][deltayq + maxR] += current;                       
+                        }                                                                                                                                     
+
+                    }
+                }
+            }
+        }
+    }
+}
+
+void precompute_color_weights(bufferweightset& allweights, scalar *allsums, buffer& u, buffer& var_u, int img_width, int img_height, Flt_parameters *all_params, int n_params)
 {
     for (int p = 0; p < n_params; ++p)
         allsums[p] = 0.f;
@@ -438,12 +538,12 @@ void precompute_color_weights(bufferweightset allweights, scalar *allsums, buffe
     myInt64 start, end;
     bufferweightset sq_diffs;
     const int deltaMax = all_params[1].r + 7;
-    allocate_buffer_weights(&sq_diffs, img_width, img_height, 6, deltaMax);
+    allocate_buffer_weights(&sq_diffs, img_width, img_height, 3, deltaMax);
     std::cout << "precompute squared diff\n";
 
     start = start_tsc();
     for (int i = 0; i < 3; ++i)
-        precompute_squared_difference1(sq_diffs[2 * i], sq_diffs[2 * i + 1], u[i], var_u[i], img_width, img_height, deltaMax);
+        precompute_squared_difference1(sq_diffs[i], u[i], var_u[i], img_width, img_height, deltaMax);
     end = stop_tsc(start);
     std::cout << end << "\n";
 
@@ -517,20 +617,25 @@ void precompute_color_weights(bufferweightset allweights, scalar *allsums, buffe
         }
     }
 
-    free_buffer_weights(&sq_diffs, img_width, img_height, 6, deltaMax);
+    free_buffer_weights(&sq_diffs, img_width, img_height, 3, deltaMax);
     free_buffer_weights(&diffs, img_width, img_height, 2, r_max);
 }
 
-void precompute_weights(bufferweightset allweights, scalar *allsums, buffer u, buffer var_u, buffer f, buffer var_f, int img_width, int img_height, Flt_parameters *all_params)
+void precompute_weights(bufferweightset& allweights, scalar *allsums, buffer& u, buffer& var_u, buffer& f, buffer& var_f, int img_width, int img_height, Flt_parameters *all_params)
 {
     // Computing gradients
+    myInt64 start, end;
     buffer gradients;
     allocate_buffer(&gradients, img_width, img_height);
+    start = start_tsc();
     for (int i = 0; i < NB_FEATURES; ++i)
         compute_gradient(gradients[i], f[i], 2, img_width, img_height); // 2 because we need almost the whole image for filter error
-    std::cout << "begin color\n";
+    end = stop_tsc(start);
+    std::cout << end << " begin color\n";
+    start = start_tsc();
     precompute_color_weights(allweights, allsums, u, var_u, img_width, img_height, all_params, 5);
-    std::cout << "done color\n";
+    end = stop_tsc(start);
+    std::cout << end << " done color\n";
     scalar wc, wf, w;
     Flt_parameters p;
 
