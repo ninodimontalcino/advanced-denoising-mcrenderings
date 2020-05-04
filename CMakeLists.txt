@@ -7,7 +7,7 @@ project(team053)
 
 # set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_FLAGS "-Wno-deprecated" )
+set(CMAKE_CXX_FLAGS "-Wno-deprecated -O3 -ffast-math -march=native" )
 
 ###########################################################################
 # OpenEXR (taken from https://github.com/mmp/pbrt-v3/blob/master/CMakeLists.txt)
