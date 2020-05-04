@@ -48,10 +48,10 @@ using namespace std;
     // ----------------------------------------------
 
     Flt_parameters p_pre = { .kc = 1., .kf = INFINITY, .tau = 0., .f = 3, .r = 5};
-    bufferweightset weights_pref;
+    bufferweight weights_pref;
 
-    allocate_buffer_weights(&weights_pref, img_width, img_height, 1, 5);
-    precompute_colors_pref(weights_pref[0], f, f_var, img_width, img_height, p_pre);
+    allocate_buffer_weights(&weights_pref, img_width, img_height, 5);
+    precompute_colors_pref(weights_pref, f, f_var, img_width, img_height, p_pre);
     if(DEBUG)
         cout << "\t - Precomputation of prefiltering weights done" << endl;
 
@@ -62,9 +62,9 @@ using namespace std;
     buffer f_filtered, f_var_filtered;
     allocate_buffer(&f_filtered, img_width, img_height);
     allocate_buffer(&f_var_filtered, img_width, img_height);
-    flt_buffer_opcount(f_filtered, f, f, f_var, p_pre, img_width, img_height, weights_pref[0]);
-    flt_buffer_opcount(f_var_filtered, f_var, f, f_var, p_pre, img_width, img_height, weights_pref[0]);
-    free_buffer_weights(&weights_pref, img_width, img_height, 1, 5);
+    flt_buffer_opcount(f_filtered, f, f, f_var, p_pre, img_width, img_height, weights_pref);
+    flt_buffer_opcount(f_var_filtered, f_var, f, f_var, p_pre, img_width, img_height, weights_pref);
+    free_buffer_weights(&weights_pref, img_width, img_height, 5);
     // DEBUGGING PART
     if(DEBUG) {
         write_channel_exr("temp/albedo_filtered.exr", &f_filtered[0], img_width, img_height);
@@ -85,8 +85,9 @@ using namespace std;
     all_params[3] = { .kc = 1.0, .kf = INFINITY, .tau = 0.001, .f = 1, .r = 1}; // filter error estimate
     all_params[4] = { .kc = 1.0, .kf = INFINITY, .tau = 0.0001, .f = 1, .r = 5}; // filter selection map
     
-    allocate_buffer_weights(&weights, img_width, img_height, 5, maxr); 
-    precompute_weights(weights, weights_sums, c, c_var, f_filtered, f_var_filtered, img_width, img_height, all_params);
+    // We allocate a little bit more than necessary for precomputations. 7 = (2f+1) with f = 3
+    allocate_buffer_weights_sets(&weights, img_width, img_height, 5, maxr+7); // Just allocate one more for precomputations 
+    precompute_weights(weights, weights_sums, c, c_var, f_filtered, f_var_filtered, img_width, img_height, all_params, maxr+7);
 
 
     // ----------------------------------------------   
@@ -291,6 +292,6 @@ using namespace std;
     free_channel(&sel_b_filtered, img_width);
 
     // Free weights
-    free_buffer_weights(&weights, img_width, img_height, 5, maxr);
+    free_buffer_weights_sets(&weights, img_width, img_height, 5, maxr+7);
 
  }
