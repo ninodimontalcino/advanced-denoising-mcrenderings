@@ -85,9 +85,8 @@ using namespace std;
     all_params[3] = { .kc = 1.0, .kf = INFINITY, .tau = 0.001, .f = 1, .r = 1}; // filter error estimate
     all_params[4] = { .kc = 1.0, .kf = INFINITY, .tau = 0.0001, .f = 1, .r = 5}; // filter selection map
     
-    // We allocate a little bit more than necessary for precomputations. 7 = (2f+1) with f = 3
-    allocate_buffer_weights_sets(&weights, img_width, img_height, 5, maxr+7); // Just allocate one more for precomputations 
-    precompute_weights(weights, weights_sums, c, c_var, f_filtered, f_var_filtered, img_width, img_height, all_params, maxr+7);
+    allocate_buffer_weights_sets(&weights, img_width, img_height, 5, maxr); 
+    precompute_weights(weights, weights_sums, c, c_var, f_filtered, f_var_filtered, img_width, img_height, all_params, maxr);
 
 
     // ----------------------------------------------   
@@ -292,6 +291,6 @@ using namespace std;
     free_channel(&sel_b_filtered, img_width);
 
     // Free weights
-    free_buffer_weights_sets(&weights, img_width, img_height, 5, maxr+7);
+    free_buffer_weights_sets(&weights, img_width, img_height, 5, maxr);
 
  }

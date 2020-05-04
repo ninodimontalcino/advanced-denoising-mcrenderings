@@ -25,7 +25,7 @@ void precompute_colors_pref(bufferweight weightpref, buffer u, buffer var_u, int
 void flt_buffer_opcount(buffer output, buffer input, buffer u, buffer var_u, Flt_parameters p, int img_width, int img_height, bufferweight weights);
 void flt_opcount(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, buffer f, buffer var_f, Flt_parameters p, int config, int img_width, int img_height, bufferweightset weights);
 void flt_channel_opcount(channel output, channel input, buffer u, buffer var_u, Flt_parameters p, int config, int img_width, int img_height, bufferweightset weights);
-void precompute_color_weights(bufferweightset allweights, buffer u, buffer var_u, int img_width, int img_height, Flt_parameters* all_params, const int offset);
-void precompute_weights(bufferweightset allweights, scalar* allsums, buffer u, buffer var_u,  buffer f, buffer var_f, int img_width, int img_height, Flt_parameters* all_params, const int offset);
+void precompute_color_weights(bufferweightset allweights, buffer u, buffer var_u, int img_width, int img_height, Flt_parameters* all_params, const int r_max);
+void precompute_weights(bufferweightset allweights, scalar* allsums, buffer u, buffer var_u,  buffer f, buffer var_f, int img_width, int img_height, Flt_parameters* all_params, const int r_max);
 
 #endif //FLT1_H
