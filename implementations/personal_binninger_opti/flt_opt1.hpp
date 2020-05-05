@@ -107,5 +107,8 @@ void compute_gradient_opt1(channel gradient, channel u, int d, int img_width, in
 scalar feature_distance_Basic(channel f, channel var_f, channel gradient, Flt_parameters p, int xp, int yp, int xq, int yq);
 scalar feature_weight_Basic(channel *f, channel *var_f, channel *gradients, Flt_parameters p, int xp, int yp, int xq, int yq);
 
+scalar feature_distance_opt1(channel f, channel var_f, channel gradient, scalar kf_squared, Flt_parameters p, int xp, int yp, int xq, int yq);
+scalar feature_weight_opt1(channel *f, channel *var_f, channel *gradients, scalar kf_squared, Flt_parameters p, int xp, int yp, int xq, int yq);
+
 
 #endif //FLT_H_OPT1

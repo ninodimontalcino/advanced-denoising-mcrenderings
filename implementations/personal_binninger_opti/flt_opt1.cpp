@@ -479,21 +479,21 @@ void flt_opt1(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_
         }
     }
 
-    channel distances, distances_sumx, distances_sumy, sum_weights_channel;
+    channel distances, distances_sum_tmp, sum_weights_channel;
     scalar nlmean;
     allocate_channel(&distances, img_width, img_height);
-    allocate_channel(&distances_sumx, img_width, img_height);
-    allocate_channel(&distances_sumy, img_width, img_height);
+    allocate_channel(&distances_sum_tmp, img_width, img_height);
     allocate_channel(&sum_weights_channel, img_width, img_height);
     for (int xp=0; xp<img_width; xp++){
         for (int yp=0; yp<img_height; yp++){
             sum_weights_channel[xp][yp]=EPSILON;
             distances[xp][yp] = 0;
-            distances_sumx[xp][yp]=0;
+            distances_sum_tmp[xp][yp]=0;
         }
     }
 
     const scalar kc_squared = p.kc*p.kc;
+    const scalar kf_squared = p.kf*p.kf;
     const scalar norm_patch = 3*(2*p.f+1)*(2*p.f+1);
     for (int r_x = -p.r; r_x <=p.r; ++r_x){
         for (int r_y = -p.r; r_y<=p.r; ++r_y){
@@ -507,7 +507,7 @@ void flt_opt1(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_
                     int yq = yp+r_y;
                     for (int i=0; i<3; i++){
                         distances[xp][yp] += per_pixel_distance_opt1(u[i], var_u[i], kc_squared, xp, yp, xq, yq);
-                        distances_sumx[xp][yp] = distances[xp][yp];
+                        distances_sum_tmp[xp][yp] = distances[xp][yp];
                     }
                 }
             }
@@ -516,19 +516,19 @@ void flt_opt1(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_
             for (int xp = p.f+p.r; xp<img_width-p.f-p.r; ++xp){
                 for (int yp = p.f+p.r; yp<img_height-p.f-p.r; ++yp){
                     for (int xf = -p.f; xf<=p.f; ++xf){
-                        distances_sumx[xp][yp] += distances[xp+xf][yp];
+                        distances_sum_tmp[xp][yp] += distances[xp+xf][yp];
                     }
                 }
             }
             for (int xp = p.f+p.r; xp<img_width-p.f-p.r; ++xp){
                 for (int yp = p.f+p.r; yp<img_height-p.f-p.r; ++yp){
                     for (int yf= -p.f; yf<=p.f; ++yf){
-                        distances[xp][yp] += distances_sumx[xp][yp+yf];
+                        distances[xp][yp] += distances_sum_tmp[xp][yp+yf];
                     }
                     nlmean = distances[xp][yp]/norm_patch;
                     w = exp(-fmax(0.f, nlmean));
                     if (f!=NULL){
-                        wf = feature_weight_Basic(f, var_f, gradients, p, xp, yp, xp+r_x, yp+r_y);
+                        wf = feature_weight_opt1(f, var_f, gradients, kf_squared, p, xp, yp, xp+r_x, yp+r_y);
                         w = fmin(w, wf);
                     }
 
@@ -541,7 +541,7 @@ void flt_opt1(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_
             for (int xp=0; xp<img_width; xp++){
                 for (int yp=0; yp<img_height; yp++){
                     distances[xp][yp] = 0;
-                    distances_sumx[xp][yp]=0;
+                    distances_sum_tmp[xp][yp]=0;
                 }
             }
 
@@ -577,12 +577,9 @@ void flt_opt1(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_
         }
 
     }
-
-
     
     free_channel(&distances, img_width);
-    free_channel(&distances_sumx, img_width);
-    free_channel(&distances_sumy, img_width);
+    free_channel(&distances_sum_tmp, img_width);
     free_channel(&sum_weights_channel, img_width);
 
     if(f != NULL) {
@@ -624,7 +621,7 @@ void flt_opt1_kc_inf(buffer out, buffer d_out_d_in, buffer input, buffer u, buff
     }
 
     // Real computation
-    sum_weights = 0;
+    const scalar kf_squared = p.kf*p.kf;
     for(int xp = p.r+p.f; xp < img_width-p.r-p.f; ++xp) {
         for(int yp = p.r+p.f; yp < img_height-p.r-p.f; ++yp) {
             
@@ -637,7 +634,7 @@ void flt_opt1_kc_inf(buffer out, buffer d_out_d_in, buffer input, buffer u, buff
                 for(int yq = yp-p.r; yq <= yp+p.r; yq++) {
                     
                     if(f != NULL)
-                        wf = feature_weight_Basic(f, var_f, gradients, p, xp, yp, xq, yq);
+                        wf = feature_weight_opt1(f, var_f, gradients, kf_squared, p, xp, yp, xq, yq);
                     else
                         wf = wc;
 
@@ -752,10 +749,25 @@ scalar feature_weight_Basic(channel *f, channel *var_f, channel *gradients, Flt_
     return exp(-df);
 }
 
+scalar feature_weight_opt1(channel *f, channel *var_f, channel *gradients, scalar kf_squared, Flt_parameters p, int xp, int yp, int xq, int yq) {
+    scalar df = 0.f;
+    for(int j=0; j<NB_FEATURES;++j)
+        df = fmax(df, feature_distance_opt1(f[j], var_f[j], gradients[j], kf_squared, p, xp, yp, xq, yq));
+    return exp(-df);
+}
+
 scalar feature_distance_Basic(channel f, channel var_f, channel gradient, Flt_parameters p, int xp, int yp, int xq, int yq) {
     scalar sqdist = f[xp][yp] - f[xq][yq];
     sqdist *= sqdist;
     scalar var_cancel = var_f[xp][yp] + fmin(var_f[xp][yp], var_f[xq][yq]);
     scalar normalization = p.kf*p.kf*fmax(p.tau, fmax(var_f[xp][yp], gradient[xp][yp]));
+    return (sqdist - var_cancel)/normalization;
+}
+
+scalar feature_distance_opt1(channel f, channel var_f, channel gradient, scalar kf_squared, Flt_parameters p, int xp, int yp, int xq, int yq) {
+    scalar sqdist = f[xp][yp] - f[xq][yq];
+    sqdist *= sqdist;
+    scalar var_cancel = var_f[xp][yp] + fmin(var_f[xp][yp], var_f[xq][yq]);
+    scalar normalization = kf_squared*fmax(p.tau, fmax(var_f[xp][yp], gradient[xp][yp]));
     return (sqdist - var_cancel)/normalization;
 }
