@@ -92,7 +92,7 @@ using namespace std;
     buffer b, d_b;
     allocate_buffer(&b, img_width, img_height);
     allocate_buffer(&d_b, img_width, img_height);
-    flt_Basic(b, d_b, c, c, c_var, f_filtered, f_var_filtered, p_b, img_width, img_height);
+    flt_opt1_kc_inf(b, d_b, c, c, c_var, f_filtered, f_var_filtered, p_b, img_width, img_height);
     
     // DEBUGGING PART
     if(DEBUG) {

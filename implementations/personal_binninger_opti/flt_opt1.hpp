@@ -92,6 +92,8 @@ void flt_channel_opt1_sel(channel output_1, channel input_1, channel output_2, c
 */        
 void flt_Basic(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, buffer f, buffer var_f, Flt_parameters p, int img_width, int img_height);
 void flt_opt1(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, buffer f, buffer var_f, Flt_parameters p, int img_width, int img_height);
+// An optimization specific to the case kc=INF
+void flt_opt1_kc_inf(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, buffer f, buffer var_f, Flt_parameters p, int img_width, int img_height);
 
 scalar per_pixel_distance_Basic(channel u, channel var_u, scalar kc, int xp, int yp, int xq, int yq);
 scalar per_pixel_distance_opt1(channel u, channel var_u, scalar kc, int xp, int yp, int xq, int yq);
