@@ -472,66 +472,12 @@ void flt_opt1(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_
         }
     }
 
-    // For edges, just copy in output the input
-      for (int i = 0; i < 3; i++){
-        for (int xp = 0; xp < img_width; xp++){
-            for(int yp = 0; yp < p.r+p.f; yp++){
-                out[i][xp][yp] = input[i][xp][yp];
-                out[i][xp][img_height - yp - 1] = input[i][xp][img_height - yp - 1];
-                d_out_d_in[i][xp][yp] = 0.f;
-                d_out_d_in[i][xp][img_height - yp - 1] = 0.f;
-            }
+    for(int xp = p.r+p.f; xp < img_width-p.r-p.f; ++xp) {
+        for(int yp = p.r+p.f; yp < img_height-p.r-p.f; ++yp) {            
+            for(int i=0;i<3;++i)
+                out[i][xp][yp] = 0; 
         }
-        for (int yp = p.r+p.f; yp < img_height - p.r+p.f; yp++){
-            for(int xp = 0; xp < p.r+p.f; xp++){
-                out[i][xp][yp] = input[i][xp][yp];
-                out[i][img_width - xp - 1][yp] = input[i][img_width - xp - 1][yp];
-                d_out_d_in[i][xp][yp] = 0.f;
-                d_out_d_in[i][img_width - xp - 1][yp] = 0.f;
-            }
-        }
-
     }
-
-    // Real computation
-    // sum_weights = 0;
-    // for(int xp = p.r+p.f; xp < img_width-p.r-p.f; ++xp) {
-    //     for(int yp = p.r+p.f; yp < img_height-p.r-p.f; ++yp) {
-            
-    //         sum_weights = EPSILON;
-            
-    //         for(int i=0;i<3;++i)
-    //             out[i][xp][yp] = 0; 
-
-    //         for(int xq = xp-p.r; xq <= xp+p.r; xq++) {
-    //             for(int yq = yp-p.r; yq <= yp+p.r; yq++) {
-                    
-    //                 wc = color_weight_opt1(u, var_u, p, xp, yp, xq, yq);
-
-    //                 if(f != NULL)
-    //                     wf = feature_weight_Basic(f, var_f, gradients, p, xp, yp, xq, yq);
-    //                 else
-    //                     wf = wc;
-
-    //                 w = fmin(wc, wf);
-    //                 sum_weights += w;
-
-    //                 for(int i=0;i<3;++i){
-    //                      out[i][xp][yp] += input[i][xq][yq] * w;
-    //                 }
-
-    //             }
-    //         }
-
-    //         for(int i=0;i<3;++i){
-    //             out[i][xp][yp] /= sum_weights;
-
-    //             // ToDo: Fix derivatives => Use formula from paper
-    //             d_out_d_in[i][xp][yp] = 0.f;
-    //         }
-    //     }
-    // }
-    
 
     channel distances, distances_sumx, distances_sumy, sum_weights_channel;
     scalar nlmean;
@@ -544,9 +490,6 @@ void flt_opt1(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_
             sum_weights_channel[xp][yp]=EPSILON;
             distances[xp][yp] = 0;
             distances_sumx[xp][yp]=0;
-            for (int i=0; i<3; i++){
-                out[i][xp][yp] = 0;
-            }
         }
     }
 
@@ -561,7 +504,7 @@ void flt_opt1(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_
                 int upperbound_y = r_y<0? img_height : img_height-r_y;
                 for (int yp = lowerbound_y; yp<upperbound_y; ++yp){
                     int xq = xp+r_x;
-                    int yq = xp+r_y;
+                    int yq = yp+r_y;
                     for (int i=0; i<3; i++){
                         distances[xp][yp] += per_pixel_distance_opt1(u[i], var_u[i], kc_squared, xp, yp, xq, yq);
                         distances_sumx[xp][yp] = distances[xp][yp];
