@@ -176,6 +176,11 @@ int main(int argc, char **argv)
   }
   cout << numFuncs << " functions registered." << endl;
    
+
+  cout << "---------------------------------------------" << endl;
+  cout << " (1) Compute Reference Solution" << endl;
+  cout << "---------------------------------------------" << endl;
+
   // Call correct function and check output
   buffer out_img;
   allocate_buffer(&out_img, img_width, img_height);
@@ -186,7 +191,7 @@ int main(int argc, char **argv)
   if (RMSE){
     // Compute RMSE between denoised image and GT (of Vanilla Implementation)
     double _rmse = rmse(out_img, gt, img_width, img_height);
-    printf("RMSE: %f \n", _rmse);
+    printf("RMSE: %f \n\n", _rmse);
   }
 
 
@@ -194,8 +199,13 @@ int main(int argc, char **argv)
   buffer out_img_f;
   allocate_buffer(&out_img_f, img_width, img_height);
 
+  cout << "---------------------------------------------" << endl;
+  cout << " (2) Validating optimized functions" << endl;
+  cout << "---------------------------------------------" << endl;
+
   // Only run for optimized functions => don't repeat vanilla computation
   for (i = 1; i < numFuncs; i++) {
+    cout << endl << "Validating: " << funcNames[i] << endl;
     denoise_func f = userFuncs[i];
     f(out_img_f, c, c_var, features, features_var, r, img_width, img_height);
 
@@ -212,6 +222,9 @@ int main(int argc, char **argv)
   }
 
   // Performance Testing
+  cout << "---------------------------------------------" << endl;
+  cout << " (3) Performance Tests (including warmup)" << endl;
+  cout << "---------------------------------------------" << endl;
   for (i = 0; i < numFuncs; i++)
   {
     perf = perf_test(userFuncs[i], funcNames[i], funcFlops[i], c, c_var, features, features_var, r, img_width, img_height);

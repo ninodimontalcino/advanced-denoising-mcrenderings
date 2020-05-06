@@ -6,8 +6,8 @@
 
 cd ../build
 #cmake .. -DCMAKE_CXX_FLAGS_RELEASE="-O0" -DCMAKE_C_FLAGS_RELEASE="-00" 
-cmake .. -DCMAKE_CXX_FLAGS_RELEASE="-O3 -fno-vectorize" -DCMAKE_C_FLAGS_RELEASE="-03 -fno-vectorize" 
-#cmake .. -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math -march=native" -DCMAKE_C_FLAGS_RELEASE="-03  -ffast-math -march=native" 
+#cmake .. -DCMAKE_CXX_FLAGS_RELEASE="-O3 -fno-vectorize" -DCMAKE_C_FLAGS_RELEASE="-03 -fno-vectorize" 
+cmake .. -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math -march=native" -DCMAKE_C_FLAGS_RELEASE="-03  -ffast-math -march=native" 
 make -j4
 
 clear

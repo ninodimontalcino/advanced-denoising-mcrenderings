@@ -6,7 +6,9 @@ project(team053)
 
 
 set(CMAKE_BUILD_TYPE Release)
+#set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_FLAGS "-Wno-deprecated -O3 -ffast-math -march=native" )
 
 ###########################################################################
 # OpenEXR (taken from https://github.com/mmp/pbrt-v3/blob/master/CMakeLists.txt)
@@ -49,6 +51,7 @@ add_executable(main
               memory_mgmt.hpp
               denoise.h
               flt.hpp 
+              flt_restructure.hpp
               validation.hpp
 
               # General Source Files
@@ -56,12 +59,15 @@ add_executable(main
               exr.cpp
               memory_mgmt.cpp 
               flt.cpp 
+              flt_restructure.cpp 
               validation.cpp
 
               # Implementations (BASIC and OPTIMIZED)
               implementations/register.hpp
               implementations/basic.cpp
-              
+              implementations/basic_restructure.cpp
+              implementations/basic_restructure2.cpp
+
               )
 
 # --------------------------
