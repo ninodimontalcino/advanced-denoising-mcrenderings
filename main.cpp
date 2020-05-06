@@ -187,10 +187,9 @@ int main(int argc, char **argv)
   denoise_func f = userFuncs[0];
   f(out_img, c, c_var, features, features_var, r, img_width, img_height);
 
-  // Compute RMSE if flag RMSE is enabled (GT is only available for 800x600, 256x256, 512x512, 1024x1024) 
+  // Compute RMSE 
+  double _rmse = rmse(out_img, gt, img_width, img_height);
   if (RMSE){
-    // Compute RMSE between denoised image and GT (of Vanilla Implementation)
-    double _rmse = rmse(out_img, gt, img_width, img_height);
     printf("RMSE: %f \n\n", _rmse);
   }
 
@@ -209,14 +208,18 @@ int main(int argc, char **argv)
     denoise_func f = userFuncs[i];
     f(out_img_f, c, c_var, features, features_var, r, img_width, img_height);
 
+    double _rmse2 = rmse(out_img_f, gt, img_width, img_height);
     if (RMSE){
-      double _rmse = rmse(out_img_f, gt, img_width, img_height);
-      printf("RMSE: %f \n", _rmse);
+      printf("RMSE: %f \n", _rmse2);
     }
 
     //Compare out_img_f with out_img_f
-    if (!compare_buffers(out_img, out_img_f, img_width, img_height)){
+    //if (!compare_buffers(out_img, out_img_f, img_width, img_height)){
+    double error[4];
+    maxAbsError(error, out_img, out_img_f, img_width, img_height);
+    if (abs(_rmse - _rmse2) > EPS){
       printf("Function %d produces a different result! \n", i);
+      printf("Abs. Max. Buffer Difference: %f at position: [%f][%f][%f] \n", error[0], error[1], error[2], error[3]);
     }
 
   }
