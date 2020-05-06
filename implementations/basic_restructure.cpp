@@ -195,25 +195,15 @@ using namespace std;
         }
     }
 
-    
-
     // DEBUG PART 
     if(DEBUG) {
         write_buffer_exr("temp/pass1.exr", &out_img, img_width, img_height);
         cout << "\t - Pass1 done" << endl;
     }
 
-    // ----------------------------------------------
-    // (8) Second Pass-Filtering
-    // ----------------------------------------------
-    // => not necessary since we use a one buffer approach (due to independet MC samples in the renderer) at the moment
-    // Therefore we can use pass1 as output
-    
-    // Flt_parameters p_final= { .kc = 0.45, .kf = INFINITY, .tau = 0.0001, .f = 1, .r = R};
-    // flt_buffer_basic(out_img, pass1, pass1, c_var, p_final, img_width, img_height);    
 
     // ----------------------------------------------
-    // (9) Memory Deallocation
+    // (8) Memory Deallocation
     // ----------------------------------------------
     // Free filtered filters
     free_buffer(&f_filtered, img_width);

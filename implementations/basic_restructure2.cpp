@@ -65,7 +65,7 @@ using namespace std;
     Flt_parameters p_all[3];
     p_all[0] = { .kc = 2.0, .kf = 0.6, .tau = 0.001, .f = 1, .r = R};
     p_all[1] = { .kc = 2.0, .kf = 0.6, .tau = 0.001, .f = 3, .r = R};
-    p_all[2] = { .kc = INFINITY, .kf = 0.6, .tau = 0.0001, .f = 1, .r = R};
+    p_all[2] = { .kc = INFINITY, .kf = 0.6, .tau = 0.0001, .f = 1, .r = R};   // Fixed Variable: kc=INF => is exploited in filtering
     buffer r, g, b;
     allocate_buffer_zero(&r, img_width, img_height);
     allocate_buffer_zero(&g, img_width, img_height);
@@ -101,7 +101,7 @@ using namespace std;
     // (b) Filter error estimates
     Flt_parameters p_sure = { .kc = 1.0, .kf = INFINITY, .tau = 0.001, .f = 1, .r = 1};
     buffer e;
-    allocate_buffer_zero(&e, img_width, img_height);
+    allocate_buffer(&e, img_width, img_height);
     filtering_basic(e, sure, c, c_var, p_sure, img_width, img_height);
     
     // DEBUG PART
@@ -171,19 +171,13 @@ using namespace std;
 
                 // Averaging of candidate filters
                 if (norm > EPSILON and norm != INFINITY){
-                    out_img[i][x][y] =  (w_r * r[i][x][y] / norm) 
-                                      + (w_g * g[i][x][y] / norm)
-                                      + (w_b * b[i][x][y] / norm);
+                    out_img[i][x][y] =  ((w_r * r[i][x][y]) 
+                                      + (w_g * g[i][x][y])
+                                      + (w_b * b[i][x][y]))/norm;
                 }
             
             }
         }
-    }
-
-    // DEBUG PART 
-    if(DEBUG) {
-        write_buffer_exr("temp/pass1.exr", &out_img, img_width, img_height);
-        cout << "\t - Pass1 done" << endl;
     }
 
     // DEBUG PART 

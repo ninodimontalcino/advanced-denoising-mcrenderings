@@ -47,23 +47,6 @@ void sure_all(buffer sure, buffer c, buffer c_var, buffer cand_r, buffer cand_g,
 
 void filtering_basic(buffer output, buffer input, buffer c, buffer c_var, Flt_parameters p, int img_width, int img_height){
     
-    // Handline Border Cases
-    // ---------------------
-    for (int i = 0; i < 3; i++){
-        for (int xp = 0; xp < img_width; xp++){
-            for(int yp = 0; yp < p.r+p.f; yp++){
-                output[i][xp][yp] = input[i][xp][yp];
-                output[i][xp][img_height - yp - 1] = input[i][xp][img_height - yp - 1];
-            }
-        }
-        for (int yp = p.r+p.f ; yp < img_height - p.r+p.f; yp++){
-            for(int xp = 0; xp < p.r+p.f; xp++){
-                output[i][xp][yp] = input[i][xp][yp];
-                output[i][img_width - xp - 1][yp] = input[i][img_width - xp - 1][yp];
-            }
-        }
-
-    }
 
     // Handling Inner Part   
     // -------------------
@@ -78,6 +61,8 @@ void filtering_basic(buffer output, buffer input, buffer c, buffer c_var, Flt_pa
     allocate_channel(&temp, img_width, img_height); 
     allocate_channel(&temp2, img_width, img_height); 
 
+    // Precompute size of neighbourhood
+    scalar neigh = 3*(2*p.f+1)*(2*p.f+1);
 
     // Covering the neighbourhood
     for (int r_x = -p.r; r_x <= p.r; r_x++){
@@ -104,13 +89,10 @@ void filtering_basic(buffer output, buffer input, buffer c, buffer c_var, Flt_pa
                 }
             }
 
-            // Precompute size of neighbourhood
-            scalar neigh = 3*(2*p.f+1)*(2*p.f+1);
-
             // Apply Box-Filtering for Patch Contribution => Use Box-Filter Seperability
             // (1) Convolve along height
             for(int xp = p.r; xp < img_width - p.r; ++xp) {
-                for(int yp = p.r + p.f + 1; yp < img_height - p.r - p.f; ++yp) {
+                for(int yp = p.r + p.f; yp < img_height - p.r - p.f; ++yp) {
 
                     scalar sum = 0.f;
                     for (int k=-p.f; k<=p.f; k++){
@@ -140,46 +122,44 @@ void filtering_basic(buffer output, buffer input, buffer c, buffer c_var, Flt_pa
                 }
             }
 
-
         }
     }
 
     // Final Weight Normalization
     for(int xp = p.r + p.f; xp < img_width - p.r - p.f; ++xp) {
-        for(int yp = p.r + p.f; yp < img_height - p.r - p.f; ++yp) {
-        
+        for(int yp = p.r + p.f ; yp < img_height - p.r - p.f; ++yp) {     
             scalar w = weight_sum[xp][yp];
             for (int i=0; i<3; i++){
                 output[i][xp][yp] /= w;
             }
         }
     }
-}
-
-
-void feature_prefiltering(buffer output, buffer output_var, buffer features, buffer features_var, Flt_parameters p, int img_width, int img_height){
 
     // Handline Border Cases
     // ---------------------
     for (int i = 0; i < 3; i++){
         for (int xp = 0; xp < img_width; xp++){
             for(int yp = 0; yp < p.r+p.f; yp++){
-                output[i][xp][yp] = features[i][xp][yp];
-                output[i][xp][img_height - yp - 1] = features[i][xp][img_height - yp - 1];
-                output_var[i][xp][yp] = features_var[i][xp][yp];
-                output_var[i][xp][img_height - yp - 1] = features_var[i][xp][img_height - yp - 1];
+                output[i][xp][yp] = input[i][xp][yp];
+                output[i][xp][img_height - yp - 1] = input[i][xp][img_height - yp - 1];
             }
         }
-        for (int yp = p.r+p.f ; yp < img_height - p.r+p.f; yp++){
-            for(int xp = 0; xp < p.r+p.f; xp++){
-                output[i][xp][yp] = features[i][xp][yp];
-                output[i][img_width - xp - 1][yp] = features[i][img_width - xp - 1][yp];
-                output_var[i][xp][yp] = features_var[i][xp][yp];
-                output_var[i][xp][img_height - yp - 1] = features_var[i][xp][img_height - yp - 1];
+        for(int xp = 0; xp < p.r+p.f; xp++){
+             for (int yp = p.r+p.f ; yp < img_height - p.r - p.f; yp++){
+                output[i][xp][yp] = input[i][xp][yp];
+                output[i][img_width - xp - 1][yp] = input[i][img_width - xp - 1][yp];
             }
         }
 
     }
+
+    free_channel(&weight_sum, img_width);
+    free_channel(&temp, img_width);
+    free_channel(&temp2, img_width); 
+}
+
+
+void feature_prefiltering(buffer output, buffer output_var, buffer features, buffer features_var, Flt_parameters p, int img_width, int img_height){
 
     // Handling Inner Part   
     // -------------------
@@ -194,6 +174,8 @@ void feature_prefiltering(buffer output, buffer output_var, buffer features, buf
     allocate_channel(&temp, img_width, img_height); 
     allocate_channel(&temp2, img_width, img_height); 
 
+    // Precompute size of neighbourhood
+    scalar neigh = 3*(2*p.f+1)*(2*p.f+1);
 
     // Covering the neighbourhood
     for (int r_x = -p.r; r_x <= p.r; r_x++){
@@ -220,13 +202,10 @@ void feature_prefiltering(buffer output, buffer output_var, buffer features, buf
                 }
             }
 
-            // Precompute size of neighbourhood
-            scalar neigh = 3*(2*p.f+1)*(2*p.f+1);
-
             // Apply Box-Filtering for Patch Contribution => Use Box-Filter Seperability
             // (1) Convolve along height
             for(int xp = p.r; xp < img_width - p.r; ++xp) {
-                for(int yp = p.r + p.f + 1; yp < img_height - p.r - p.f; ++yp) {
+                for(int yp = p.r + p.f; yp < img_height - p.r - p.f; ++yp) {
                     
                     scalar sum = 0.f;
                     for (int k=-p.f; k<=p.f; k++){
@@ -238,7 +217,6 @@ void feature_prefiltering(buffer output, buffer output_var, buffer features, buf
 
             // (2) Convolve along width including weighted contribution
             for(int xp = p.r + p.f; xp < img_width - p.r - p.f; ++xp) {
-
                 for(int yp = p.r + p.f; yp < img_height - p.r - p.f; ++yp) {
 
                     int xq = xp + r_x;
@@ -274,27 +252,37 @@ void feature_prefiltering(buffer output, buffer output_var, buffer features, buf
         }
     }
 
-}
-
-void candidate_filtering(buffer output, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters p, int img_width, int img_height){
-
     // Handline Border Cases
     // ---------------------
     for (int i = 0; i < 3; i++){
         for (int xp = 0; xp < img_width; xp++){
             for(int yp = 0; yp < p.r+p.f; yp++){
-                output[i][xp][yp] = color[i][xp][yp];
-                output[i][xp][img_height - yp - 1] = color[i][xp][img_height - yp - 1];
+                output[i][xp][yp] = features[i][xp][yp];
+                output[i][xp][img_height - yp - 1] = features[i][xp][img_height - yp - 1];
+                output_var[i][xp][yp] = features_var[i][xp][yp];
+                output_var[i][xp][img_height - yp - 1] = features_var[i][xp][img_height - yp - 1];
             }
         }
-        for (int yp = p.r+p.f ; yp < img_height - p.r+p.f; yp++){
-            for(int xp = 0; xp < p.r+p.f; xp++){
-                output[i][xp][yp] = color[i][xp][yp];
-                output[i][img_width - xp - 1][yp] = color[i][img_width - xp - 1][yp];
+        for(int xp = 0; xp < p.r+p.f; xp++){
+             for (int yp = p.r+p.f ; yp < img_height - p.r - p.f; yp++){
+                output[i][xp][yp] = features[i][xp][yp];
+                output[i][img_width - xp - 1][yp] = features[i][img_width - xp - 1][yp];
+                output_var[i][xp][yp] = features_var[i][xp][yp];
+                output_var[i][xp][img_height - yp - 1] = features_var[i][xp][img_height - yp - 1];
             }
         }
 
     }
+
+    // Free memory
+    free_channel(&weight_sum, img_width);
+    free_channel(&temp, img_width);
+    free_channel(&temp2, img_width); 
+
+}
+
+void candidate_filtering(buffer output, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters p, int img_width, int img_height){
+
 
     // Handling Inner Part   
     // -------------------
@@ -310,15 +298,20 @@ void candidate_filtering(buffer output, buffer color, buffer color_var, buffer f
     allocate_channel(&temp, img_width, img_height); 
     allocate_channel(&temp2, img_width, img_height); 
 
+    // Init feature weights channel
+    channel feature_weights;
+    allocate_channel(&feature_weights, img_width, img_height);
 
     // Compute gradients
     buffer gradients;
-    if(features != NULL) {
-        allocate_buffer(&gradients, img_width, img_height);
-        for(int i=0; i<NB_FEATURES;++i) {
-            compute_gradient(gradients[i], features[i], p.r+p.f, img_width, img_height);
-        }
+    allocate_buffer(&gradients, img_width, img_height);
+    for(int i=0; i<NB_FEATURES;++i) {
+        compute_gradient(gradients[i], features[i], p.r+p.f, img_width, img_height);
     }
+
+    // Precompute size of neighbourhood
+    scalar neigh = 3*(2*p.f+1)*(2*p.f+1);
+
 
     // Covering the neighbourhood
     for (int r_x = -p.r; r_x <= p.r; r_x++){
@@ -345,13 +338,8 @@ void candidate_filtering(buffer output, buffer color, buffer color_var, buffer f
                 }
             }
 
-            // Precompute size of neighbourhood
-            scalar neigh = 3*(2*p.f+1)*(2*p.f+1);
 
             // Compute features
-            channel feature_weights;
-            allocate_channel(&feature_weights, img_width, img_height);
-
             for(int xp = p.r + p.f; xp < img_width - p.r - p.f; ++xp) {
                 for(int yp = p.r + p.f; yp < img_height - p.r - p.f; ++yp) {
 
@@ -398,7 +386,6 @@ void candidate_filtering(buffer output, buffer color, buffer color_var, buffer f
                     }
                     scalar color_weight = exp(-fmax(0.f, (sum / neigh)));
                     
-
                     scalar weight = fmin(color_weight, feature_weights[xp][yp]);
                     weight_sum[xp][yp] += weight;
                     
@@ -422,12 +409,37 @@ void candidate_filtering(buffer output, buffer color, buffer color_var, buffer f
         }
     }
 
+    // Handle Border Cases
+    // ---------------------
+    for (int i = 0; i < 3; i++){
+        for (int xp = 0; xp < img_width; xp++){
+            for(int yp = 0; yp < p.r + p.f; yp++){
+                output[i][xp][yp] = color[i][xp][yp];
+                output[i][xp][img_height - yp - 1] = color[i][xp][img_height - yp - 1];
+            }
+        }
+        for(int xp = 0; xp < p.r+p.f; xp++){
+            for (int yp = p.r+p.f ; yp < img_height - p.r - p.f; yp++){
+                output[i][xp][yp] = color[i][xp][yp];
+                output[i][img_width - xp - 1][yp] = color[i][img_width - xp - 1][yp];
+            }
+        }
+
+    }
+
+    // Free memory
+    free_buffer(&gradients, img_width);
+    free_channel(&weight_sum, img_width);
+    free_channel(&feature_weights, img_width);
+    free_channel(&temp, img_width);
+    free_channel(&temp2, img_width);
+
 }
 
 
 
 // ====================================================================================================================================================================================================================================
-// !!! TO BE IMPROVED => Bad runtime because of cache
+// !!! TO BE IMPROVED => ... cache handline can still be better and more precomputations
 // ====================================================================================================================================================================================================================================
 
 void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters* p, int img_width, int img_height){
@@ -443,7 +455,6 @@ void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, 
     scalar k_f_squared_r = p[0].kf * p[0].kf;
     scalar k_c_squared_g = p[1].kc * p[1].kc;
     scalar k_f_squared_g = p[1].kf * p[1].kf;
-    scalar k_c_squared_b = p[2].kc * p[2].kc;
     scalar k_f_squared_b = p[2].kf * p[2].kf;
 
 
@@ -452,42 +463,6 @@ void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, 
     int f_min = fmin(f_r, fmin(f_g, f_b));
     int R = p[0].r;
 
-    // Handline Border Cases
-    // ---------------------
-    for (int i = 0; i < 3; i++){
-        for (int xp = 0; xp < img_width; xp++){
-            for(int yp = 0; yp < R + f_max; yp++){
-                output_r[i][xp][yp] = color[i][xp][yp];
-                output_r[i][xp][img_height - yp - 1] = color[i][xp][img_height - yp - 1];
-                output_b[i][xp][yp] = color[i][xp][yp];
-                output_b[i][xp][img_height - yp - 1] = color[i][xp][img_height - yp - 1];
-            }
-        }
-        for (int yp = R + f_max ; yp < img_height - R + f_max; yp++){
-            for(int xp = 0; xp < R + f_max; xp++){
-                output_r[i][xp][yp] = color[i][xp][yp];
-                output_r[i][img_width - xp - 1][yp] = color[i][img_width - xp - 1][yp];
-                output_b[i][xp][yp] = color[i][xp][yp];
-                output_b[i][img_width - xp - 1][yp] = color[i][img_width - xp - 1][yp];
-            }
-        }
-    }
-
-    // Special Handling of Filter SECOND since f_g != f_r
-    for (int i = 0; i < 3; i++){
-        for (int xp = 0; xp < img_width; xp++){
-            for(int yp = 0; yp < R + f_g; yp++){
-                output_g[i][xp][yp] = color[i][xp][yp];
-                output_g[i][xp][img_height - yp - 1] = color[i][xp][img_height - yp - 1];
-            }
-        }
-        for (int yp = R + f_g ; yp < img_height - R + f_g; yp++){
-            for(int xp = 0; xp < R + f_g; xp++){
-                output_g[i][xp][yp] = color[i][xp][yp];
-                output_g[i][img_width - xp - 1][yp] = color[i][img_width - xp - 1][yp];
-            }
-        }
-    }
 
     // Handling Inner Part   
     // -------------------
@@ -497,13 +472,16 @@ void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, 
     allocate_buffer_zero(&weight_sum, img_width, img_height);
 
     // Init temp channel
-    buffer temp, temp2;
-    allocate_buffer(&temp, img_width, img_height); 
+    channel temp;
+    buffer temp2;
+    allocate_channel(&temp, img_width, img_height); 
     allocate_buffer(&temp2, img_width, img_height); 
 
     // Allocate feature weights buffer
-    buffer features_weights;
-    allocate_buffer(&features_weights, img_width, img_height);
+    channel features_weights_r;
+    channel features_weights_b;
+    allocate_channel(&features_weights_r, img_width, img_height);
+    allocate_channel(&features_weights_b, img_width, img_height);
 
 
     // Compute gradients
@@ -511,9 +489,14 @@ void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, 
     if(features != NULL) {
         allocate_buffer(&gradients, img_width, img_height);
         for(int i=0; i<NB_FEATURES;++i) {
-            compute_gradient(gradients[i], features[i], R, img_width, img_height);
+            compute_gradient(gradients[i], features[i], R+f_min, img_width, img_height);
         }
     }
+
+    // Precompute size of neighbourhood
+    scalar neigh_r = 3*(2*f_r+1)*(2*f_r+1);
+    scalar neigh_g = 3*(2*f_g+1)*(2*f_g+1);
+    scalar neigh_b = 3*(2*f_b+1)*(2*f_b+1);
 
     // Covering the neighbourhood
     for (int r_x = -R; r_x <= R; r_x++){
@@ -527,36 +510,21 @@ void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, 
                     int yq = yp + r_y;
 
                     scalar distance_r = 0.f;
-                    scalar distance_g = 0.f;
-                    scalar distance_b = 0.f;
 
                     for (int i=0; i<3; i++){                        
                         scalar sqdist = color[i][xp][yp] - color[i][xq][yq];
                         sqdist *= sqdist;
                         scalar var_cancel = color_var[i][xp][yp] + fmin(color_var[i][xp][yp], color_var[i][xq][yq]);
                         scalar var_term = color_var[i][xp][yp] + color_var[i][xq][yq];
-
                         scalar normalization_r = EPSILON + k_c_squared_r*(var_term);
-                        scalar normalization_g = EPSILON + k_c_squared_g*(var_term);
-                        scalar normalization_b = EPSILON + k_c_squared_b*(var_term);
-
                         scalar dist_var = sqdist - var_cancel;
                         distance_r += (dist_var) / normalization_r;
-                        distance_g += (dist_var) / normalization_g;
-                        distance_b += (dist_var) / normalization_b;
                     }
 
-                    temp[0][xp][yp] = distance_r;
-                    temp[1][xp][yp] = distance_r;
-                    temp[2][xp][yp] = distance_b;
+                    temp[xp][yp] = distance_r;
 
                 }
             }
-
-            // Precompute size of neighbourhood
-            scalar neigh_r = 3*(2*f_r+1)*(2*f_r+1);
-            scalar neigh_g = 3*(2*f_g+1)*(2*f_g+1);
-            scalar neigh_b = 3*(2*f_b+1)*(2*f_b+1);
 
             // Precompute feature weights
             for(int xp = R + f_min; xp < img_width - R - f_min; ++xp) {
@@ -566,7 +534,6 @@ void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, 
                     int yq = yp + r_y;
 
                     scalar df_r = 0.f;
-                    scalar df_g = 0.f;
                     scalar df_b = 0.f;
 
                     for(int j=0; j<NB_FEATURES;++j){
@@ -574,36 +541,31 @@ void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, 
                         sqdist *= sqdist;
                         scalar var_cancel = features_var[j][xp][yp] + fmin(features_var[j][xp][yp], features_var[j][xq][yq]);
                         scalar var_max = fmax(features_var[j][xp][yp], gradients[j][xp][yp]);
-
                         scalar normalization_r = k_f_squared_r*fmax(tau_r, var_max);
-                        scalar normalization_g = k_f_squared_g*fmax(tau_g, var_max);
                         scalar normalization_b = k_f_squared_b*fmax(tau_b, var_max);
-
                         scalar dist_var = sqdist - var_cancel;
-
                         df_r = fmax(df_r, (dist_var)/normalization_r);
-                        df_g = fmax(df_g, (dist_var)/normalization_g);
                         df_b = fmax(df_b, (dist_var)/normalization_b);
                     }
 
-                    features_weights[0][xp][yp] = exp(-df_r);
-                    features_weights[1][xp][yp] = exp(-df_g);
-                    features_weights[2][xp][yp] = exp(-df_b);
+                    features_weights_r[xp][yp] = exp(-df_r);
+                    features_weights_b[xp][yp] = exp(-df_b);
                 } 
             }
             
 
-            // Apply Box-Filtering for Patch Contribution => Use Box-Filter Seperability
+            // Next Steps: Box-Filtering for Patch Contribution 
+            // => Use Box-Filter Seperability => linear scans of data
             
-            // -------------
+            // ----------------------------------------------
             // Candidate R
-            // -------------
+            // ----------------------------------------------
             // (1) Convolve along height
             for(int xp = R; xp < img_width - R; ++xp) {
                 for(int yp = R + f_r; yp < img_height - R - f_r; ++yp) {
                     scalar sum_r = 0.f;
                     for (int k=-f_r; k<=f_r; k++){
-                        sum_r += temp[0][xp][yp+k];
+                        sum_r += temp[xp][yp+k];
                     }
                     temp2[0][xp][yp] = sum_r;
                 }
@@ -623,7 +585,8 @@ void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, 
                     }
                     scalar color_weight = exp(-fmax(0.f, (sum / neigh_r)));
 
-                    scalar weight = fmin(color_weight, features_weights[0][xp][yp]);
+                    // Compute final weight
+                    scalar weight = fmin(color_weight, features_weights_r[xp][yp]);
                     weight_sum[0][xp][yp] += weight;
                     
                     for (int i=0; i<3; i++){
@@ -632,15 +595,15 @@ void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, 
                 }
             }
 
-            // -------------
+            // ----------------------------------------------
             // Candidate G
-            // -------------
+            // ----------------------------------------------
             // (1) Convolve along height
             for(int xp = R; xp < img_width - R; ++xp) {
                 for(int yp = R + f_g; yp < img_height - R - f_g; ++yp) {
                     scalar sum_g = 0.f;
                     for (int k=-f_g; k<=f_g; k++){
-                        sum_g += temp[0][xp][yp+k];
+                        sum_g += temp[xp][yp+k];
                     }
                     temp2[1][xp][yp] = sum_g;
                 }
@@ -660,7 +623,8 @@ void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, 
                     }
                     scalar color_weight = exp(-fmax(0.f, (sum / neigh_g)));
                     
-                    scalar weight = fmin(color_weight, features_weights[1][xp][yp]);
+                    // Compute final weight
+                    scalar weight = fmin(color_weight, features_weights_r[xp][yp]);
                     weight_sum[1][xp][yp] += weight;
                     
                     for (int i=0; i<3; i++){
@@ -669,35 +633,19 @@ void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, 
                 }
             }
 
-            // -------------
-            // Candidate B
-            // -------------
-            // (1) Convolve along height
-            for(int xp = R; xp < img_width - R; ++xp) {
-                for(int yp = R + f_b; yp < img_height - R - f_b; ++yp) {
-                    scalar sum_b= 0.f;
-                    for (int k=-f_b; k<=f_b; k++){
-                        sum_b += temp[2][xp][yp+k];
-                    }
-                    temp2[2][xp][yp] = sum_b;
-                }
-            }
+            // ----------------------------------------------
+            // Candidate B 
+            // => no color weight computation due to kc = Inf
+            // ----------------------------------------------
 
-            // (2) Convolve along width including weighted contribution
             for(int xp = R + f_b; xp < img_width - R - f_b; ++xp) {
                 for(int yp = R + f_b; yp < img_height - R - f_b; ++yp) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
 
-                    // Compute final color weight
-                    scalar sum = 0.f;
-                    for (int k=-f_b; k<=f_b; k++){
-                        sum += temp2[2][xp+k][yp];
-                    }
-                    scalar color_weight = exp(-fmax(0.f, (sum / neigh_b)));
-                    
-                    scalar weight = fmin(color_weight, features_weights[2][xp][yp]);
+                    // Compute final weight
+                    scalar weight = features_weights_b[xp][yp];
                     weight_sum[2][xp][yp] += weight;
                     
                     for (int i=0; i<3; i++){
@@ -705,8 +653,6 @@ void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, 
                     }
                 }
             }
-
-
 
         }
     }
@@ -744,12 +690,51 @@ void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, 
         }
     }
 
+    // Handline Border Cases 
+    // ----------------------------------
+    // Candidate FIRST and THIRD (due to f_r = f_b)
+    for (int i = 0; i < 3; i++){
+        for (int xp = 0; xp < img_width; xp++){
+            for(int yp = 0; yp < R + f_r; yp++){
+                output_r[i][xp][yp] = color[i][xp][yp];
+                output_r[i][xp][img_height - yp - 1] = color[i][xp][img_height - yp - 1];
+                output_b[i][xp][yp] = color[i][xp][yp];
+                output_b[i][xp][img_height - yp - 1] = color[i][xp][img_height - yp - 1];
+            }
+        }
+        for(int xp = 0; xp < R + f_r; xp++){
+            for (int yp = R + f_r ; yp < img_height - R - f_r; yp++){
+            
+                output_r[i][xp][yp] = color[i][xp][yp];
+                output_r[i][img_width - xp - 1][yp] = color[i][img_width - xp - 1][yp];
+                output_b[i][xp][yp] = color[i][xp][yp];
+                output_b[i][img_width - xp - 1][yp] = color[i][img_width - xp - 1][yp];
+             }
+        }
+    }
+
+    // Candidate SECOND since f_g != f_r
+    for (int i = 0; i < 3; i++){
+        for (int xp = 0; xp < img_width; xp++){
+            for(int yp = 0; yp < R + f_g; yp++){
+                output_g[i][xp][yp] = color[i][xp][yp];
+                output_g[i][xp][img_height - yp - 1] = color[i][xp][img_height - yp - 1];
+            }
+        }
+        for(int xp = 0; xp < R + f_g; xp++){
+            for (int yp = R + f_g ; yp < img_height - R - f_g; yp++){
+                output_g[i][xp][yp] = color[i][xp][yp];
+                output_g[i][img_width - xp - 1][yp] = color[i][img_width - xp - 1][yp];
+            }
+        }
+    }
 
     // Free memory
     free_buffer(&weight_sum, img_width);
     free_buffer(&gradients, img_width);
-    free_buffer(&temp, img_width);
+    free_channel(&temp, img_width);
     free_buffer(&temp2, img_width);
-    free_buffer(&features_weights, img_width);
+    free_channel(&features_weights_r, img_width);
+    free_channel(&features_weights_b, img_width);
 
 }
