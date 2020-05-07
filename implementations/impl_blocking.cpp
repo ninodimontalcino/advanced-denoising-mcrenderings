@@ -54,7 +54,9 @@ using namespace std;
     allocate_buffer_zero(&f_filtered, img_width, img_height);
     allocate_buffer_zero(&f_var_filtered, img_width, img_height);
     // feature_prefiltering(f_filtered, f_var_filtered, f, f_var, p_pre, img_width, img_height);
-    feature_prefiltering_blocking(f_filtered, f_var_filtered, f, f_var, p_pre, img_width, img_height, 64, 64);
+    block_width_size = 32;
+    block_height_size = 32;
+    feature_prefiltering_blocking(f_filtered, f_var_filtered, f, f_var, p_pre, img_width, img_height, block_width_size, block_height_size);
     
     // DEBUGGING PART
     if(DEBUG) {
@@ -109,6 +111,9 @@ using namespace std;
     Flt_parameters p_sure = { .kc = 1.0, .kf = INFINITY, .tau = 0.001, .f = 1, .r = 1};
     buffer e;
     allocate_buffer_zero(&e, img_width, img_height);
+    // filtering_basic(e, sure, c, c_var, p_sure, img_width, img_height);
+    block_width_size = 8;
+    block_height_size = 8;
     filtering_basic_blocking(e, sure, c, c_var, p_sure, img_width, img_height, block_width_size, block_height_size);
     
     // DEBUG PART
@@ -119,7 +124,7 @@ using namespace std;
         cout << "\t - Filtered Sure Error Estimates done" << endl;
     }
 
-     // ----------------------------------------------
+    // ----------------------------------------------
     // (5) Compute Binary Selection Maps
     // ----------------------------------------------
     buffer sel;
@@ -148,8 +153,10 @@ using namespace std;
     Flt_parameters p_sel = { .kc = 1.0, .kf = INFINITY, .tau = 0.0001, .f = 1, .r = 5};
     buffer sel_filtered;
     allocate_buffer_zero(&sel_filtered, img_width, img_height);
-    // filtering_basic_blocking(sel_filtered, sel, c, c_var, p_sel, img_width, img_height, block_width_size, block_height_size);
-    filtering_basic(sel_filtered, sel, c, c_var, p_sel, img_width, img_height);
+    // filtering_basic(sel_filtered, sel, c, c_var, p_sel, img_width, img_height);
+    block_width_size = 16;
+    block_height_size = 16;
+    filtering_basic_blocking(sel_filtered, sel, c, c_var, p_sel, img_width, img_height, block_width_size, block_height_size);
 
     // DEBUG PART
     if(DEBUG) {

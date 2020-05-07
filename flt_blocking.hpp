@@ -4,6 +4,11 @@
 #include "flt.hpp"
 #include "flt_restructure.hpp"
 
+// ----------------------------------------------
+// /!\ WARNING
+// The block sizes block_width and block_height must be greater than 2*(p.f+p.r)
+// ----------------------------------------------
+
 
 void sure_all_blocking(buffer sure, buffer c, buffer c_var, buffer cand_r, buffer cand_g, buffer cand_b, int img_width, int img_height);
 void filtering_basic_blocking(buffer output, buffer input, buffer c, buffer c_var, Flt_parameters p, int img_width, int img_height, int blocks_width, int blocks_height);

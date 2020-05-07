@@ -159,6 +159,7 @@ void filtering_basic_blocking(buffer output, buffer input, buffer c, buffer c_va
 
         if (end_y < img_height)
         {
+            begin_y = nb_Blocks_height * (blocks_height_size - 2 * (p.r + p.f));
             for (int r_x = -p.r; r_x <= p.r; r_x++)
             {
                 for (int r_y = -p.r; r_y <= p.r; r_y++)
@@ -166,7 +167,7 @@ void filtering_basic_blocking(buffer output, buffer input, buffer c, buffer c_va
                     // Compute Color Weight for all pixels with fixed r
                     for (int xp = begin_x + p.r; xp < end_x - p.r; ++xp)
                     {
-                        for (int yp = end_y + p.r; yp < img_height - p.r; ++yp)
+                        for (int yp = begin_y + p.r; yp < img_height - p.r; ++yp)
                         {
 
                             int xq = xp + r_x;
@@ -190,7 +191,7 @@ void filtering_basic_blocking(buffer output, buffer input, buffer c, buffer c_va
                     // (1) Convolve along height
                     for (int xp = begin_x + p.r; xp < end_x - p.r; ++xp)
                     {
-                        for (int yp = end_y + p.r + p.f; yp < img_height - p.r - p.f; ++yp)
+                        for (int yp = begin_y + p.r + p.f; yp < img_height - p.r - p.f; ++yp)
                         {
 
                             scalar sum = 0.f;
@@ -205,7 +206,7 @@ void filtering_basic_blocking(buffer output, buffer input, buffer c, buffer c_va
                     // (2) Convolve along width including weighted contribution
                     for (int xp = begin_x + p.r + p.f; xp < end_x - p.r - p.f; ++xp)
                     {
-                        for (int yp = end_y + p.r + p.f; yp < img_height - p.r - p.f; ++yp)
+                        for (int yp = begin_y + p.r + p.f; yp < img_height - p.r - p.f; ++yp)
                         {
 
                             int xq = xp + r_x;
@@ -231,7 +232,7 @@ void filtering_basic_blocking(buffer output, buffer input, buffer c, buffer c_va
             // Final Weight Normalization
             for (int xp = begin_x + p.r + p.f; xp < end_x - p.r - p.f; ++xp)
             {
-                for (int yp = end_y + p.r + p.f; yp < img_height - p.r - p.f; ++yp)
+                for (int yp = begin_y + p.r + p.f; yp < img_height - p.r - p.f; ++yp)
                 {
                     scalar w = weight_sum[xp][yp];
                     for (int i = 0; i < 3; i++)
@@ -245,6 +246,7 @@ void filtering_basic_blocking(buffer output, buffer input, buffer c, buffer c_va
 
     if (end_x < img_width)
     {
+        begin_x = nb_Blocks_width * (blocks_width_size - 2 * (p.r + p.f));
         for (int b_h = 0; b_h < nb_Blocks_height; ++b_h)
         {
             begin_y = b_h * (blocks_height_size - 2 * (p.r + p.f));
@@ -255,7 +257,7 @@ void filtering_basic_blocking(buffer output, buffer input, buffer c, buffer c_va
                 for (int r_y = -p.r; r_y <= p.r; r_y++)
                 {
                     // Compute Color Weight for all pixels with fixed r
-                    for (int xp = end_x + p.r; xp < img_width - p.r; ++xp)
+                    for (int xp = begin_x + p.r; xp < img_width - p.r; ++xp)
                     {
                         for (int yp = begin_y + p.r; yp < end_y - p.r; ++yp)
                         {
@@ -279,7 +281,7 @@ void filtering_basic_blocking(buffer output, buffer input, buffer c, buffer c_va
 
                     // Apply Box-Filtering for Patch Contribution => Use Box-Filter Seperability
                     // (1) Convolve along height
-                    for (int xp = end_x + p.r; xp < img_width - p.r; ++xp)
+                    for (int xp = begin_x + p.r; xp < img_width - p.r; ++xp)
                     {
                         for (int yp = begin_y + p.r + p.f; yp < end_y - p.r - p.f; ++yp)
                         {
@@ -294,7 +296,7 @@ void filtering_basic_blocking(buffer output, buffer input, buffer c, buffer c_va
                     }
 
                     // (2) Convolve along width including weighted contribution
-                    for (int xp = end_x + p.r + p.f; xp < img_width - p.r - p.f; ++xp)
+                    for (int xp = begin_x + p.r + p.f; xp < img_width - p.r - p.f; ++xp)
                     {
                         for (int yp = begin_y + p.r + p.f; yp < end_y - p.r - p.f; ++yp)
                         {
@@ -320,7 +322,7 @@ void filtering_basic_blocking(buffer output, buffer input, buffer c, buffer c_va
             }
 
             // Final Weight Normalization
-            for (int xp = end_x + p.r + p.f; xp < img_width - p.r - p.f; ++xp)
+            for (int xp = begin_x + p.r + p.f; xp < img_width - p.r - p.f; ++xp)
             {
                 for (int yp = begin_y + p.r + p.f; yp < end_y - p.r - p.f; ++yp)
                 {
@@ -335,14 +337,15 @@ void filtering_basic_blocking(buffer output, buffer input, buffer c, buffer c_va
 
         if (end_y < img_height)
         {
+            begin_y = nb_Blocks_height * (blocks_height_size - 2 * (p.r + p.f));
             for (int r_x = -p.r; r_x <= p.r; r_x++)
             {
                 for (int r_y = -p.r; r_y <= p.r; r_y++)
                 {
                     // Compute Color Weight for all pixels with fixed r
-                    for (int xp = end_x + p.r; xp < img_width - p.r; ++xp)
+                    for (int xp = begin_x + p.r; xp < img_width - p.r; ++xp)
                     {
-                        for (int yp = end_y + p.r; yp < img_height - p.r; ++yp)
+                        for (int yp = begin_y + p.r; yp < img_height - p.r; ++yp)
                         {
 
                             int xq = xp + r_x;
@@ -364,9 +367,9 @@ void filtering_basic_blocking(buffer output, buffer input, buffer c, buffer c_va
 
                     // Apply Box-Filtering for Patch Contribution => Use Box-Filter Seperability
                     // (1) Convolve along height
-                    for (int xp = end_x + p.r; xp < img_width - p.r; ++xp)
+                    for (int xp = begin_x + p.r; xp < img_width - p.r; ++xp)
                     {
-                        for (int yp = end_y + p.r + p.f; yp < img_height - p.r - p.f; ++yp)
+                        for (int yp = begin_y + p.r + p.f; yp < img_height - p.r - p.f; ++yp)
                         {
 
                             scalar sum = 0.f;
@@ -379,9 +382,9 @@ void filtering_basic_blocking(buffer output, buffer input, buffer c, buffer c_va
                     }
 
                     // (2) Convolve along width including weighted contribution
-                    for (int xp = end_x + p.r + p.f; xp < img_width - p.r - p.f; ++xp)
+                    for (int xp = begin_x + p.r + p.f; xp < img_width - p.r - p.f; ++xp)
                     {
-                        for (int yp = end_y + p.r + p.f; yp < img_height - p.r - p.f; ++yp)
+                        for (int yp = begin_y + p.r + p.f; yp < img_height - p.r - p.f; ++yp)
                         {
 
                             int xq = xp + r_x;
@@ -405,9 +408,9 @@ void filtering_basic_blocking(buffer output, buffer input, buffer c, buffer c_va
             }
 
             // Final Weight Normalization
-            for (int xp = end_x + p.r + p.f; xp < img_width - p.r - p.f; ++xp)
+            for (int xp = begin_x + p.r + p.f; xp < img_width - p.r - p.f; ++xp)
             {
-                for (int yp = end_y + p.r + p.f; yp < img_height - p.r - p.f; ++yp)
+                for (int yp = begin_y + p.r + p.f; yp < img_height - p.r - p.f; ++yp)
                 {
                     scalar w = weight_sum[xp][yp];
                     for (int i = 0; i < 3; i++)
@@ -417,6 +420,7 @@ void filtering_basic_blocking(buffer output, buffer input, buffer c, buffer c_va
                 }
             }
         }
+    
     }
 
     // Handline Border Cases
