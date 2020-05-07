@@ -446,7 +446,7 @@ void filtering_basic_blocking(buffer output, buffer input, buffer c, buffer c_va
     free_channel(&temp2, img_width);
 }
 
-void feature_prefiltering_blocking(buffer output, buffer output_var, buffer features, buffer features_var, Flt_parameters p, int img_width, int img_height)
+void feature_prefiltering_blocking(buffer output, buffer output_var, buffer features, buffer features_var, Flt_parameters p, int img_width, int img_height, int blocks_width_size, int blocks_height_size)
 {
 
     // Handling Inner Part
@@ -465,89 +465,412 @@ void feature_prefiltering_blocking(buffer output, buffer output_var, buffer feat
     // Precompute size of neighbourhood
     scalar neigh = 3 * (2 * p.f + 1) * (2 * p.f + 1);
 
+    const int nb_Blocks_width = (img_width - 2 * (p.r + p.f)) / (blocks_width_size - 2 * (p.r + p.f));
+    const int nb_Blocks_height = (img_height - 2 * (p.r + p.f)) / (blocks_height_size - 2 * (p.r + p.f));
+
+    int begin_x = 0;
+    int end_x = 0;
+    int begin_y = 0;
+    int end_y = 0;
+
     // Covering the neighbourhood
-    for (int r_x = -p.r; r_x <= p.r; r_x++)
+    for (int b_w = 0; b_w < nb_Blocks_width; ++b_w)
     {
-        for (int r_y = -p.r; r_y <= p.r; r_y++)
+        begin_x = b_w * (blocks_width_size - 2 * (p.r + p.f));
+        end_x = begin_x + blocks_width_size;
+        for (int b_h = 0; b_h < nb_Blocks_height; ++b_h)
         {
-
-            // Compute Color Weight for all pixels with fixed r
-            for (int xp = p.r; xp < img_width - p.r; ++xp)
+            begin_y = b_h * (blocks_height_size - 2 * (p.r + p.f));
+            end_y = begin_y + blocks_height_size;
+            for (int r_x = -p.r; r_x <= p.r; r_x++)
             {
-                for (int yp = p.r; yp < img_height - p.r; ++yp)
+                for (int r_y = -p.r; r_y <= p.r; r_y++)
                 {
 
-                    int xq = xp + r_x;
-                    int yq = yp + r_y;
-
-                    scalar distance = 0;
-                    for (int i = 0; i < 3; i++)
+                    // Compute Color Weight for all pixels with fixed r
+                    for (int xp = begin_x + p.r; xp < end_x - p.r; ++xp)
                     {
-                        scalar sqdist = features[i][xp][yp] - features[i][xq][yq];
-                        sqdist *= sqdist;
-                        scalar var_cancel = features_var[i][xp][yp] + fmin(features_var[i][xp][yp], features_var[i][xq][yq]);
-                        scalar normalization = EPSILON + k_c_squared * (features_var[i][xp][yp] + features_var[i][xq][yq]);
-                        distance += (sqdist - var_cancel) / normalization;
+                        if (r_x == 0 && r_y == 0 && b_h == 0)
+                        {
+                            // printf("%d\n", xp);
+                        }
+                        for (int yp = begin_y + p.r; yp < end_y - p.r; ++yp)
+                        {
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            scalar distance = 0;
+                            for (int i = 0; i < 3; i++)
+                            {
+                                scalar sqdist = features[i][xp][yp] - features[i][xq][yq];
+                                sqdist *= sqdist;
+                                scalar var_cancel = features_var[i][xp][yp] + fmin(features_var[i][xp][yp], features_var[i][xq][yq]);
+                                scalar normalization = EPSILON + k_c_squared * (features_var[i][xp][yp] + features_var[i][xq][yq]);
+                                distance += (sqdist - var_cancel) / normalization;
+                            }
+
+                            temp[xp][yp] = distance;
+                        }
                     }
 
-                    temp[xp][yp] = distance;
+                    // Apply Box-Filtering for Patch Contribution => Use Box-Filter Seperability
+                    // (1) Convolve along height
+                    for (int xp = begin_x + p.r; xp < end_x - p.r; ++xp)
+                    {
+                        for (int yp = begin_y + p.r + p.f; yp < end_y - p.r - p.f; ++yp)
+                        {
+
+                            scalar sum = 0.f;
+                            for (int k = -p.f; k <= p.f; k++)
+                            {
+                                sum += temp[xp][yp + k];
+                            }
+                            temp2[xp][yp] = sum;
+                        }
+                    }
+
+                    // (2) Convolve along width including weighted contribution
+                    for (int xp = begin_x + p.r + p.f; xp < end_x - p.r - p.f; ++xp)
+                    {
+                        for (int yp = begin_y + p.r + p.f; yp < end_y - p.r - p.f; ++yp)
+                        {
+
+                            // if (r_x==0 && r_y==0 && b_w==0 && xp == begin_x + p.r+p.f){
+                            //     printf("%d\n", yp);
+                            // }
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            scalar sum = 0.f;
+                            for (int k = -p.f; k <= p.f; k++)
+                            {
+                                sum += temp2[xp + k][yp];
+                            }
+                            scalar weight = exp(-fmax(0.f, (sum / neigh)));
+                            weight_sum[xp][yp] += weight;
+
+                            for (int i = 0; i < 3; i++)
+                            {
+                                output[i][xp][yp] += weight * features[i][xq][yq];
+                                output_var[i][xp][yp] += weight * features_var[i][xq][yq];
+                            }
+                        }
+                    }
                 }
             }
 
-            // Apply Box-Filtering for Patch Contribution => Use Box-Filter Seperability
-            // (1) Convolve along height
-            for (int xp = p.r; xp < img_width - p.r; ++xp)
+            // Final Weight Normalization
+            for (int xp = begin_x + p.r + p.f; xp < end_x - p.r - p.f; ++xp)
             {
-                for (int yp = p.r + p.f; yp < img_height - p.r - p.f; ++yp)
+                for (int yp = begin_y + p.r + p.f; yp < end_y - p.r - p.f; ++yp)
                 {
 
-                    scalar sum = 0.f;
-                    for (int k = -p.f; k <= p.f; k++)
+                    scalar w = weight_sum[xp][yp];
+                    for (int i = 0; i < 3; i++)
                     {
-                        sum += temp[xp][yp + k];
+                        output[i][xp][yp] /= w;
+                        output_var[i][xp][yp] /= w;
                     }
-                    temp2[xp][yp] = sum;
+                }
+            }
+        }
+        if (end_y != img_height)
+        {
+            begin_y = nb_Blocks_height * (blocks_height_size - 2 * (p.r + p.f));
+            // printf("coucou %d\n", end_y);
+            for (int r_x = -p.r; r_x <= p.r; r_x++)
+            {
+                for (int r_y = -p.r; r_y <= p.r; r_y++)
+                {
+
+                    // Compute Color Weight for all pixels with fixed r
+                    for (int xp = begin_x + p.r; xp < end_x - p.r; ++xp)
+                    {
+                        if (r_x == 0 && r_y == 0)
+                        {
+                            // printf("%d\n", xp);
+                        }
+                        for (int yp = begin_y + p.r; yp < img_height - p.r; ++yp)
+                        {
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            scalar distance = 0;
+                            for (int i = 0; i < 3; i++)
+                            {
+                                scalar sqdist = features[i][xp][yp] - features[i][xq][yq];
+                                sqdist *= sqdist;
+                                scalar var_cancel = features_var[i][xp][yp] + fmin(features_var[i][xp][yp], features_var[i][xq][yq]);
+                                scalar normalization = EPSILON + k_c_squared * (features_var[i][xp][yp] + features_var[i][xq][yq]);
+                                distance += (sqdist - var_cancel) / normalization;
+                            }
+
+                            temp[xp][yp] = distance;
+                        }
+                    }
+
+                    // Apply Box-Filtering for Patch Contribution => Use Box-Filter Seperability
+                    // (1) Convolve along height
+                    for (int xp = begin_x + p.r; xp < end_x - p.r; ++xp)
+                    {
+                        for (int yp = begin_y + p.r + p.f; yp < img_height - p.r - p.f; ++yp)
+                        {
+
+                            scalar sum = 0.f;
+                            for (int k = -p.f; k <= p.f; k++)
+                            {
+                                sum += temp[xp][yp + k];
+                            }
+                            temp2[xp][yp] = sum;
+                        }
+                    }
+
+                    // (2) Convolve along width including weighted contribution
+                    for (int xp = begin_x + p.r + p.f; xp < end_x - p.r - p.f; ++xp)
+                    {
+                        for (int yp = begin_y + p.r + p.f; yp < img_height - p.r - p.f; ++yp)
+                        {
+                            // if (r_x==0 && r_y==0 && b_w==0 && xp == begin_x + p.r+p.f){
+                            //     printf("%d\n", yp);
+                            // }
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            scalar sum = 0.f;
+                            for (int k = -p.f; k <= p.f; k++)
+                            {
+                                sum += temp2[xp + k][yp];
+                            }
+                            scalar weight = exp(-fmax(0.f, (sum / neigh)));
+                            weight_sum[xp][yp] += weight;
+
+                            for (int i = 0; i < 3; i++)
+                            {
+                                output[i][xp][yp] += weight * features[i][xq][yq];
+                                output_var[i][xp][yp] += weight * features_var[i][xq][yq];
+                            }
+                        }
+                    }
                 }
             }
 
-            // (2) Convolve along width including weighted contribution
-            for (int xp = p.r + p.f; xp < img_width - p.r - p.f; ++xp)
+            // Final Weight Normalization
+            for (int xp = begin_x + p.r + p.f; xp < end_x - p.r - p.f; ++xp)
             {
-                for (int yp = p.r + p.f; yp < img_height - p.r - p.f; ++yp)
+                for (int yp = begin_y + p.r + p.f; yp < img_height - p.r - p.f; ++yp)
                 {
 
-                    int xq = xp + r_x;
-                    int yq = yp + r_y;
-
-                    scalar sum = 0.f;
-                    for (int k = -p.f; k <= p.f; k++)
-                    {
-                        sum += temp2[xp + k][yp];
-                    }
-                    scalar weight = exp(-fmax(0.f, (sum / neigh)));
-                    weight_sum[xp][yp] += weight;
-
+                    scalar w = weight_sum[xp][yp];
                     for (int i = 0; i < 3; i++)
                     {
-                        output[i][xp][yp] += weight * features[i][xq][yq];
-                        output_var[i][xp][yp] += weight * features_var[i][xq][yq];
+                        output[i][xp][yp] /= w;
+                        output_var[i][xp][yp] /= w;
                     }
                 }
             }
         }
     }
 
-    // Final Weight Normalization
-    for (int xp = p.r + p.f; xp < img_width - p.r - p.f; ++xp)
+    if (end_x != img_width)
     {
-        for (int yp = p.r + p.f; yp < img_height - p.r - p.f; ++yp)
+        begin_x = nb_Blocks_width * (blocks_width_size - 2 * (p.r + p.f));
+        for (int b_h = 0; b_h < nb_Blocks_height; ++b_h)
         {
-
-            scalar w = weight_sum[xp][yp];
-            for (int i = 0; i < 3; i++)
+            begin_y = b_h * (blocks_height_size - 2 * (p.r + p.f));
+            end_y = begin_y + blocks_height_size;
+            for (int r_x = -p.r; r_x <= p.r; r_x++)
             {
-                output[i][xp][yp] /= w;
-                output_var[i][xp][yp] /= w;
+                for (int r_y = -p.r; r_y <= p.r; r_y++)
+                {
+
+                    // Compute Color Weight for all pixels with fixed r
+                    for (int xp = begin_x + p.r; xp < img_width - p.r; ++xp)
+                    {
+                        if (r_x == 0 && r_y == 0 && b_h == 0)
+                        {
+                            // printf("%d\n", xp);
+                        }
+                        for (int yp = begin_y + p.r; yp < end_y - p.r; ++yp)
+                        {
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            scalar distance = 0;
+                            for (int i = 0; i < 3; i++)
+                            {
+                                scalar sqdist = features[i][xp][yp] - features[i][xq][yq];
+                                sqdist *= sqdist;
+                                scalar var_cancel = features_var[i][xp][yp] + fmin(features_var[i][xp][yp], features_var[i][xq][yq]);
+                                scalar normalization = EPSILON + k_c_squared * (features_var[i][xp][yp] + features_var[i][xq][yq]);
+                                distance += (sqdist - var_cancel) / normalization;
+                            }
+
+                            temp[xp][yp] = distance;
+                        }
+                    }
+
+                    // Apply Box-Filtering for Patch Contribution => Use Box-Filter Seperability
+                    // (1) Convolve along height
+                    for (int xp = begin_x + p.r; xp < img_width - p.r; ++xp)
+                    {
+                        for (int yp = begin_y + p.r + p.f; yp < end_y - p.r - p.f; ++yp)
+                        {
+
+                            scalar sum = 0.f;
+                            for (int k = -p.f; k <= p.f; k++)
+                            {
+                                sum += temp[xp][yp + k];
+                            }
+                            temp2[xp][yp] = sum;
+                        }
+                    }
+
+                    // (2) Convolve along width including weighted contribution
+                    for (int xp = begin_x + p.r + p.f; xp < img_width - p.r - p.f; ++xp)
+                    {
+                        for (int yp = begin_y + p.r + p.f; yp < end_y - p.r - p.f; ++yp)
+                        {
+
+                            // if (r_x==0 && r_y==0 && b_w==0 && xp == begin_x + p.r+p.f){
+                            //     printf("%d\n", yp);
+                            // }
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            scalar sum = 0.f;
+                            for (int k = -p.f; k <= p.f; k++)
+                            {
+                                sum += temp2[xp + k][yp];
+                            }
+                            scalar weight = exp(-fmax(0.f, (sum / neigh)));
+                            weight_sum[xp][yp] += weight;
+
+                            for (int i = 0; i < 3; i++)
+                            {
+                                output[i][xp][yp] += weight * features[i][xq][yq];
+                                output_var[i][xp][yp] += weight * features_var[i][xq][yq];
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Final Weight Normalization
+            for (int xp = begin_x + p.r + p.f; xp < img_width - p.r - p.f; ++xp)
+            {
+                for (int yp = begin_y + p.r + p.f; yp < end_y - p.r - p.f; ++yp)
+                {
+
+                    scalar w = weight_sum[xp][yp];
+                    for (int i = 0; i < 3; i++)
+                    {
+                        output[i][xp][yp] /= w;
+                        output_var[i][xp][yp] /= w;
+                    }
+                }
+            }
+        }
+        if (end_y != img_height)
+        {
+            begin_y = nb_Blocks_height * (blocks_height_size - 2 * (p.r + p.f));
+            // printf("coucou %d\n", end_y);
+            for (int r_x = -p.r; r_x <= p.r; r_x++)
+            {
+                for (int r_y = -p.r; r_y <= p.r; r_y++)
+                {
+
+                    // Compute Color Weight for all pixels with fixed r
+                    for (int xp = begin_x + p.r; xp < img_width - p.r; ++xp)
+                    {
+                        if (r_x == 0 && r_y == 0)
+                        {
+                            // printf("%d\n", xp);
+                        }
+                        for (int yp = begin_y + p.r; yp < img_height - p.r; ++yp)
+                        {
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            scalar distance = 0;
+                            for (int i = 0; i < 3; i++)
+                            {
+                                scalar sqdist = features[i][xp][yp] - features[i][xq][yq];
+                                sqdist *= sqdist;
+                                scalar var_cancel = features_var[i][xp][yp] + fmin(features_var[i][xp][yp], features_var[i][xq][yq]);
+                                scalar normalization = EPSILON + k_c_squared * (features_var[i][xp][yp] + features_var[i][xq][yq]);
+                                distance += (sqdist - var_cancel) / normalization;
+                            }
+
+                            temp[xp][yp] = distance;
+                        }
+                    }
+
+                    // Apply Box-Filtering for Patch Contribution => Use Box-Filter Seperability
+                    // (1) Convolve along height
+                    for (int xp = begin_x + p.r; xp < img_width - p.r; ++xp)
+                    {
+                        for (int yp = begin_y + p.r + p.f; yp < img_height - p.r - p.f; ++yp)
+                        {
+
+                            scalar sum = 0.f;
+                            for (int k = -p.f; k <= p.f; k++)
+                            {
+                                sum += temp[xp][yp + k];
+                            }
+                            temp2[xp][yp] = sum;
+                        }
+                    }
+
+                    // (2) Convolve along width including weighted contribution
+                    for (int xp = begin_x + p.r + p.f; xp < img_width - p.r - p.f; ++xp)
+                    {
+                        for (int yp = begin_y + p.r + p.f; yp < img_height - p.r - p.f; ++yp)
+                        {
+                            // if (r_x==0 && r_y==0 && b_w==0 && xp == begin_x + p.r+p.f){
+                            //     printf("%d\n", yp);
+                            // }
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            scalar sum = 0.f;
+                            for (int k = -p.f; k <= p.f; k++)
+                            {
+                                sum += temp2[xp + k][yp];
+                            }
+                            scalar weight = exp(-fmax(0.f, (sum / neigh)));
+                            weight_sum[xp][yp] += weight;
+
+                            for (int i = 0; i < 3; i++)
+                            {
+                                output[i][xp][yp] += weight * features[i][xq][yq];
+                                output_var[i][xp][yp] += weight * features_var[i][xq][yq];
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Final Weight Normalization
+            for (int xp = begin_x + p.r + p.f; xp < img_width - p.r - p.f; ++xp)
+            {
+                for (int yp = begin_y + p.r + p.f; yp < img_height - p.r - p.f; ++yp)
+                {
+
+                    scalar w = weight_sum[xp][yp];
+                    for (int i = 0; i < 3; i++)
+                    {
+                        output[i][xp][yp] /= w;
+                        output_var[i][xp][yp] /= w;
+                    }
+                }
             }
         }
     }
