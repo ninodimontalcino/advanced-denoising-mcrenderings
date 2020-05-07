@@ -52,6 +52,7 @@ add_executable(main
               denoise.h
               flt.hpp 
               flt_restructure.hpp
+              flt_blocking.hpp
               validation.hpp
 
               # General Source Files
@@ -60,6 +61,7 @@ add_executable(main
               memory_mgmt.cpp 
               flt.cpp 
               flt_restructure.cpp 
+              flt_blocking.cpp
               validation.cpp
 
               # Implementations (BASIC and OPTIMIZED)
@@ -67,7 +69,7 @@ add_executable(main
               implementations/basic.cpp
               implementations/basic_restructure.cpp
               implementations/basic_restructure2.cpp
-
+              implementations/impl_blocking.cpp
               )
 
 # --------------------------
