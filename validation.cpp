@@ -28,7 +28,7 @@ scalar rmse(buffer denoised, buffer gt, int img_width, int img_height){
     rmse = rmse / n;
 
     // Compute square-root => RMSE
-    rmse = sqrt(rmse);
+    rmse = sqrtf(rmse);
 
     return rmse;
 
@@ -79,7 +79,7 @@ void maxAbsError(double res[4], buffer buf1, buffer buf2, int img_width, int img
         for(int x = 0; x < img_width; ++x) {
             for(int y = 0; y < img_height; ++y) {
                 double local_error = abs(buf1[i][x][y] - buf2[i][x][y]);
-                if (local_error > 1e-4 && DEBUG){
+                if (local_error > 1e-3 && DEBUG){
                     printf("Difference of %f at position: [%d][%d][%d] \n", local_error, i, x, y);
                 }
                 if (local_error > maxError){

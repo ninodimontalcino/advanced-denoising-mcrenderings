@@ -53,7 +53,7 @@ using namespace std;
     // DEBUGGING PART
     if(DEBUG) {
         write_channel_exr("temp/albedo_filtered.exr", &f_filtered[0], img_width, img_height);
-        write_channel_exr("temp/depth_filtered.exr", &f_filtered[1], img_width, img_height);
+        write_channel_exr("temp/depth_filtered.exr",  &f_filtered[1], img_width, img_height);
         write_channel_exr("temp/normal_filtered.exr", &f_filtered[2], img_width, img_height);
         cout << "\t - Feature Prefiltering done" << endl;
     }
@@ -103,7 +103,7 @@ using namespace std;
 
     // (a) Compute SURE error estimates
     buffer sure;
-    allocate_buffer(&sure, img_width, img_height);
+    allocate_buffer_zero(&sure, img_width, img_height);
     sure_all(sure, c, c_var, r, g, b, img_width, img_height);
     
     // DEBUGGING PART
@@ -132,7 +132,7 @@ using namespace std;
     // (5) Compute Binary Selection Maps
     // ----------------------------------------------
     buffer sel;
-    allocate_buffer_zero(&sel, img_width, img_height);
+    allocate_buffer(&sel, img_width, img_height);
     
     // Compute selection maps
     for (int x = 0; x < img_width; x++){

@@ -338,7 +338,6 @@ void candidate_filtering(buffer output, buffer color, buffer color_var, buffer f
                 }
             }
 
-
             // Compute features
             for(int xp = p.r + p.f; xp < img_width - p.r - p.f; ++xp) {
                 for(int yp = p.r + p.f; yp < img_height - p.r - p.f; ++yp) {
@@ -356,7 +355,6 @@ void candidate_filtering(buffer output, buffer color, buffer color_var, buffer f
                         df = fmax(df, (sqdist - var_cancel)/normalization);
                     }
                     feature_weights[xp][yp] = exp(-df);
-
                 }
             }
 
@@ -394,7 +392,6 @@ void candidate_filtering(buffer output, buffer color, buffer color_var, buffer f
                     }
                 }
             }
-
         }
     }
 
@@ -424,22 +421,20 @@ void candidate_filtering(buffer output, buffer color, buffer color_var, buffer f
                 output[i][img_width - xp - 1][yp] = color[i][img_width - xp - 1][yp];
             }
         }
-
     }
 
     // Free memory
-    free_buffer(&gradients, img_width);
     free_channel(&weight_sum, img_width);
-    free_channel(&feature_weights, img_width);
     free_channel(&temp, img_width);
     free_channel(&temp2, img_width);
-
+    free_channel(&feature_weights, img_width);
+    free_buffer(&gradients, img_width);
 }
 
 
 
 // ====================================================================================================================================================================================================================================
-// !!! TO BE IMPROVED => ... cache handline can still be better and more precomputations
+// !!! TO BE IMPROVED => still more precomputations possible
 // ====================================================================================================================================================================================================================================
 
 void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters* p, int img_width, int img_height){
@@ -473,9 +468,11 @@ void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, 
 
     // Init temp channel
     channel temp;
-    buffer temp2;
+    channel temp2_r;
+    channel temp2_g;
     allocate_channel(&temp, img_width, img_height); 
-    allocate_buffer(&temp2, img_width, img_height); 
+    allocate_channel(&temp2_r, img_width, img_height); 
+    allocate_channel(&temp2_g, img_width, img_height); 
 
     // Allocate feature weights buffer
     channel features_weights_r;
@@ -486,11 +483,9 @@ void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, 
 
     // Compute gradients
     buffer gradients;
-    if(features != NULL) {
-        allocate_buffer(&gradients, img_width, img_height);
-        for(int i=0; i<NB_FEATURES;++i) {
-            compute_gradient(gradients[i], features[i], R+f_min, img_width, img_height);
-        }
+    allocate_buffer(&gradients, img_width, img_height);
+    for(int i=0; i<NB_FEATURES;++i) {
+        compute_gradient(gradients[i], features[i], R+f_min, img_width, img_height);
     }
 
     // Precompute size of neighbourhood
@@ -567,7 +562,7 @@ void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, 
                     for (int k=-f_r; k<=f_r; k++){
                         sum_r += temp[xp][yp+k];
                     }
-                    temp2[0][xp][yp] = sum_r;
+                    temp2_r[xp][yp] = sum_r;
                 }
             }
 
@@ -581,7 +576,7 @@ void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, 
                     // Compute final color weight
                     scalar sum = 0.f;
                     for (int k=-f_r; k<=f_r; k++){
-                        sum += temp2[0][xp+k][yp];
+                        sum += temp2_r[xp+k][yp];
                     }
                     scalar color_weight = exp(-fmax(0.f, (sum / neigh_r)));
 
@@ -605,7 +600,7 @@ void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, 
                     for (int k=-f_g; k<=f_g; k++){
                         sum_g += temp[xp][yp+k];
                     }
-                    temp2[1][xp][yp] = sum_g;
+                    temp2_g[xp][yp] = sum_g;
                 }
             }
 
@@ -619,7 +614,7 @@ void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, 
                     // Compute final color weight
                     scalar sum = 0.f;
                     for (int k=-f_g; k<=f_g; k++){
-                        sum += temp2[1][xp+k][yp];
+                        sum += temp2_g[xp+k][yp];
                     }
                     scalar color_weight = exp(-fmax(0.f, (sum / neigh_g)));
                     
@@ -731,10 +726,11 @@ void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, 
 
     // Free memory
     free_buffer(&weight_sum, img_width);
-    free_buffer(&gradients, img_width);
     free_channel(&temp, img_width);
-    free_buffer(&temp2, img_width);
+    free_channel(&temp2_r, img_width);
+    free_channel(&temp2_g, img_width);
     free_channel(&features_weights_r, img_width);
     free_channel(&features_weights_b, img_width);
+    free_buffer(&gradients, img_width);
 
 }

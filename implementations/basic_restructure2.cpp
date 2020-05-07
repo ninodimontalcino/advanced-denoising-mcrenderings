@@ -52,7 +52,7 @@ using namespace std;
     // DEBUGGING PART
     if(DEBUG) {
         write_channel_exr("temp/albedo_filtered.exr", &f_filtered[0], img_width, img_height);
-        write_channel_exr("temp/depth_filtered.exr", &f_filtered[1], img_width, img_height);
+        write_channel_exr("temp/depth_filtered.exr",  &f_filtered[1], img_width, img_height);
         write_channel_exr("temp/normal_filtered.exr", &f_filtered[2], img_width, img_height);
         cout << "\t - Feature Prefiltering done" << endl;
     }
@@ -87,7 +87,7 @@ using namespace std;
 
     // (a) Compute SURE error estimates
     buffer sure;
-    allocate_buffer(&sure, img_width, img_height);
+    allocate_buffer_zero(&sure, img_width, img_height);
     sure_all(sure, c, c_var, r, g, b, img_width, img_height);
     
     // DEBUGGING PART
@@ -101,7 +101,7 @@ using namespace std;
     // (b) Filter error estimates
     Flt_parameters p_sure = { .kc = 1.0, .kf = INFINITY, .tau = 0.001, .f = 1, .r = 1};
     buffer e;
-    allocate_buffer(&e, img_width, img_height);
+    allocate_buffer_zero(&e, img_width, img_height);
     filtering_basic(e, sure, c, c_var, p_sure, img_width, img_height);
     
     // DEBUG PART
