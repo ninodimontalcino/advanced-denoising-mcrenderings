@@ -1,5 +1,5 @@
-#ifndef FLT_2_H
-#define FLT_2_H
+#ifndef FLT_3_H
+#define FLT_3_H
 
 #include "flt.hpp"
 

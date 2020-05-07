@@ -89,7 +89,7 @@ using namespace std;
     // (a) Compute SURE error estimates
     buffer sure;
     allocate_buffer_zero(&sure, img_width, img_height);
-    sure_all(sure, c, c_var, r, g, b, img_width, img_height);
+    sure_all_blocking(sure, c, c_var, r, g, b, img_width, img_height);
     
     // DEBUGGING PART
     if(DEBUG) {

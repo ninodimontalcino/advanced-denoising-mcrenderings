@@ -11,15 +11,10 @@ void sure_all_blocking(buffer sure, buffer c, buffer c_var, buffer cand_r, buffe
     
     scalar d_r, d_g, d_b, v;
     
-    for (int x = 0; x < img_width; x++){
-        for (int y = 0; y < img_height; y++){
-
-            scalar sure_r = 0.f;
-            scalar sure_g = 0.f;
-            scalar sure_b = 0.f;
-
-            // Sum over color channels
-            for (int i = 0; i < 3; i++){    
+    // Sum over color channels
+    for (int i = 0; i < 3; i++){  
+        for (int x = 0; x < img_width; x++){
+            for (int y = 0; y < img_height; y++){
 
                 // Calculate terms
                 d_r = cand_r[i][x][y] - c[i][x][y];
@@ -31,16 +26,11 @@ void sure_all_blocking(buffer sure, buffer c, buffer c_var, buffer cand_r, buffe
                 v = c_var[i][x][y];
                 v *= v;
 
-                // Summing up
-                sure_r += d_r - v; 
-                sure_g += d_g - v; 
-                sure_b += d_b - v; 
-
+                // Store sure error estimate
+                sure[0][x][y] += d_r - v;
+                sure[1][x][y] += d_g - v;
+                sure[2][x][y] += d_b - v;
             }
-            // Store sure error estimate
-            sure[0][x][y] = sure_r;
-            sure[1][x][y] = sure_g;
-            sure[2][x][y] = sure_b;
         }
     }
 }
