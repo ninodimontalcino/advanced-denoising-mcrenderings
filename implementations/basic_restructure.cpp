@@ -47,7 +47,8 @@ using namespace std;
     buffer f_filtered, f_var_filtered;
     allocate_buffer_zero(&f_filtered, img_width, img_height);
     allocate_buffer_zero(&f_var_filtered, img_width, img_height);
-    feature_prefiltering(f_filtered, f_var_filtered, f, f_var, p_pre, img_width, img_height);
+    filtering_basic(f_filtered, f, f, f_var, p_pre, img_width, img_height);
+    filtering_basic(f_var_filtered, f_var, f, f_var, p_pre, img_width, img_height);
     
     // DEBUGGING PART
     if(DEBUG) {
