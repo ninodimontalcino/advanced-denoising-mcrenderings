@@ -4,3 +4,4 @@ build/
 src/ext/
 .vscode/
 .DS_Store
+ASL Denoiser/
