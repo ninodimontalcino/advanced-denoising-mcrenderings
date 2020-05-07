@@ -49,7 +49,7 @@ void filtering_basic_blocking(buffer output, buffer input, buffer c, buffer c_va
 
     // Init temp channel
     channel temp, temp2;
-    allocate_channel(&temp, img_width, img_height); 
+    allocate_channel_zero(&temp, img_width, img_height); 
     allocate_channel(&temp2, img_width, img_height); 
 
     // Precompute size of neighbourhood
@@ -60,23 +60,20 @@ void filtering_basic_blocking(buffer output, buffer input, buffer c, buffer c_va
         for (int r_y = -p.r; r_y <= p.r; r_y++){
         
             // Compute Color Weight for all pixels with fixed r
-            for(int xp = p.r; xp < img_width - p.r; ++xp) {
-                for(int yp = p.r; yp < img_height - p.r; ++yp) {
 
-                    int xq = xp + r_x;
-                    int yq = yp + r_y;
+            for (int i=0; i<3; i++){  
+                for(int xp = p.r; xp < img_width - p.r; ++xp) {
+                    for(int yp = p.r; yp < img_height - p.r; ++yp) {
 
-                    scalar distance = 0;
-                    for (int i=0; i<3; i++){                        
+                        int xq = xp + r_x;
+                        int yq = yp + r_y;
+                      
                         scalar sqdist = c[i][xp][yp] - c[i][xq][yq];
                         sqdist *= sqdist;
                         scalar var_cancel = c_var[i][xp][yp] + fmin(c_var[i][xp][yp], c_var[i][xq][yq]);
                         scalar normalization = EPSILON + k_c_squared*(c_var[i][xp][yp] + c_var[i][xq][yq]);
-                        distance += (sqdist - var_cancel) / normalization;
+                        temp[xp][yp] += (sqdist - var_cancel) / normalization;
                     }
-
-                    temp[xp][yp] = distance;
-
                 }
             }
 
