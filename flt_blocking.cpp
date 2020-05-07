@@ -36,7 +36,7 @@ void sure_all_blocking(buffer sure, buffer c, buffer c_var, buffer cand_r, buffe
 }
 
 
-void filtering_basic_blocking(buffer output, buffer input, buffer c, buffer c_var, Flt_parameters p, int img_width, int img_height){
+void filtering_basic_blocking(buffer output, buffer input, buffer c, buffer c_var, Flt_parameters p, int img_width, int img_height, int blocks_width, int blocks_height){
     
 
     // Handling Inner Part   
@@ -55,25 +55,93 @@ void filtering_basic_blocking(buffer output, buffer input, buffer c, buffer c_va
     // Precompute size of neighbourhood
     scalar neigh = 3*(2*p.f+1)*(2*p.f+1);
 
+    const int nb_Blocks_width = (img_width-2*p.r)/blocks_width;
+    const int nb_Blocks_height = (img_height-2*p.r)/blocks_height;
+    const int nb_Blocks_height_f = (img_height-2*p.r-2*p.f)/blocks_height;
+
     // Covering the neighbourhood
     for (int r_x = -p.r; r_x <= p.r; r_x++){
         for (int r_y = -p.r; r_y <= p.r; r_y++){
         
-            // Compute Color Weight for all pixels with fixed r
+            // // Compute Color Weight for all pixels with fixed r
+            // for (int i=0; i<3; i++){  
+            //     for (int b_w=0; b_w < nb_Blocks_width; ++b_w){
+            //         for(int xp = p.r+blocks_width*b_w; xp < p.r+blocks_width*(b_w+1); ++xp) {
+            //             // printf("(%d, %d) ",p.r, xp);
+            //             for (int b_h = 0; b_h < nb_Blocks_height; ++b_h){
+            //                 for(int yp = p.r+blocks_height*b_h; yp < blocks_height*(b_h+1); ++yp) {
 
-            for (int i=0; i<3; i++){  
-                for(int xp = p.r; xp < img_width - p.r; ++xp) {
-                    for(int yp = p.r; yp < img_height - p.r; ++yp) {
-
-                        int xq = xp + r_x;
-                        int yq = yp + r_y;
+            //                     int xq = xp + r_x;
+            //                     int yq = yp + r_y;
                       
+            //                     scalar sqdist = c[i][xp][yp] - c[i][xq][yq];
+            //                     sqdist *= sqdist;
+            //                     scalar var_cancel = c_var[i][xp][yp] + fmin(c_var[i][xp][yp], c_var[i][xq][yq]);
+            //                     scalar normalization = EPSILON + k_c_squared*(c_var[i][xp][yp] + c_var[i][xq][yq]);
+            //                     temp[xp][yp] += (sqdist - var_cancel) / normalization;
+            //                 }
+            //             }
+            //                 for(int yp = p.r+blocks_height*nb_Blocks_height; yp < img_height - p.r; ++yp) {
+            //                     int xq = xp + r_x;
+            //                     int yq = yp + r_y;
+                      
+            //                     scalar sqdist = c[i][xp][yp] - c[i][xq][yq];
+            //                     sqdist *= sqdist;
+            //                     scalar var_cancel = c_var[i][xp][yp] + fmin(c_var[i][xp][yp], c_var[i][xq][yq]);
+            //                     scalar normalization = EPSILON + k_c_squared*(c_var[i][xp][yp] + c_var[i][xq][yq]);
+            //                     temp[xp][yp] += (sqdist - var_cancel) / normalization;
+            //                 }
+
+            //         }
+            //     }
+            // }
+            // for (int i=0; i<3; i++){  
+            //     for(int xp = p.r+blocks_width*nb_Blocks_width; xp < img_width - p.r; ++xp){
+            //         // printf("(%d, %d)",p.r, xp);
+            //         for (int b_h = 0; b_h < nb_Blocks_height; ++b_h){
+            //                 for(int yp = p.r+blocks_height*b_h; yp < blocks_height*(b_h+1); ++yp) {
+
+            //                     int xq = xp + r_x;
+            //                     int yq = yp + r_y;
+                      
+            //                     scalar sqdist = c[i][xp][yp] - c[i][xq][yq];
+            //                     sqdist *= sqdist;
+            //                     scalar var_cancel = c_var[i][xp][yp] + fmin(c_var[i][xp][yp], c_var[i][xq][yq]);
+            //                     scalar normalization = EPSILON + k_c_squared*(c_var[i][xp][yp] + c_var[i][xq][yq]);
+            //                     temp[xp][yp] += (sqdist - var_cancel) / normalization;
+            //                 }
+            //             }
+            //                 for(int yp = p.r+blocks_height*nb_Blocks_height; yp < img_height - p.r; ++yp) {
+            //                     int xq = xp + r_x;
+            //                     int yq = yp + r_y;
+                      
+            //                     scalar sqdist = c[i][xp][yp] - c[i][xq][yq];
+            //                     sqdist *= sqdist;
+            //                     scalar var_cancel = c_var[i][xp][yp] + fmin(c_var[i][xp][yp], c_var[i][xq][yq]);
+            //                     scalar normalization = EPSILON + k_c_squared*(c_var[i][xp][yp] + c_var[i][xq][yq]);
+            //                     temp[xp][yp] += (sqdist - var_cancel) / normalization;
+            //                 }
+            //     }
+            // }
+            // Compute Color Weight for all pixels with fixed r
+            for(int xp = p.r; xp < img_width - p.r; ++xp) {
+                // printf("%d, %d\n",p.r, xp);
+                for(int yp = p.r; yp < img_height - p.r; ++yp) {
+
+                    int xq = xp + r_x;
+                    int yq = yp + r_y;
+
+                    scalar distance = 0;
+                    for (int i=0; i<3; i++){                        
                         scalar sqdist = c[i][xp][yp] - c[i][xq][yq];
                         sqdist *= sqdist;
                         scalar var_cancel = c_var[i][xp][yp] + fmin(c_var[i][xp][yp], c_var[i][xq][yq]);
                         scalar normalization = EPSILON + k_c_squared*(c_var[i][xp][yp] + c_var[i][xq][yq]);
-                        temp[xp][yp] += (sqdist - var_cancel) / normalization;
+                        distance += (sqdist - var_cancel) / normalization;
                     }
+
+                    temp[xp][yp] = distance;
+
                 }
             }
 

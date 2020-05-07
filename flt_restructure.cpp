@@ -70,6 +70,7 @@ void filtering_basic(buffer output, buffer input, buffer c, buffer c_var, Flt_pa
         
             // Compute Color Weight for all pixels with fixed r
             for(int xp = p.r; xp < img_width - p.r; ++xp) {
+                // printf("%d, %d\n",p.r, xp);
                 for(int yp = p.r; yp < img_height - p.r; ++yp) {
 
                     int xq = xp + r_x;

@@ -103,7 +103,7 @@ using namespace std;
     Flt_parameters p_sure = { .kc = 1.0, .kf = INFINITY, .tau = 0.001, .f = 1, .r = 1};
     buffer e;
     allocate_buffer_zero(&e, img_width, img_height);
-    filtering_basic(e, sure, c, c_var, p_sure, img_width, img_height);
+    filtering_basic_blocking(e, sure, c, c_var, p_sure, img_width, img_height, 8, 8);
     
     // DEBUG PART
     if(DEBUG) {
@@ -142,7 +142,7 @@ using namespace std;
     Flt_parameters p_sel = { .kc = 1.0, .kf = INFINITY, .tau = 0.0001, .f = 1, .r = 5};
     buffer sel_filtered;
     allocate_buffer_zero(&sel_filtered, img_width, img_height);
-    filtering_basic(sel_filtered, sel, c, c_var, p_sel, img_width, img_height);
+    filtering_basic_blocking(sel_filtered, sel, c, c_var, p_sel, img_width, img_height, 8, 8);
 
     // DEBUG PART
     if(DEBUG) {
