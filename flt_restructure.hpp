@@ -9,4 +9,5 @@ void filtering_basic(buffer output, buffer input, buffer c, buffer c_var, Flt_pa
 void feature_prefiltering(buffer output, buffer output_var, buffer features, buffer features_var, Flt_parameters p, int img_width, int img_height);
 void candidate_filtering(buffer output, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters p, int img_width, int img_height);
 void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters* p, int img_width, int img_height);
+void candidate_filtering_all2(buffer output_r, buffer output_g, buffer output_b, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters* p, int img_width, int img_height);
 #endif //FLT_2_H
