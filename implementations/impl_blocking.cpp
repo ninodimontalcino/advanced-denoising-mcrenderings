@@ -80,6 +80,11 @@ using namespace std;
     allocate_buffer_zero(&g, img_width, img_height);
     allocate_buffer_zero(&b, img_width, img_height);
     candidate_filtering_all(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, img_width, img_height);
+    block_width_size = 128;
+    block_height_size = 128;
+    // candidate_filtering_all_blocking(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, img_width, img_height, block_height_size, block_width_size);
+
+    
 
     
     // DEBUGGING PART

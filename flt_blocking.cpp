@@ -1186,7 +1186,7 @@ void candidate_filtering_blocking(buffer output, buffer color, buffer color_var,
 
     if (end_x < img_width)
     {
-        begin_x = nb_Blocks_width * (blocks_width_size - 2 *(p.r+p.f));
+        begin_x = nb_Blocks_width * (blocks_width_size - 2 * (p.r + p.f));
         for (int b_h = 0; b_h < nb_Blocks_height; ++b_h)
         {
             begin_y = b_h * (blocks_height_size - 2 * (p.r + p.f));
@@ -1506,225 +1506,933 @@ void candidate_filtering_all_blocking(buffer output_r, buffer output_g, buffer o
     scalar neigh_g = 3 * (2 * f_g + 1) * (2 * f_g + 1);
     scalar neigh_b = 3 * (2 * f_b + 1) * (2 * f_b + 1);
 
-    // Covering the neighbourhood
-    for (int r_x = -R; r_x <= R; r_x++)
+    const int nb_Blocks_width = (img_width - 2 * (R + f_max)) / (blocks_width_size - 2 * (R + f_max));
+    const int nb_Blocks_height = (img_height - 2 * (R + f_max)) / (blocks_height_size - 2 * (R + f_max));
+
+    int begin_x = 0;
+    int end_x = 0;
+    int begin_y = 0;
+    int end_y = 0;
+
+    for (int b_w = 0; b_w < nb_Blocks_width; ++b_w)
     {
-        for (int r_y = -R; r_y <= R; r_y++)
+        begin_x = b_w * (blocks_width_size - 2 * (R + f_max));
+        end_x = begin_x + blocks_width_size;
+        for (int b_h = 0; b_h < nb_Blocks_height; ++b_h)
         {
+            begin_y = b_h * (blocks_height_size - 2 * (R + f_max));
+            end_y = begin_y + blocks_height_size;
 
-            // Compute Color Weight for all pixels with fixed r
-            for (int xp = R; xp < img_width - R; ++xp)
+            // Covering the neighbourhood
+            for (int r_x = -R; r_x <= R; r_x++)
             {
-                for (int yp = R; yp < img_height - R; ++yp)
+                for (int r_y = -R; r_y <= R; r_y++)
                 {
 
-                    int xq = xp + r_x;
-                    int yq = yp + r_y;
+                    // Compute Color Weight for all pixels with fixed r
+                    for (int xp = begin_x + R; xp < end_x - R; ++xp)
+                    {
+                        for (int yp = begin_y + R; yp < end_y - R; ++yp)
+                        {
 
-                    scalar distance_r = 0.f;
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
 
+                            scalar distance_r = 0.f;
+
+                            for (int i = 0; i < 3; i++)
+                            {
+                                scalar sqdist = color[i][xp][yp] - color[i][xq][yq];
+                                sqdist *= sqdist;
+                                scalar var_cancel = color_var[i][xp][yp] + fmin(color_var[i][xp][yp], color_var[i][xq][yq]);
+                                scalar var_term = color_var[i][xp][yp] + color_var[i][xq][yq];
+                                scalar normalization_r = EPSILON + k_c_squared_r * (var_term);
+                                scalar dist_var = sqdist - var_cancel;
+                                distance_r += (dist_var) / normalization_r;
+                            }
+
+                            temp[xp][yp] = distance_r;
+                        }
+                    }
+
+                    // Precompute feature weights
+                    for (int xp = begin_x + R + f_min; xp < end_x - R - f_min; ++xp)
+                    {
+                        for (int yp = begin_y + R + f_min; yp < end_y - R - f_min; ++yp)
+                        {
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            scalar df_r = 0.f;
+                            scalar df_b = 0.f;
+
+                            for (int j = 0; j < NB_FEATURES; ++j)
+                            {
+                                scalar sqdist = features[j][xp][yp] - features[j][xq][yq];
+                                sqdist *= sqdist;
+                                scalar var_cancel = features_var[j][xp][yp] + fmin(features_var[j][xp][yp], features_var[j][xq][yq]);
+                                scalar var_max = fmax(features_var[j][xp][yp], gradients[j][xp][yp]);
+                                scalar normalization_r = k_f_squared_r * fmax(tau_r, var_max);
+                                scalar normalization_b = k_f_squared_b * fmax(tau_b, var_max);
+                                scalar dist_var = sqdist - var_cancel;
+                                df_r = fmax(df_r, (dist_var) / normalization_r);
+                                df_b = fmax(df_b, (dist_var) / normalization_b);
+                            }
+
+                            features_weights_r[xp][yp] = exp(-df_r);
+                            features_weights_b[xp][yp] = exp(-df_b);
+                        }
+                    }
+
+                    // Next Steps: Box-Filtering for Patch Contribution
+                    // => Use Box-Filter Seperability => linear scans of data
+
+                    // ----------------------------------------------
+                    // Candidate R
+                    // ----------------------------------------------
+                    // (1) Convolve along height
+                    for (int xp = begin_x + R; xp < end_x - R; ++xp)
+                    {
+                        for (int yp = begin_y + R + f_r; yp < end_y - R - f_r; ++yp)
+                        {
+                            scalar sum_r = 0.f;
+                            for (int k = -f_r; k <= f_r; k++)
+                            {
+                                sum_r += temp[xp][yp + k];
+                            }
+                            temp2_r[xp][yp] = sum_r;
+                        }
+                    }
+
+                    // (2) Convolve along width including weighted contribution
+                    for (int xp = begin_x + R + f_r; xp < end_x - R - f_r; ++xp)
+                    {
+                        for (int yp = begin_y + R + f_r; yp < end_y - R - f_r; ++yp)
+                        {
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            // Compute final color weight
+                            scalar sum = 0.f;
+                            for (int k = -f_r; k <= f_r; k++)
+                            {
+                                sum += temp2_r[xp + k][yp];
+                            }
+                            scalar color_weight = exp(-fmax(0.f, (sum / neigh_r)));
+
+                            // Compute final weight
+                            scalar weight = fmin(color_weight, features_weights_r[xp][yp]);
+                            weight_sum[0][xp][yp] += weight;
+
+                            for (int i = 0; i < 3; i++)
+                            {
+                                output_r[i][xp][yp] += weight * color[i][xq][yq];
+                            }
+                        }
+                    }
+
+                    // ----------------------------------------------
+                    // Candidate G
+                    // ----------------------------------------------
+                    // (1) Convolve along height
+                    for (int xp = begin_x + R; xp < end_x - R; ++xp)
+                    {
+                        for (int yp = begin_y + R + f_g; yp < end_y - R - f_g; ++yp)
+                        {
+                            scalar sum_g = 0.f;
+                            for (int k = -f_g; k <= f_g; k++)
+                            {
+                                sum_g += temp[xp][yp + k];
+                            }
+                            temp2_g[xp][yp] = sum_g;
+                        }
+                    }
+
+                    // (2) Convolve along width including weighted contribution
+                    for (int xp = begin_x + R + f_g; xp < end_x - R - f_g; ++xp)
+                    {
+                        for (int yp = begin_y + R + f_g; yp < end_y - R - f_g; ++yp)
+                        {
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            // Compute final color weight
+                            scalar sum = 0.f;
+                            for (int k = -f_g; k <= f_g; k++)
+                            {
+                                sum += temp2_g[xp + k][yp];
+                            }
+                            scalar color_weight = exp(-fmax(0.f, (sum / neigh_g)));
+
+                            // Compute final weight
+                            scalar weight = fmin(color_weight, features_weights_r[xp][yp]);
+                            weight_sum[1][xp][yp] += weight;
+
+                            for (int i = 0; i < 3; i++)
+                            {
+                                output_g[i][xp][yp] += weight * color[i][xq][yq];
+                            }
+                        }
+                    }
+
+                    // ----------------------------------------------
+                    // Candidate B
+                    // => no color weight computation due to kc = Inf
+                    // ----------------------------------------------
+
+                    for (int xp = begin_x + R + f_b; xp < end_x - R - f_b; ++xp)
+                    {
+                        for (int yp = begin_y + R + f_b; yp < end_y - R - f_b; ++yp)
+                        {
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            // Compute final weight
+                            scalar weight = features_weights_b[xp][yp];
+                            weight_sum[2][xp][yp] += weight;
+
+                            for (int i = 0; i < 3; i++)
+                            {
+                                output_b[i][xp][yp] += weight * color[i][xq][yq];
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Final Weight Normalization R
+            for (int xp = begin_x + R + f_r; xp < end_x - R - f_r; ++xp)
+            {
+                for (int yp = begin_y + R + f_r; yp < end_y - R - f_r; ++yp)
+                {
+
+                    scalar w = weight_sum[0][xp][yp];
                     for (int i = 0; i < 3; i++)
                     {
-                        scalar sqdist = color[i][xp][yp] - color[i][xq][yq];
-                        sqdist *= sqdist;
-                        scalar var_cancel = color_var[i][xp][yp] + fmin(color_var[i][xp][yp], color_var[i][xq][yq]);
-                        scalar var_term = color_var[i][xp][yp] + color_var[i][xq][yq];
-                        scalar normalization_r = EPSILON + k_c_squared_r * (var_term);
-                        scalar dist_var = sqdist - var_cancel;
-                        distance_r += (dist_var) / normalization_r;
+                        output_r[i][xp][yp] /= w;
                     }
-
-                    temp[xp][yp] = distance_r;
                 }
             }
 
-            // Precompute feature weights
-            for (int xp = R + f_min; xp < img_width - R - f_min; ++xp)
+            // Final Weight Normalization G
+            for (int xp = begin_x + R + f_g; xp < end_x - R - f_g; ++xp)
             {
-                for (int yp = R + f_min; yp < img_height - R - f_min; ++yp)
+                for (int yp = begin_y + R + f_g; yp < end_y - R - f_g; ++yp)
                 {
 
-                    int xq = xp + r_x;
-                    int yq = yp + r_y;
-
-                    scalar df_r = 0.f;
-                    scalar df_b = 0.f;
-
-                    for (int j = 0; j < NB_FEATURES; ++j)
-                    {
-                        scalar sqdist = features[j][xp][yp] - features[j][xq][yq];
-                        sqdist *= sqdist;
-                        scalar var_cancel = features_var[j][xp][yp] + fmin(features_var[j][xp][yp], features_var[j][xq][yq]);
-                        scalar var_max = fmax(features_var[j][xp][yp], gradients[j][xp][yp]);
-                        scalar normalization_r = k_f_squared_r * fmax(tau_r, var_max);
-                        scalar normalization_b = k_f_squared_b * fmax(tau_b, var_max);
-                        scalar dist_var = sqdist - var_cancel;
-                        df_r = fmax(df_r, (dist_var) / normalization_r);
-                        df_b = fmax(df_b, (dist_var) / normalization_b);
-                    }
-
-                    features_weights_r[xp][yp] = exp(-df_r);
-                    features_weights_b[xp][yp] = exp(-df_b);
-                }
-            }
-
-            // Next Steps: Box-Filtering for Patch Contribution
-            // => Use Box-Filter Seperability => linear scans of data
-
-            // ----------------------------------------------
-            // Candidate R
-            // ----------------------------------------------
-            // (1) Convolve along height
-            for (int xp = R; xp < img_width - R; ++xp)
-            {
-                for (int yp = R + f_r; yp < img_height - R - f_r; ++yp)
-                {
-                    scalar sum_r = 0.f;
-                    for (int k = -f_r; k <= f_r; k++)
-                    {
-                        sum_r += temp[xp][yp + k];
-                    }
-                    temp2_r[xp][yp] = sum_r;
-                }
-            }
-
-            // (2) Convolve along width including weighted contribution
-            for (int xp = R + f_r; xp < img_width - R - f_r; ++xp)
-            {
-                for (int yp = R + f_r; yp < img_height - R - f_r; ++yp)
-                {
-
-                    int xq = xp + r_x;
-                    int yq = yp + r_y;
-
-                    // Compute final color weight
-                    scalar sum = 0.f;
-                    for (int k = -f_r; k <= f_r; k++)
-                    {
-                        sum += temp2_r[xp + k][yp];
-                    }
-                    scalar color_weight = exp(-fmax(0.f, (sum / neigh_r)));
-
-                    // Compute final weight
-                    scalar weight = fmin(color_weight, features_weights_r[xp][yp]);
-                    weight_sum[0][xp][yp] += weight;
-
+                    scalar w = weight_sum[1][xp][yp];
                     for (int i = 0; i < 3; i++)
                     {
-                        output_r[i][xp][yp] += weight * color[i][xq][yq];
+                        output_g[i][xp][yp] /= w;
                     }
                 }
             }
 
-            // ----------------------------------------------
-            // Candidate G
-            // ----------------------------------------------
-            // (1) Convolve along height
-            for (int xp = R; xp < img_width - R; ++xp)
+            // Final Weight Normalization B
+            for (int xp = begin_x + R + f_b; xp < end_x - R - f_b; ++xp)
             {
-                for (int yp = R + f_g; yp < img_height - R - f_g; ++yp)
-                {
-                    scalar sum_g = 0.f;
-                    for (int k = -f_g; k <= f_g; k++)
-                    {
-                        sum_g += temp[xp][yp + k];
-                    }
-                    temp2_g[xp][yp] = sum_g;
-                }
-            }
-
-            // (2) Convolve along width including weighted contribution
-            for (int xp = R + f_g; xp < img_width - R - f_g; ++xp)
-            {
-                for (int yp = R + f_g; yp < img_height - R - f_g; ++yp)
+                for (int yp = begin_y + R + f_b; yp < end_y - R - f_b; ++yp)
                 {
 
-                    int xq = xp + r_x;
-                    int yq = yp + r_y;
-
-                    // Compute final color weight
-                    scalar sum = 0.f;
-                    for (int k = -f_g; k <= f_g; k++)
-                    {
-                        sum += temp2_g[xp + k][yp];
-                    }
-                    scalar color_weight = exp(-fmax(0.f, (sum / neigh_g)));
-
-                    // Compute final weight
-                    scalar weight = fmin(color_weight, features_weights_r[xp][yp]);
-                    weight_sum[1][xp][yp] += weight;
-
+                    scalar w = weight_sum[2][xp][yp];
                     for (int i = 0; i < 3; i++)
                     {
-                        output_g[i][xp][yp] += weight * color[i][xq][yq];
+                        output_b[i][xp][yp] /= w;
+                    }
+                }
+            }
+        }
+        if (end_y != img_height)
+        {
+            begin_y = nb_Blocks_height * (blocks_height_size - 2 * (R + f_max));
+            end_y = img_height;
+
+            // Covering the neighbourhood
+            for (int r_x = -R; r_x <= R; r_x++)
+            {
+                for (int r_y = -R; r_y <= R; r_y++)
+                {
+
+                    // Compute Color Weight for all pixels with fixed r
+                    for (int xp = begin_x + R; xp < end_x - R; ++xp)
+                    {
+                        for (int yp = begin_y + R; yp < end_y - R; ++yp)
+                        {
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            scalar distance_r = 0.f;
+
+                            for (int i = 0; i < 3; i++)
+                            {
+                                scalar sqdist = color[i][xp][yp] - color[i][xq][yq];
+                                sqdist *= sqdist;
+                                scalar var_cancel = color_var[i][xp][yp] + fmin(color_var[i][xp][yp], color_var[i][xq][yq]);
+                                scalar var_term = color_var[i][xp][yp] + color_var[i][xq][yq];
+                                scalar normalization_r = EPSILON + k_c_squared_r * (var_term);
+                                scalar dist_var = sqdist - var_cancel;
+                                distance_r += (dist_var) / normalization_r;
+                            }
+
+                            temp[xp][yp] = distance_r;
+                        }
+                    }
+
+                    // Precompute feature weights
+                    for (int xp = begin_x + R + f_min; xp < end_x - R - f_min; ++xp)
+                    {
+                        for (int yp = begin_y + R + f_min; yp < end_y - R - f_min; ++yp)
+                        {
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            scalar df_r = 0.f;
+                            scalar df_b = 0.f;
+
+                            for (int j = 0; j < NB_FEATURES; ++j)
+                            {
+                                scalar sqdist = features[j][xp][yp] - features[j][xq][yq];
+                                sqdist *= sqdist;
+                                scalar var_cancel = features_var[j][xp][yp] + fmin(features_var[j][xp][yp], features_var[j][xq][yq]);
+                                scalar var_max = fmax(features_var[j][xp][yp], gradients[j][xp][yp]);
+                                scalar normalization_r = k_f_squared_r * fmax(tau_r, var_max);
+                                scalar normalization_b = k_f_squared_b * fmax(tau_b, var_max);
+                                scalar dist_var = sqdist - var_cancel;
+                                df_r = fmax(df_r, (dist_var) / normalization_r);
+                                df_b = fmax(df_b, (dist_var) / normalization_b);
+                            }
+
+                            features_weights_r[xp][yp] = exp(-df_r);
+                            features_weights_b[xp][yp] = exp(-df_b);
+                        }
+                    }
+
+                    // Next Steps: Box-Filtering for Patch Contribution
+                    // => Use Box-Filter Seperability => linear scans of data
+
+                    // ----------------------------------------------
+                    // Candidate R
+                    // ----------------------------------------------
+                    // (1) Convolve along height
+                    for (int xp = begin_x + R; xp < end_x - R; ++xp)
+                    {
+                        for (int yp = begin_y + R + f_r; yp < end_y - R - f_r; ++yp)
+                        {
+                            scalar sum_r = 0.f;
+                            for (int k = -f_r; k <= f_r; k++)
+                            {
+                                sum_r += temp[xp][yp + k];
+                            }
+                            temp2_r[xp][yp] = sum_r;
+                        }
+                    }
+
+                    // (2) Convolve along width including weighted contribution
+                    for (int xp = begin_x + R + f_r; xp < end_x - R - f_r; ++xp)
+                    {
+                        for (int yp = begin_y + R + f_r; yp < end_y - R - f_r; ++yp)
+                        {
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            // Compute final color weight
+                            scalar sum = 0.f;
+                            for (int k = -f_r; k <= f_r; k++)
+                            {
+                                sum += temp2_r[xp + k][yp];
+                            }
+                            scalar color_weight = exp(-fmax(0.f, (sum / neigh_r)));
+
+                            // Compute final weight
+                            scalar weight = fmin(color_weight, features_weights_r[xp][yp]);
+                            weight_sum[0][xp][yp] += weight;
+
+                            for (int i = 0; i < 3; i++)
+                            {
+                                output_r[i][xp][yp] += weight * color[i][xq][yq];
+                            }
+                        }
+                    }
+
+                    // ----------------------------------------------
+                    // Candidate G
+                    // ----------------------------------------------
+                    // (1) Convolve along height
+                    for (int xp = begin_x + R; xp < end_x - R; ++xp)
+                    {
+                        for (int yp = begin_y + R + f_g; yp < end_y - R - f_g; ++yp)
+                        {
+                            scalar sum_g = 0.f;
+                            for (int k = -f_g; k <= f_g; k++)
+                            {
+                                sum_g += temp[xp][yp + k];
+                            }
+                            temp2_g[xp][yp] = sum_g;
+                        }
+                    }
+
+                    // (2) Convolve along width including weighted contribution
+                    for (int xp = begin_x + R + f_g; xp < end_x - R - f_g; ++xp)
+                    {
+                        for (int yp = begin_y + R + f_g; yp < end_y - R - f_g; ++yp)
+                        {
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            // Compute final color weight
+                            scalar sum = 0.f;
+                            for (int k = -f_g; k <= f_g; k++)
+                            {
+                                sum += temp2_g[xp + k][yp];
+                            }
+                            scalar color_weight = exp(-fmax(0.f, (sum / neigh_g)));
+
+                            // Compute final weight
+                            scalar weight = fmin(color_weight, features_weights_r[xp][yp]);
+                            weight_sum[1][xp][yp] += weight;
+
+                            for (int i = 0; i < 3; i++)
+                            {
+                                output_g[i][xp][yp] += weight * color[i][xq][yq];
+                            }
+                        }
+                    }
+
+                    // ----------------------------------------------
+                    // Candidate B
+                    // => no color weight computation due to kc = Inf
+                    // ----------------------------------------------
+
+                    for (int xp = begin_x + R + f_b; xp < end_x - R - f_b; ++xp)
+                    {
+                        for (int yp = begin_y + R + f_b; yp < end_y - R - f_b; ++yp)
+                        {
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            // Compute final weight
+                            scalar weight = features_weights_b[xp][yp];
+                            weight_sum[2][xp][yp] += weight;
+
+                            for (int i = 0; i < 3; i++)
+                            {
+                                output_b[i][xp][yp] += weight * color[i][xq][yq];
+                            }
+                        }
                     }
                 }
             }
 
-            // ----------------------------------------------
-            // Candidate B
-            // => no color weight computation due to kc = Inf
-            // ----------------------------------------------
-
-            for (int xp = R + f_b; xp < img_width - R - f_b; ++xp)
+            // Final Weight Normalization R
+            for (int xp = begin_x + R + f_r; xp < end_x - R - f_r; ++xp)
             {
-                for (int yp = R + f_b; yp < img_height - R - f_b; ++yp)
+                for (int yp = begin_y + R + f_r; yp < end_y - R - f_r; ++yp)
                 {
 
-                    int xq = xp + r_x;
-                    int yq = yp + r_y;
-
-                    // Compute final weight
-                    scalar weight = features_weights_b[xp][yp];
-                    weight_sum[2][xp][yp] += weight;
-
+                    scalar w = weight_sum[0][xp][yp];
                     for (int i = 0; i < 3; i++)
                     {
-                        output_b[i][xp][yp] += weight * color[i][xq][yq];
+                        output_r[i][xp][yp] /= w;
+                    }
+                }
+            }
+
+            // Final Weight Normalization G
+            for (int xp = begin_x + R + f_g; xp < end_x - R - f_g; ++xp)
+            {
+                for (int yp = begin_y + R + f_g; yp < end_y - R - f_g; ++yp)
+                {
+
+                    scalar w = weight_sum[1][xp][yp];
+                    for (int i = 0; i < 3; i++)
+                    {
+                        output_g[i][xp][yp] /= w;
+                    }
+                }
+            }
+
+            // Final Weight Normalization B
+            for (int xp = begin_x + R + f_b; xp < end_x - R - f_b; ++xp)
+            {
+                for (int yp = begin_y + R + f_b; yp < end_y - R - f_b; ++yp)
+                {
+
+                    scalar w = weight_sum[2][xp][yp];
+                    for (int i = 0; i < 3; i++)
+                    {
+                        output_b[i][xp][yp] /= w;
                     }
                 }
             }
         }
     }
-
-    // Final Weight Normalization R
-    for (int xp = R + f_r; xp < img_width - R - f_r; ++xp)
+    if (end_x != img_width)
     {
-        for (int yp = R + f_r; yp < img_height - R - f_r; ++yp)
+        begin_x = nb_Blocks_width * (blocks_width_size - 2 * (R + f_max));
+        end_x = img_width;
+        for (int b_h = 0; b_h < nb_Blocks_height; ++b_h)
         {
+            begin_y = b_h * (blocks_height_size - 2 * (R + f_max));
+            end_y = begin_y + blocks_height_size;
 
-            scalar w = weight_sum[0][xp][yp];
-            for (int i = 0; i < 3; i++)
+            // Covering the neighbourhood
+            for (int r_x = -R; r_x <= R; r_x++)
             {
-                output_r[i][xp][yp] /= w;
+                for (int r_y = -R; r_y <= R; r_y++)
+                {
+
+                    // Compute Color Weight for all pixels with fixed r
+                    for (int xp = begin_x + R; xp < end_x - R; ++xp)
+                    {
+                        for (int yp = begin_y + R; yp < end_y - R; ++yp)
+                        {
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            scalar distance_r = 0.f;
+
+                            for (int i = 0; i < 3; i++)
+                            {
+                                scalar sqdist = color[i][xp][yp] - color[i][xq][yq];
+                                sqdist *= sqdist;
+                                scalar var_cancel = color_var[i][xp][yp] + fmin(color_var[i][xp][yp], color_var[i][xq][yq]);
+                                scalar var_term = color_var[i][xp][yp] + color_var[i][xq][yq];
+                                scalar normalization_r = EPSILON + k_c_squared_r * (var_term);
+                                scalar dist_var = sqdist - var_cancel;
+                                distance_r += (dist_var) / normalization_r;
+                            }
+
+                            temp[xp][yp] = distance_r;
+                        }
+                    }
+
+                    // Precompute feature weights
+                    for (int xp = begin_x + R + f_min; xp < end_x - R - f_min; ++xp)
+                    {
+                        for (int yp = begin_y + R + f_min; yp < end_y - R - f_min; ++yp)
+                        {
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            scalar df_r = 0.f;
+                            scalar df_b = 0.f;
+
+                            for (int j = 0; j < NB_FEATURES; ++j)
+                            {
+                                scalar sqdist = features[j][xp][yp] - features[j][xq][yq];
+                                sqdist *= sqdist;
+                                scalar var_cancel = features_var[j][xp][yp] + fmin(features_var[j][xp][yp], features_var[j][xq][yq]);
+                                scalar var_max = fmax(features_var[j][xp][yp], gradients[j][xp][yp]);
+                                scalar normalization_r = k_f_squared_r * fmax(tau_r, var_max);
+                                scalar normalization_b = k_f_squared_b * fmax(tau_b, var_max);
+                                scalar dist_var = sqdist - var_cancel;
+                                df_r = fmax(df_r, (dist_var) / normalization_r);
+                                df_b = fmax(df_b, (dist_var) / normalization_b);
+                            }
+
+                            features_weights_r[xp][yp] = exp(-df_r);
+                            features_weights_b[xp][yp] = exp(-df_b);
+                        }
+                    }
+
+                    // Next Steps: Box-Filtering for Patch Contribution
+                    // => Use Box-Filter Seperability => linear scans of data
+
+                    // ----------------------------------------------
+                    // Candidate R
+                    // ----------------------------------------------
+                    // (1) Convolve along height
+                    for (int xp = begin_x + R; xp < end_x - R; ++xp)
+                    {
+                        for (int yp = begin_y + R + f_r; yp < end_y - R - f_r; ++yp)
+                        {
+                            scalar sum_r = 0.f;
+                            for (int k = -f_r; k <= f_r; k++)
+                            {
+                                sum_r += temp[xp][yp + k];
+                            }
+                            temp2_r[xp][yp] = sum_r;
+                        }
+                    }
+
+                    // (2) Convolve along width including weighted contribution
+                    for (int xp = begin_x + R + f_r; xp < end_x - R - f_r; ++xp)
+                    {
+                        for (int yp = begin_y + R + f_r; yp < end_y - R - f_r; ++yp)
+                        {
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            // Compute final color weight
+                            scalar sum = 0.f;
+                            for (int k = -f_r; k <= f_r; k++)
+                            {
+                                sum += temp2_r[xp + k][yp];
+                            }
+                            scalar color_weight = exp(-fmax(0.f, (sum / neigh_r)));
+
+                            // Compute final weight
+                            scalar weight = fmin(color_weight, features_weights_r[xp][yp]);
+                            weight_sum[0][xp][yp] += weight;
+
+                            for (int i = 0; i < 3; i++)
+                            {
+                                output_r[i][xp][yp] += weight * color[i][xq][yq];
+                            }
+                        }
+                    }
+
+                    // ----------------------------------------------
+                    // Candidate G
+                    // ----------------------------------------------
+                    // (1) Convolve along height
+                    for (int xp = begin_x + R; xp < end_x - R; ++xp)
+                    {
+                        for (int yp = begin_y + R + f_g; yp < end_y - R - f_g; ++yp)
+                        {
+                            scalar sum_g = 0.f;
+                            for (int k = -f_g; k <= f_g; k++)
+                            {
+                                sum_g += temp[xp][yp + k];
+                            }
+                            temp2_g[xp][yp] = sum_g;
+                        }
+                    }
+
+                    // (2) Convolve along width including weighted contribution
+                    for (int xp = begin_x + R + f_g; xp < end_x - R - f_g; ++xp)
+                    {
+                        for (int yp = begin_y + R + f_g; yp < end_y - R - f_g; ++yp)
+                        {
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            // Compute final color weight
+                            scalar sum = 0.f;
+                            for (int k = -f_g; k <= f_g; k++)
+                            {
+                                sum += temp2_g[xp + k][yp];
+                            }
+                            scalar color_weight = exp(-fmax(0.f, (sum / neigh_g)));
+
+                            // Compute final weight
+                            scalar weight = fmin(color_weight, features_weights_r[xp][yp]);
+                            weight_sum[1][xp][yp] += weight;
+
+                            for (int i = 0; i < 3; i++)
+                            {
+                                output_g[i][xp][yp] += weight * color[i][xq][yq];
+                            }
+                        }
+                    }
+
+                    // ----------------------------------------------
+                    // Candidate B
+                    // => no color weight computation due to kc = Inf
+                    // ----------------------------------------------
+
+                    for (int xp = begin_x + R + f_b; xp < end_x - R - f_b; ++xp)
+                    {
+                        for (int yp = begin_y + R + f_b; yp < end_y - R - f_b; ++yp)
+                        {
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            // Compute final weight
+                            scalar weight = features_weights_b[xp][yp];
+                            weight_sum[2][xp][yp] += weight;
+
+                            for (int i = 0; i < 3; i++)
+                            {
+                                output_b[i][xp][yp] += weight * color[i][xq][yq];
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Final Weight Normalization R
+            for (int xp = begin_x + R + f_r; xp < end_x - R - f_r; ++xp)
+            {
+                for (int yp = begin_y + R + f_r; yp < end_y - R - f_r; ++yp)
+                {
+
+                    scalar w = weight_sum[0][xp][yp];
+                    for (int i = 0; i < 3; i++)
+                    {
+                        output_r[i][xp][yp] /= w;
+                    }
+                }
+            }
+
+            // Final Weight Normalization G
+            for (int xp = begin_x + R + f_g; xp < end_x - R - f_g; ++xp)
+            {
+                for (int yp = begin_y + R + f_g; yp < end_y - R - f_g; ++yp)
+                {
+
+                    scalar w = weight_sum[1][xp][yp];
+                    for (int i = 0; i < 3; i++)
+                    {
+                        output_g[i][xp][yp] /= w;
+                    }
+                }
+            }
+
+            // Final Weight Normalization B
+            for (int xp = begin_x + R + f_b; xp < end_x - R - f_b; ++xp)
+            {
+                for (int yp = begin_y + R + f_b; yp < end_y - R - f_b; ++yp)
+                {
+
+                    scalar w = weight_sum[2][xp][yp];
+                    for (int i = 0; i < 3; i++)
+                    {
+                        output_b[i][xp][yp] /= w;
+                    }
+                }
             }
         }
-    }
-
-    // Final Weight Normalization G
-    for (int xp = R + f_g; xp < img_width - R - f_g; ++xp)
-    {
-        for (int yp = R + f_g; yp < img_height - R - f_g; ++yp)
+        if (end_y != img_height)
         {
+            begin_y = nb_Blocks_height * (blocks_height_size - 2 * (R + f_max));
+            end_y = img_height;
 
-            scalar w = weight_sum[1][xp][yp];
-            for (int i = 0; i < 3; i++)
+            // Covering the neighbourhood
+            for (int r_x = -R; r_x <= R; r_x++)
             {
-                output_g[i][xp][yp] /= w;
+                for (int r_y = -R; r_y <= R; r_y++)
+                {
+
+                    // Compute Color Weight for all pixels with fixed r
+                    for (int xp = begin_x + R; xp < end_x - R; ++xp)
+                    {
+                        for (int yp = begin_y + R; yp < end_y - R; ++yp)
+                        {
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            scalar distance_r = 0.f;
+
+                            for (int i = 0; i < 3; i++)
+                            {
+                                scalar sqdist = color[i][xp][yp] - color[i][xq][yq];
+                                sqdist *= sqdist;
+                                scalar var_cancel = color_var[i][xp][yp] + fmin(color_var[i][xp][yp], color_var[i][xq][yq]);
+                                scalar var_term = color_var[i][xp][yp] + color_var[i][xq][yq];
+                                scalar normalization_r = EPSILON + k_c_squared_r * (var_term);
+                                scalar dist_var = sqdist - var_cancel;
+                                distance_r += (dist_var) / normalization_r;
+                            }
+
+                            temp[xp][yp] = distance_r;
+                        }
+                    }
+
+                    // Precompute feature weights
+                    for (int xp = begin_x + R + f_min; xp < end_x - R - f_min; ++xp)
+                    {
+                        for (int yp = begin_y + R + f_min; yp < end_y - R - f_min; ++yp)
+                        {
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            scalar df_r = 0.f;
+                            scalar df_b = 0.f;
+
+                            for (int j = 0; j < NB_FEATURES; ++j)
+                            {
+                                scalar sqdist = features[j][xp][yp] - features[j][xq][yq];
+                                sqdist *= sqdist;
+                                scalar var_cancel = features_var[j][xp][yp] + fmin(features_var[j][xp][yp], features_var[j][xq][yq]);
+                                scalar var_max = fmax(features_var[j][xp][yp], gradients[j][xp][yp]);
+                                scalar normalization_r = k_f_squared_r * fmax(tau_r, var_max);
+                                scalar normalization_b = k_f_squared_b * fmax(tau_b, var_max);
+                                scalar dist_var = sqdist - var_cancel;
+                                df_r = fmax(df_r, (dist_var) / normalization_r);
+                                df_b = fmax(df_b, (dist_var) / normalization_b);
+                            }
+
+                            features_weights_r[xp][yp] = exp(-df_r);
+                            features_weights_b[xp][yp] = exp(-df_b);
+                        }
+                    }
+
+                    // Next Steps: Box-Filtering for Patch Contribution
+                    // => Use Box-Filter Seperability => linear scans of data
+
+                    // ----------------------------------------------
+                    // Candidate R
+                    // ----------------------------------------------
+                    // (1) Convolve along height
+                    for (int xp = begin_x + R; xp < end_x - R; ++xp)
+                    {
+                        for (int yp = begin_y + R + f_r; yp < end_y - R - f_r; ++yp)
+                        {
+                            scalar sum_r = 0.f;
+                            for (int k = -f_r; k <= f_r; k++)
+                            {
+                                sum_r += temp[xp][yp + k];
+                            }
+                            temp2_r[xp][yp] = sum_r;
+                        }
+                    }
+
+                    // (2) Convolve along width including weighted contribution
+                    for (int xp = begin_x + R + f_r; xp < end_x - R - f_r; ++xp)
+                    {
+                        for (int yp = begin_y + R + f_r; yp < end_y - R - f_r; ++yp)
+                        {
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            // Compute final color weight
+                            scalar sum = 0.f;
+                            for (int k = -f_r; k <= f_r; k++)
+                            {
+                                sum += temp2_r[xp + k][yp];
+                            }
+                            scalar color_weight = exp(-fmax(0.f, (sum / neigh_r)));
+
+                            // Compute final weight
+                            scalar weight = fmin(color_weight, features_weights_r[xp][yp]);
+                            weight_sum[0][xp][yp] += weight;
+
+                            for (int i = 0; i < 3; i++)
+                            {
+                                output_r[i][xp][yp] += weight * color[i][xq][yq];
+                            }
+                        }
+                    }
+
+                    // ----------------------------------------------
+                    // Candidate G
+                    // ----------------------------------------------
+                    // (1) Convolve along height
+                    for (int xp = begin_x + R; xp < end_x - R; ++xp)
+                    {
+                        for (int yp = begin_y + R + f_g; yp < end_y - R - f_g; ++yp)
+                        {
+                            scalar sum_g = 0.f;
+                            for (int k = -f_g; k <= f_g; k++)
+                            {
+                                sum_g += temp[xp][yp + k];
+                            }
+                            temp2_g[xp][yp] = sum_g;
+                        }
+                    }
+
+                    // (2) Convolve along width including weighted contribution
+                    for (int xp = begin_x + R + f_g; xp < end_x - R - f_g; ++xp)
+                    {
+                        for (int yp = begin_y + R + f_g; yp < end_y - R - f_g; ++yp)
+                        {
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            // Compute final color weight
+                            scalar sum = 0.f;
+                            for (int k = -f_g; k <= f_g; k++)
+                            {
+                                sum += temp2_g[xp + k][yp];
+                            }
+                            scalar color_weight = exp(-fmax(0.f, (sum / neigh_g)));
+
+                            // Compute final weight
+                            scalar weight = fmin(color_weight, features_weights_r[xp][yp]);
+                            weight_sum[1][xp][yp] += weight;
+
+                            for (int i = 0; i < 3; i++)
+                            {
+                                output_g[i][xp][yp] += weight * color[i][xq][yq];
+                            }
+                        }
+                    }
+
+                    // ----------------------------------------------
+                    // Candidate B
+                    // => no color weight computation due to kc = Inf
+                    // ----------------------------------------------
+
+                    for (int xp = begin_x + R + f_b; xp < end_x - R - f_b; ++xp)
+                    {
+                        for (int yp = begin_y + R + f_b; yp < end_y - R - f_b; ++yp)
+                        {
+
+                            int xq = xp + r_x;
+                            int yq = yp + r_y;
+
+                            // Compute final weight
+                            scalar weight = features_weights_b[xp][yp];
+                            weight_sum[2][xp][yp] += weight;
+
+                            for (int i = 0; i < 3; i++)
+                            {
+                                output_b[i][xp][yp] += weight * color[i][xq][yq];
+                            }
+                        }
+                    }
+                }
             }
-        }
-    }
 
-    // Final Weight Normalization B
-    for (int xp = R + f_b; xp < img_width - R - f_b; ++xp)
-    {
-        for (int yp = R + f_b; yp < img_height - R - f_b; ++yp)
-        {
-
-            scalar w = weight_sum[2][xp][yp];
-            for (int i = 0; i < 3; i++)
+            // Final Weight Normalization R
+            for (int xp = begin_x + R + f_r; xp < end_x - R - f_r; ++xp)
             {
-                output_b[i][xp][yp] /= w;
+                for (int yp = begin_y + R + f_r; yp < end_y - R - f_r; ++yp)
+                {
+
+                    scalar w = weight_sum[0][xp][yp];
+                    for (int i = 0; i < 3; i++)
+                    {
+                        output_r[i][xp][yp] /= w;
+                    }
+                }
+            }
+
+            // Final Weight Normalization G
+            for (int xp = begin_x + R + f_g; xp < end_x - R - f_g; ++xp)
+            {
+                for (int yp = begin_y + R + f_g; yp < end_y - R - f_g; ++yp)
+                {
+
+                    scalar w = weight_sum[1][xp][yp];
+                    for (int i = 0; i < 3; i++)
+                    {
+                        output_g[i][xp][yp] /= w;
+                    }
+                }
+            }
+
+            // Final Weight Normalization B
+            for (int xp = begin_x + R + f_b; xp < end_x - R - f_b; ++xp)
+            {
+                for (int yp = begin_y + R + f_b; yp < end_y - R - f_b; ++yp)
+                {
+
+                    scalar w = weight_sum[2][xp][yp];
+                    for (int i = 0; i < 3; i++)
+                    {
+                        output_b[i][xp][yp] /= w;
+                    }
+                }
             }
         }
     }
