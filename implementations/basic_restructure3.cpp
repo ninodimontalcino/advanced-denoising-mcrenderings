@@ -79,11 +79,11 @@ using namespace std;
     candidate_filtering_all2(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, W, H);
 
 
-    for (int i = 0; i < W; i ++) {
-        for (int j = 0; j < H; j ++) {
-            cout << r[3*(i*W+j)] << " "  << r[3*(i*W+j)+1] << " "  << r[3*(i*W+j)+2] << "\n";
-        }
-    }
+    // for (int i = 0; i < W; i ++) {
+    //     for (int j = 0; j < H; j ++) {
+    //         cout << r[3*(i*W+j)] << " "  << r[3*(i*W+j)+1] << " "  << r[3*(i*W+j)+2] << "\n";
+    //     }
+    // }
     
     // DEBUGGING PART
     if(DEBUG) {

@@ -10,7 +10,7 @@
 
 void sure_all(scalar* sure, scalar* c, scalar* c_var, scalar* cand_r, scalar* cand_g, scalar* cand_b, int W, int H){
 
-    int WH = W*H;
+    //int WH = W*H;
     
     scalar d_r, d_g, d_b, v;
     
@@ -41,9 +41,9 @@ void sure_all(scalar* sure, scalar* c, scalar* c_var, scalar* cand_r, scalar* ca
 
             }
             // Store sure error estimate
-            sure[0 * WH + x * W + y] = sure_r;
-            sure[1 * WH + x * W + y] = sure_g;
-            sure[2 * WH + x * W + y] = sure_b;
+            sure[0 + 3 * (x * W + y)] = sure_r;
+            sure[1 + 3 * (x * W + y)] = sure_g;
+            sure[2 + 3 * (x * W + y)] = sure_b;
         }
     }
 }
@@ -51,7 +51,7 @@ void sure_all(scalar* sure, scalar* c, scalar* c_var, scalar* cand_r, scalar* ca
 
 void filtering_basic(scalar* output, scalar* input, scalar* c, scalar* c_var, Flt_parameters p, int W, int H){
     
-    int WH = W*H;
+    //int WH = W*H;
 
     // Handling Inner Part   
     // -------------------
@@ -293,7 +293,7 @@ void feature_prefiltering(scalar* output, scalar* output_var, scalar* features, 
 
 void candidate_filtering(scalar* output, scalar* color, scalar* color_var, scalar* features, scalar* features_var, Flt_parameters p, int W, int H){
 
-    int WH = W * H;
+    //int WH = W * H;
 
     // Handling Inner Part   
     // -------------------
@@ -321,10 +321,10 @@ void candidate_filtering(scalar* output, scalar* color, scalar* color_var, scala
     for(int i=0; i<NB_FEATURES;++i) {
         for(int x =  p.r + p.f; x < W - p.r - p.f; ++x) {
             for(int y = p.r + p.f; y < H - p.r - p.f; ++y) {
-                scalar diffL = features[3 * (x * W + y) + i] - features[i * WH + (x-1) * W + y];
-                scalar diffR = features[3 * (x * W + y) + i] - features[i * WH + (x+1) * W + y];
-                scalar diffU = features[3 * (x * W + y) + i] - features[i * WH + x * W + y - 1];
-                scalar diffD = features[3 * (x * W + y) + i] - features[i * WH + x * W + y + 1];
+                scalar diffL = features[3 * (x * W + y) + i] - features[i + 3 * ((x-1) * W + y)];
+                scalar diffR = features[3 * (x * W + y) + i] - features[i + 3 * ((x+1) * W + y)];
+                scalar diffU = features[3 * (x * W + y) + i] - features[i + 3 * (x * W + y - 1) ];
+                scalar diffD = features[3 * (x * W + y) + i] - features[i + 3 * (x * W + y + 1) ];
 
                 gradients[3 * (x * W + y) + i] = fmin(diffL*diffL, diffR*diffR) + fmin(diffU*diffU, diffD*diffD);
             }
@@ -471,7 +471,7 @@ void candidate_filtering_all(scalar* output_r, scalar* output_g, scalar* output_
     scalar k_f_squared_b = p[2].kf * p[2].kf;
 
     // Rename Width and Height
-    int WH = W * H;
+    //int WH = W * H;
 
     // Determinte max f => R is fixed to the same for all
     int f_max = fmax(f_r, fmax(f_g, f_b));
@@ -506,10 +506,10 @@ void candidate_filtering_all(scalar* output_r, scalar* output_g, scalar* output_
     for(int i=0; i<NB_FEATURES;++i) {
         for(int x =  R+f_min; x < W - R - f_min; ++x) {
             for(int y =  R+f_min; y < H-  R - f_min; ++y) {
-                scalar diffL = features[3 * (x * W + y) + i] - features[i * WH + (x-1) * W + y];
-                scalar diffR = features[3 * (x * W + y) + i] - features[i * WH + (x+1) * W + y];
-                scalar diffU = features[3 * (x * W + y) + i] - features[i * WH + x * W + y - 1];
-                scalar diffD = features[3 * (x * W + y) + i] - features[i * WH + x * W + y + 1];
+                scalar diffL = features[3 * (x * W + y) + i] - features[3 * ((x-1) * W + y) + i];
+                scalar diffR = features[3 * (x * W + y) + i] - features[3 * ((x+1) * W + y) + i];
+                scalar diffU = features[3 * (x * W + y) + i] - features[3 * (x * W + y - 1) + i];
+                scalar diffD = features[3 * (x * W + y) + i] - features[3 * (x * W + y + 1) + i];
 
                 gradients[3 * (x * W + y) + i] = fmin(diffL*diffL, diffR*diffR) + fmin(diffU*diffU, diffD*diffD);
             }
