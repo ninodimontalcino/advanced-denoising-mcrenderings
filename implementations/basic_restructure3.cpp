@@ -133,9 +133,9 @@ using namespace std;
     // Compute selection maps
     for (int x = 0; x < W; x++){
         for (int y = 0; y < H; y++){
-                sel[0 * WH + x * W + y] = e[0 * WH + x * W + y] < e[1 * WH + x * W + y] && e[0 * WH + x * W + y] < e[2 * WH + x * W + y];
-                sel[1 * WH + x * W + y] = e[1 * WH + x * W + y] < e[0 * WH + x * W + y] && e[1 * WH + x * W + y] < e[2 * WH + x * W + y];
-                sel[2 * WH + x * W + y] = e[2 * WH + x * W + y] < e[0 * WH + x * W + y] && e[1 * WH + x * W + y] < e[2 * WH + x * W + y];
+                sel[0 + 3 *  (x * W + y)] = e[0 + 3 *  (x * W + y)] < e[1 + 3 *  (x * W + y)] && e[0 + 3 *  (x * W + y)] < e[2 + 3 *  (x * W + y)];
+                sel[1 + 3 *  (x * W + y)] = e[1 + 3 *  (x * W + y)] < e[0 + 3 *  (x * W + y)] && e[1 + 3 *  (x * W + y)] < e[2 + 3 *  (x * W + y)];
+                sel[2 + 3 *  (x * W + y)] = e[2 + 3 *  (x * W + y)] < e[0 + 3 *  (x * W + y)] && e[1 + 3 *  (x * W + y)] < e[2 + 3 *  (x * W + y)];
         }
     }
 
@@ -172,20 +172,20 @@ using namespace std;
             for (int y = 0; y < H; y++){
 
                 // Retrieve weights and normalization term => such that weights sum up to 1
-                w_r = sel_filtered[0 * WH + x * W + y];
-                w_g = sel_filtered[1 * WH + x * W + y];
-                w_b = sel_filtered[2 * WH + x * W + y];
+                w_r = sel_filtered[0 + 3 *  (x * W + y)];
+                w_g = sel_filtered[1 + 3 *  (x * W + y)];
+                w_b = sel_filtered[2 + 3 *  (x * W + y)];
 
                 norm = w_r + w_g + w_b;
             
                 // Set candidate r as base => for boundary parts and pixels with norm == 0
-                out_img[i * WH + x * W + y] = r[i * WH + x * W + y];
+                out_img[i + 3 *  (x * W + y)] = r[i + 3 *  (x * W + y)];
 
                 // Averaging of candidate filters
                 if (norm > EPSILON and norm != INFINITY){
-                    out_img[i * WH + x * W + y] =  ((w_r * r[i * WH + x * W + y]) 
-                                                  + (w_g * g[i * WH + x * W + y])
-                                                  + (w_b * b[i * WH + x * W + y]))/norm;
+                    out_img[i + 3 *  (x * W + y)] =  ((w_r * r[i + 3 *  (x * W + y)]) 
+                                                  + (w_g * g[i + 3 *  (x * W + y)])
+                                                  + (w_b * b[i + 3 *  (x * W + y)]))/norm;
                 }
             
             }
