@@ -17,9 +17,9 @@ void load_exr(const char fileName[], scalar** buf, int &W, int &H)
         // Fill buffer with corresponding values -> c[channel][x][y]
         for (int i = 0; i < W; i++) {
             for (int j=0; j<H; j++) {
-                (*buf)[0 * WH + i * W + j] = pixelsR[j][i];
-                (*buf)[1 * WH + i * W + j] = pixelsG[j][i];
-                (*buf)[2 * WH + i * W + j] = pixelsB[j][i];
+                (*buf)[3 * (i * W + j) + 0] = pixelsR[j][i];
+                (*buf)[3 * (i * W + j) + 1] = pixelsG[j][i];
+                (*buf)[3 * (i * W + j) + 2] = pixelsB[j][i];
             }
         }
 }
@@ -37,9 +37,9 @@ void write_buffer_exr(const char fileName[], scalar* buf, int W, int H){
 
     for (int x = 0; x < W; x++){
         for (int y = 0; y < H; y++){
-            pixelsR[y][x] = buf[0 * WH + x * W  + y];
-            pixelsG[y][x] = buf[1 * WH + x * W  + y];
-            pixelsB[y][x] = buf[2 * WH + x * W  + y];
+            pixelsR[y][x] = buf[3 * (x * W + y) + 0];
+            pixelsG[y][x] = buf[3 * (x * W + y) + 1];
+            pixelsB[y][x] = buf[3 * (x * W + y) + 2];
         }
     }
 

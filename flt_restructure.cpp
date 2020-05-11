@@ -25,13 +25,13 @@ void sure_all(scalar* sure, scalar* c, scalar* c_var, scalar* cand_r, scalar* ca
             for (int i = 0; i < 3; i++){    
 
                 // Calculate terms
-                d_r = cand_r[i * WH + x * W + y] - c[i * WH + x * W + y];
+                d_r = cand_r[3 * (x * W + y) + i] - c[3 * (x * W + y) + i];
                 d_r *= d_r;
-                d_g = cand_g[i * WH + x * W + y] - c[i * WH + x * W + y];
+                d_g = cand_g[3 * (x * W + y) + i] - c[3 * (x * W + y) + i];
                 d_g *= d_g;
-                d_b = cand_b[i * WH + x * W + y] - c[i * WH + x * W + y];
+                d_b = cand_b[3 * (x * W + y) + i] - c[3 * (x * W + y) + i];
                 d_b *= d_b;
-                v = c_var[i * WH + x * W + y];
+                v = c_var[3 * (x * W + y) + i];
                 v *= v;
 
                 // Summing up
@@ -84,10 +84,10 @@ void filtering_basic(scalar* output, scalar* input, scalar* c, scalar* c_var, Fl
 
                     scalar distance = 0;
                     for (int i=0; i<3; i++){                        
-                        scalar sqdist = c[i * WH + xp * W + yp] - c[i * WH + xq * W + yq];
+                        scalar sqdist = c[3 * (xp * W + yp) + i] - c[3 * (xq * W + yq) + i];
                         sqdist *= sqdist;
-                        scalar var_cancel = c_var[i * WH + xp * W + yp] + fmin(c_var[i * WH + xp * W + yp], c_var[i * WH + xq * W + yq]);
-                        scalar normalization = EPSILON + k_c_squared*(c_var[i * WH + xp * W + yp] + c_var[i * WH + xq * W + yq]);
+                        scalar var_cancel = c_var[3 * (xp * W + yp) + i] + fmin(c_var[3 * (xp * W + yp) + i], c_var[3 * (xq * W + yq) + i]);
+                        scalar normalization = EPSILON + k_c_squared*(c_var[3 * (xp * W + yp) + i] + c_var[3 * (xq * W + yq) + i]);
                         distance += (sqdist - var_cancel) / normalization;
                     }
 
@@ -124,7 +124,7 @@ void filtering_basic(scalar* output, scalar* input, scalar* c, scalar* c_var, Fl
                     weight_sum[xp * W + yp] += weight;
                     
                     for (int i=0; i<3; i++){
-                        output[i * WH + xp * W + yp] += weight * input[i * WH + xq * W + yq];
+                        output[3 * (xp * W + yp) + i] += weight * input[3 * (xq * W + yq) + i];
                     }
                 }
             }
@@ -137,7 +137,7 @@ void filtering_basic(scalar* output, scalar* input, scalar* c, scalar* c_var, Fl
         for(int yp = p.r + p.f ; yp < H - p.r - p.f; ++yp) {     
             scalar w = weight_sum[xp * W + yp];
             for (int i=0; i<3; i++){
-                output[i * WH + xp * W + yp] /= w;
+                output[3 * (xp * W + yp) + i] /= w;
             }
         }
     }
@@ -147,14 +147,14 @@ void filtering_basic(scalar* output, scalar* input, scalar* c, scalar* c_var, Fl
     for (int i = 0; i < 3; i++){
         for (int xp = 0; xp < W; xp++){
             for(int yp = 0; yp < p.r+p.f; yp++){
-                output[i * WH + xp * W + yp] = input[i * WH + xp * W + yp];
-                output[i * WH + xp * W + H - yp - 1] = input[i * WH + xp * W + H - yp - 1];
+                output[3 * (xp * W + yp) + i] = input[3 * (xp * W + yp) + i];
+                output[i + 3 * (xp * W + H - yp - 1)] = input[i + 3 * (xp * W + H - yp - 1)];
             }
         }
         for(int xp = 0; xp < p.r+p.f; xp++){
              for (int yp = p.r+p.f ; yp < H - p.r - p.f; yp++){
-                output[i * WH + xp * W + yp] = input[i * WH + xp * W + yp];
-                output[i * WH + (W - xp - 1) * W + yp] = input[i * WH + (W - xp - 1) * W + yp];
+                output[3 * (xp * W + yp) + i] = input[3 * (xp * W + yp) + i];
+                output[3 * ((W - xp - 1) * W + yp) + i] = input[3 * ((W - xp - 1) * W + yp) + i];
             }
         }
 
@@ -200,10 +200,10 @@ void feature_prefiltering(scalar* output, scalar* output_var, scalar* features, 
 
                     scalar distance = 0;
                     for (int i=0; i<3; i++){                        
-                        scalar sqdist = features[i * WH + xp * W + yp] - features[i * WH + xq * W + yq];
+                        scalar sqdist = features[3 * (xp * W + yp) + i] - features[3 * (xq * W + yq) + i];
                         sqdist *= sqdist;
-                        scalar var_cancel = features_var[i * WH + xp * W + yp] + fmin(features_var[i * WH + xp * W + yp], features_var[i * WH + xq * W + yq]);
-                        scalar normalization = EPSILON + k_c_squared*(features_var[i * WH + xp * W + yp] + features_var[i * WH + xq * W + yq]);
+                        scalar var_cancel = features_var[3 * (xp * W + yp) + i] + fmin(features_var[3 * (xp * W + yp) + i], features_var[3 * (xq * W + yq) + i]);
+                        scalar normalization = EPSILON + k_c_squared*(features_var[3 * (xp * W + yp) + i] + features_var[3 * (xq * W + yq) + i]);
                         distance += (sqdist - var_cancel) / normalization;
                     }
 
@@ -240,8 +240,8 @@ void feature_prefiltering(scalar* output, scalar* output_var, scalar* features, 
                     weight_sum[xp * W + yp] += weight;
                     
                     for (int i=0; i<3; i++){
-                        output[i * WH + xp * W + yp] += weight * features[i * WH + xq * W + yq];
-                        output_var[i * WH + xp * W + yp] += weight * features_var[i * WH + xq * W + yq];
+                        output[3 * (xp * W + yp) + i] += weight * features[3 * (xq * W + yq) + i];
+                        output_var[3 * (xp * W + yp) + i] += weight * features_var[3 * (xq * W + yq) + i];
                     }
                 }
             }
@@ -256,8 +256,8 @@ void feature_prefiltering(scalar* output, scalar* output_var, scalar* features, 
         
             scalar w = weight_sum[xp * W + yp];
             for (int i=0; i<3; i++){
-                output[i * WH + xp * W + yp] /= w;
-                output_var[i * WH + xp * W + yp] /= w;
+                output[3 * (xp * W + yp) + i] /= w;
+                output_var[3 * (xp * W + yp) + i] /= w;
             }
         }
     }
@@ -267,18 +267,18 @@ void feature_prefiltering(scalar* output, scalar* output_var, scalar* features, 
     for (int i = 0; i < 3; i++){
         for (int xp = 0; xp < W; xp++){
             for(int yp = 0; yp < p.r+p.f; yp++){
-                output[i * WH + xp * W + yp] = features[i * WH + xp * W + yp];
-                output[i * WH + xp * W + H - yp - 1] = features[i * WH + xp * W + H - yp - 1];
-                output_var[i * WH + xp * W + yp] = features_var[i * WH + xp * W + yp];
-                output_var[i * WH + xp * W + H - yp - 1] = features_var[i * WH + xp * W + H - yp - 1];
+                output[3 * (xp * W + yp) + i] = features[3 * (xp * W + yp) + i];
+                output[3 * (xp * W + H - yp - 1) + i] = features[3 * (xp * W + H - yp - 1) + i];
+                output_var[3 * (xp * W + yp) + i] = features_var[3 * (xp * W + yp) + i];
+                output_var[3 * (xp * W + H - yp - 1) + i] = features_var[3 * (xp * W + H - yp - 1) + i];
             }
         }
         for(int xp = 0; xp < p.r+p.f; xp++){
              for (int yp = p.r+p.f ; yp < H - p.r - p.f; yp++){
-                output[i * WH + xp * W + yp] = features[i * WH + xp * W + yp];
-                output[i * WH + (W - xp - 1) * W + yp] = features[i * WH + (W - xp - 1) * W + yp];
-                output_var[i * WH + xp * W + yp] = features_var[i * WH + xp * W + yp];
-                output_var[i * WH + (W - xp - 1) * W + yp] = features_var[i * WH + (W - xp - 1) * W + yp];
+                output[3 * (xp * W + yp) + i] = features[3 * (xp * W + yp) + i];
+                output[3 * ((W - xp - 1) * W + yp) + i] = features[3 * ((W - xp - 1) * W + yp) + i];
+                output_var[3 * (xp * W + yp) + i] = features_var[3 * (xp * W + yp) + i];
+                output_var[3 * ((W - xp - 1) * W + yp) + i] = features_var[3 * ((W - xp - 1) * W + yp) + i];
             }
         }
 
@@ -321,12 +321,12 @@ void candidate_filtering(scalar* output, scalar* color, scalar* color_var, scala
     for(int i=0; i<NB_FEATURES;++i) {
         for(int x =  p.r + p.f; x < W - p.r - p.f; ++x) {
             for(int y = p.r + p.f; y < H - p.r - p.f; ++y) {
-                scalar diffL = features[i * WH + x * W + y] - features[i * WH + (x-1) * W + y];
-                scalar diffR = features[i * WH + x * W + y] - features[i * WH + (x+1) * W + y];
-                scalar diffU = features[i * WH + x * W + y] - features[i * WH + x * W + y - 1];
-                scalar diffD = features[i * WH + x * W + y] - features[i * WH + x * W + y + 1];
+                scalar diffL = features[3 * (x * W + y) + i] - features[i * WH + (x-1) * W + y];
+                scalar diffR = features[3 * (x * W + y) + i] - features[i * WH + (x+1) * W + y];
+                scalar diffU = features[3 * (x * W + y) + i] - features[i * WH + x * W + y - 1];
+                scalar diffD = features[3 * (x * W + y) + i] - features[i * WH + x * W + y + 1];
 
-                gradients[i * WH + x * W + y] = fmin(diffL*diffL, diffR*diffR) + fmin(diffU*diffU, diffD*diffD);
+                gradients[3 * (x * W + y) + i] = fmin(diffL*diffL, diffR*diffR) + fmin(diffU*diffU, diffD*diffD);
             }
         } 
     }
@@ -348,10 +348,10 @@ void candidate_filtering(scalar* output, scalar* color, scalar* color_var, scala
 
                     scalar distance = 0;
                     for (int i=0; i<3; i++){                        
-                        scalar sqdist = color[i * WH + xp * W + yp] - color[i * WH + xq * W + yq];
+                        scalar sqdist = color[3 * (xp * W + yp) + i] - color[3 * (xq * W + yq) + i];
                         sqdist *= sqdist;
-                        scalar var_cancel = color_var[i * WH + xp * W + yp] + fmin(color_var[i * WH + xp * W + yp], color_var[i * WH + xq * W + yq]);
-                        scalar normalization = EPSILON + k_c_squared*(color_var[i * WH + xp * W + yp] + color_var[i * WH + xq * W + yq]);
+                        scalar var_cancel = color_var[3 * (xp * W + yp) + i] + fmin(color_var[3 * (xp * W + yp) + i], color_var[3 * (xq * W + yq) + i]);
+                        scalar normalization = EPSILON + k_c_squared*(color_var[3 * (xp * W + yp) + i] + color_var[3 * (xq * W + yq) + i]);
                         distance += (sqdist - var_cancel) / normalization;
                     }
 
@@ -371,10 +371,10 @@ void candidate_filtering(scalar* output, scalar* color, scalar* color_var, scala
                     // Compute feature weight
                     scalar df = 0.f;
                     for(int j=0; j<NB_FEATURES;++j){
-                        scalar sqdist = features[j * WH + xp * W + yp] - features[j * WH + xq * W + yq];
+                        scalar sqdist = features[3 * (xp * W + yp) + j] - features[3 * (xq * W + yq) + j];
                         sqdist *= sqdist;
-                        scalar var_cancel = features_var[j * WH + xp * W + yp] + fmin(features_var[j * WH + xp * W + yp], features_var[j * WH + xq * W + yq]);
-                        scalar normalization = k_f_squared*fmax(p.tau, fmax(features_var[j * WH + xp * W + yp], gradients[j * WH + xp * W + yp]));
+                        scalar var_cancel = features_var[3 * (xp * W + yp) + j] + fmin(features_var[3 * (xp * W + yp) + j], features_var[3 * (xq * W + yq) + j]);
+                        scalar normalization = k_f_squared*fmax(p.tau, fmax(features_var[3 * (xp * W + yp) + j], gradients[3 * (xp * W + yp) + j]));
                         df = fmax(df, (sqdist - var_cancel)/normalization);
                     }
                     feature_weights[xp * W + yp] = exp(-df);
@@ -411,7 +411,7 @@ void candidate_filtering(scalar* output, scalar* color, scalar* color_var, scala
                     weight_sum[xp * W + yp] += weight;
                     
                     for (int i=0; i<3; i++){
-                        output[i * WH + xp * W + yp] += weight * color[i * WH + xq * W + yq];
+                        output[3 * (xp * W + yp) + i] += weight * color[3 * (xq * W + yq) + i];
                     }
                 }
             }
@@ -424,7 +424,7 @@ void candidate_filtering(scalar* output, scalar* color, scalar* color_var, scala
         
             scalar w = weight_sum[xp * W + yp];
             for (int i=0; i<3; i++){
-                output[i * WH + xp * W + yp] /= w;
+                output[3 * (xp * W + yp) + i] /= w;
             }
         }
     }
@@ -434,14 +434,14 @@ void candidate_filtering(scalar* output, scalar* color, scalar* color_var, scala
     for (int i = 0; i < 3; i++){
         for (int xp = 0; xp < W; xp++){
             for(int yp = 0; yp < p.r + p.f; yp++){
-                output[i * WH + xp * W + yp] = color[i * WH + xp * W + yp];
-                output[i * WH + xp * W + H - yp - 1] = color[i * WH + xp * W + H - yp - 1];
+                output[3 * (xp * W + yp) + i] = color[3 * (xp * W + yp) + i];
+                output[i + 3 * (xp * W + H - yp - 1)] = color[i + 3 * (xp * W + H - yp - 1)];
             }
         }
         for(int xp = 0; xp < p.r+p.f; xp++){
             for (int yp = p.r+p.f ; yp < H - p.r - p.f; yp++){
-                output[i * WH + xp * W + yp] = color[i * WH + xp * W + yp];
-                output[i * WH + (W - xp - 1) * W + yp] = color[i * WH + (W - xp - 1) * W + yp];
+                output[3 * (xp * W + yp) + i] = color[3 * (xp * W + yp) + i];
+                output[3 * ((W - xp - 1) * W + yp) + i] = color[3 * ((W - xp - 1) * W + yp) + i];
             }
         }
     }
@@ -506,12 +506,12 @@ void candidate_filtering_all(scalar* output_r, scalar* output_g, scalar* output_
     for(int i=0; i<NB_FEATURES;++i) {
         for(int x =  R+f_min; x < W - R - f_min; ++x) {
             for(int y =  R+f_min; y < H-  R - f_min; ++y) {
-                scalar diffL = features[i * WH + x * W + y] - features[i * WH + (x-1) * W + y];
-                scalar diffR = features[i * WH + x * W + y] - features[i * WH + (x+1) * W + y];
-                scalar diffU = features[i * WH + x * W + y] - features[i * WH + x * W + y - 1];
-                scalar diffD = features[i * WH + x * W + y] - features[i * WH + x * W + y + 1];
+                scalar diffL = features[3 * (x * W + y) + i] - features[i * WH + (x-1) * W + y];
+                scalar diffR = features[3 * (x * W + y) + i] - features[i * WH + (x+1) * W + y];
+                scalar diffU = features[3 * (x * W + y) + i] - features[i * WH + x * W + y - 1];
+                scalar diffD = features[3 * (x * W + y) + i] - features[i * WH + x * W + y + 1];
 
-                gradients[i * WH + x * W + y] = fmin(diffL*diffL, diffR*diffR) + fmin(diffU*diffU, diffD*diffD);
+                gradients[3 * (x * W + y) + i] = fmin(diffL*diffL, diffR*diffR) + fmin(diffU*diffU, diffD*diffD);
             }
         } 
     }
@@ -535,10 +535,10 @@ void candidate_filtering_all(scalar* output_r, scalar* output_g, scalar* output_
                     scalar distance_r = 0.f;
 
                     for (int i=0; i<3; i++){                        
-                        scalar sqdist = color[i * WH + xp * W + yp] - color[i * WH + xq * W + yq];
+                        scalar sqdist = color[3 * (xp * W + yp) + i] - color[3 * (xq * W + yq) + i];
                         sqdist *= sqdist;
-                        scalar var_cancel = color_var[i * WH + xp * W + yp] + fmin(color_var[i * WH + xp * W + yp], color_var[i * WH + xq * W + yq]);
-                        scalar var_term = color_var[i * WH + xp * W + yp] + color_var[i * WH + xq * W + yq];
+                        scalar var_cancel = color_var[3 * (xp * W + yp) + i] + fmin(color_var[3 * (xp * W + yp) + i], color_var[3 * (xq * W + yq) + i]);
+                        scalar var_term = color_var[3 * (xp * W + yp) + i] + color_var[3 * (xq * W + yq) + i];
                         scalar normalization_r = EPSILON + k_c_squared_r*(var_term);
                         scalar dist_var = sqdist - var_cancel;
                         distance_r += (dist_var) / normalization_r;
@@ -560,10 +560,10 @@ void candidate_filtering_all(scalar* output_r, scalar* output_g, scalar* output_
                     scalar df_b = 0.f;
 
                     for(int j=0; j<NB_FEATURES;++j){
-                        scalar sqdist = features[j * WH + xp * W + yp] - features[j * WH + xq * W + yq];
+                        scalar sqdist = features[3 * (xp * W + yp) + j] - features[3 * (xq * W + yq) + j];
                         sqdist *= sqdist;
-                        scalar var_cancel = features_var[j * WH + xp * W + yp] + fmin(features_var[j * WH + xp * W + yp], features_var[j * WH + xq * W + yq]);
-                        scalar var_max = fmax(features_var[j * WH + xp * W + yp], gradients[j * WH + xp * W + yp]);
+                        scalar var_cancel = features_var[3 * (xp * W + yp) + j] + fmin(features_var[3 * (xp * W + yp) + j], features_var[3 * (xq * W + yq) + j]);
+                        scalar var_max = fmax(features_var[3 * (xp * W + yp) + j], gradients[3 * (xp * W + yp) + j]);
                         scalar normalization_r = k_f_squared_r*fmax(tau_r, var_max);
                         scalar normalization_b = k_f_squared_b*fmax(tau_b, var_max);
                         scalar dist_var = sqdist - var_cancel;
@@ -610,10 +610,10 @@ void candidate_filtering_all(scalar* output_r, scalar* output_g, scalar* output_
 
                     // Compute final weight
                     scalar weight = fmin(color_weight, features_weights_r[xp * W + yp]);
-                    weight_sum[0 * WH + xp * W + yp] += weight;
+                    weight_sum[3 * (xp * W + yp)] += weight;
                     
                     for (int i=0; i<3; i++){
-                        output_r[i * WH + xp * W + yp] += weight * color[i * WH + xq * W + yq];
+                        output_r[3 * (xp * W + yp) + i] += weight * color[3 * (xq * W + yq) + i];
                     }
                 }
             }
@@ -648,10 +648,10 @@ void candidate_filtering_all(scalar* output_r, scalar* output_g, scalar* output_
                     
                     // Compute final weight
                     scalar weight = fmin(color_weight, features_weights_r[xp * W + yp]);
-                    weight_sum[1 * WH + xp * W + yp] += weight;
+                    weight_sum[1 + 3 * (xp * W + yp)] += weight;
                     
                     for (int i=0; i<3; i++){
-                        output_g[i * WH + xp * W + yp] += weight * color[i * WH + xq * W + yq];
+                        output_g[3 * (xp * W + yp) + i] += weight * color[3 * (xq * W + yq) + i];
                     }
                 }
             }
@@ -669,10 +669,10 @@ void candidate_filtering_all(scalar* output_r, scalar* output_g, scalar* output_
 
                     // Compute final weight
                     scalar weight = features_weights_b[xp * W + yp];
-                    weight_sum[2 * WH + xp * W + yp] += weight;
+                    weight_sum[2 + 3 * (xp * W + yp)] += weight;
                     
                     for (int i=0; i<3; i++){
-                        output_b[i * WH + xp * W + yp] += weight * color[i * WH + xq * W + yq];
+                        output_b[3 * (xp * W + yp) + i] += weight * color[3 * (xq * W + yq) + i];
                     }
                 }
             }
@@ -684,9 +684,9 @@ void candidate_filtering_all(scalar* output_r, scalar* output_g, scalar* output_
     for(int xp = R + f_r; xp < W - R - f_r; ++xp) {
         for(int yp = R + f_r; yp < H - R - f_r; ++yp) {
         
-            scalar w = weight_sum[0 * WH + xp * W + yp];
+            scalar w = weight_sum[3 * (xp * W + yp)];
             for (int i=0; i<3; i++){
-                output_r[i * WH + xp * W + yp] /= w;
+                output_r[3 * (xp * W + yp) + i] /= w;
             }
         }
     }
@@ -695,9 +695,9 @@ void candidate_filtering_all(scalar* output_r, scalar* output_g, scalar* output_
    for(int xp = R + f_g; xp < W - R - f_g; ++xp) {
         for(int yp = R + f_g; yp < H - R - f_g; ++yp) {
         
-            scalar w = weight_sum[1 * WH + xp * W + yp];
+            scalar w = weight_sum[1 + 3 * (xp * W + yp)];
             for (int i=0; i<3; i++){
-                output_g[i * WH + xp * W + yp] /= w;
+                output_g[3 * (xp * W + yp) + i] /= w;
             }
         }
     }
@@ -706,9 +706,9 @@ void candidate_filtering_all(scalar* output_r, scalar* output_g, scalar* output_
    for(int xp = R + f_b; xp < W - R - f_b; ++xp) {
         for(int yp = R + f_b; yp < H - R - f_b; ++yp) {
         
-            scalar w = weight_sum[2 * WH + xp * W + yp];
+            scalar w = weight_sum[2 + 3 * (xp * W + yp)];
             for (int i=0; i<3; i++){
-                output_b[i * WH + xp * W + yp] /= w;
+                output_b[3 * (xp * W + yp) + i] /= w;
             }
         }
     }
@@ -719,19 +719,19 @@ void candidate_filtering_all(scalar* output_r, scalar* output_g, scalar* output_
     for (int i = 0; i < 3; i++){
         for (int xp = 0; xp < W; xp++){
             for(int yp = 0; yp < R + f_r; yp++){
-                output_r[i * WH + xp * W + yp] = color[i * WH + xp * W + yp];
-                output_r[i * WH + xp * W + H - yp - 1] = color[i * WH + xp * W + H - yp - 1];
-                output_b[i * WH + xp * W + yp] = color[i * WH + xp * W + yp];
-                output_b[i * WH + xp * W + H - yp - 1] = color[i * WH + xp * W + H - yp - 1];
+                output_r[3 * (xp * W + yp) + i] = color[3 * (xp * W + yp) + i];
+                output_r[i + 3 * (xp * W + H - yp - 1)] = color[i + 3 * (xp * W + H - yp - 1)];
+                output_b[3 * (xp * W + yp) + i] = color[3 * (xp * W + yp) + i];
+                output_b[i + 3 * (xp * W + H - yp - 1)] = color[i + 3 * (xp * W + H - yp - 1)];
             }
         }
         for(int xp = 0; xp < R + f_r; xp++){
             for (int yp = R + f_r ; yp < H - R - f_r; yp++){
             
-                output_r[i * WH + xp * W + yp] = color[i * WH + xp * W + yp];
-                output_r[i * WH + (W - xp - 1) * W + yp ] = color[i * WH + (W - xp - 1) * W + yp ];
-                output_b[i * WH + xp * W + yp] = color[i * WH + xp * W + yp];
-                output_b[i * WH + (W - xp - 1) * W + yp ] = color[i * WH + (W - xp - 1) * W + yp ];
+                output_r[3 * (xp * W + yp) + i] = color[3 * (xp * W + yp) + i];
+                output_r[3 * ((W - xp - 1) * W + yp) + i ] = color[3 * ((W - xp - 1) * W + yp) + i ];
+                output_b[3 * (xp * W + yp) + i] = color[3 * (xp * W + yp) + i];
+                output_b[3 * ((W - xp - 1) * W + yp) + i ] = color[3 * ((W - xp - 1) * W + yp) + i ];
              }
         }
     }
@@ -740,14 +740,14 @@ void candidate_filtering_all(scalar* output_r, scalar* output_g, scalar* output_
     for (int i = 0; i < 3; i++){
         for (int xp = 0; xp < W; xp++){
             for(int yp = 0; yp < R + f_g; yp++){
-                output_g[i * WH + xp * W + yp] = color[i * WH + xp * W + yp];
-                output_g[i * WH + xp * W + H - yp - 1] = color[i * WH + xp * W + H - yp - 1];
+                output_g[3 * (xp * W + yp) + i] = color[3 * (xp * W + yp) + i];
+                output_g[i + 3 * (xp * W + H - yp - 1)] = color[i + 3 * (xp * W + H - yp - 1)];
             }
         }
         for(int xp = 0; xp < R + f_g; xp++){
             for (int yp = R + f_g ; yp < H - R - f_g; yp++){
-                output_g[i * WH + xp * W + yp] = color[i * WH + xp * W + yp];
-                output_g[i * WH + (W - xp - 1) * W + yp ] = color[i * WH + (W - xp - 1) * W + yp ];
+                output_g[3 * (xp * W + yp) + i] = color[3 * (xp * W + yp) + i];
+                output_g[3 * ((W - xp - 1) * W + yp) + i ] = color[3 * ((W - xp - 1) * W + yp) + i ];
             }
         }
     }
@@ -794,7 +794,7 @@ void candidate_filtering_all2(scalar* output_r, scalar* output_g, scalar* output
     // Handling Inner Part   
     // -------------------
 
-    int WH = W*H;
+    //int WH = W*H;
 
     // Allocate buffer weights_sum for normalizing
     scalar* weight_sum;
@@ -822,12 +822,12 @@ void candidate_filtering_all2(scalar* output_r, scalar* output_g, scalar* output
     for(int i=0; i<NB_FEATURES;++i) {
         for(int x =  R+f_min; x < W - R - f_min; ++x) {
             for(int y =  R+f_min; y < H-  R - f_min; ++y) {
-                scalar diffL = features[i * WH + x * W + y] - features[i * WH + (x-1) * W + y];
-                scalar diffR = features[i * WH + x * W + y] - features[i * WH + (x+1) * W + y];
-                scalar diffU = features[i * WH + x * W + y] - features[i * WH + x * W + y - 1];
-                scalar diffD = features[i * WH + x * W + y] - features[i * WH + x * W + y + 1];
+                scalar diffL = features[3 * (x * W + y) + i] - features[3 * ((x - 1) * W + y) + i];
+                scalar diffR = features[3 * (x * W + y) + i] - features[3 * ((x + 1) * W + y) + i];
+                scalar diffU = features[3 * (x * W + y) + i] - features[3 * (x * W + y - 1) + i];
+                scalar diffD = features[3 * (x * W + y) + i] - features[3 * (x * W + y + 1) + i];
 
-                gradients[i * WH + x * W + y] = fmin(diffL*diffL, diffR*diffR) + fmin(diffU*diffU, diffD*diffD);
+                gradients[3 * (x * W + y) + i] = fmin(diffL*diffL, diffR*diffR) + fmin(diffU*diffU, diffD*diffD);
             }
         } 
     }
@@ -867,22 +867,22 @@ void candidate_filtering_all2(scalar* output_r, scalar* output_g, scalar* output
 
                     for (int i=0; i<3; i++){   
 
-                        scalar sqdist_0 = color[i * WH + xp * W + yp] - color[i * WH + xq * W + yq];
-                        scalar sqdist_1 = color[i * WH + xp * W + yp+1] - color[i * WH + xq * W + yq+1];
-                        scalar sqdist_2 = color[i * WH + xp * W + yp+2] - color[i * WH + xq * W + yq+2];
-                        scalar sqdist_3 = color[i * WH + xp * W + yp+3] - color[i * WH + xq * W + yq+3];
-                        scalar sqdist_4 = color[i * WH + xp * W + yp+4] - color[i * WH + xq * W + yq+4];
-                        scalar sqdist_5 = color[i * WH + xp * W + yp+5] - color[i * WH + xq * W + yq+5];
-                        scalar sqdist_6 = color[i * WH + xp * W + yp+6] - color[i * WH + xq * W + yq+6];
-                        scalar sqdist_7 = color[i * WH + xp * W + yp+7] - color[i * WH + xq * W + yq+7];
-                        scalar sqdist_8 = color[i * WH + xp * W + yp+8] - color[i * WH + xq * W + yq+8];
-                        scalar sqdist_9 = color[i * WH + xp * W + yp+9] - color[i * WH + xq * W + yq+9];
-                        scalar sqdist_10 = color[i * WH + xp * W + yp+10] - color[i * WH + xq * W + yq+10];
-                        scalar sqdist_11 = color[i * WH + xp * W + yp+11] - color[i * WH + xq * W + yq+11];
-                        scalar sqdist_12 = color[i * WH + xp * W + yp+12] - color[i * WH + xq * W + yq+12];
-                        scalar sqdist_13 = color[i * WH + xp * W + yp+13] - color[i * WH + xq * W + yq+13];
-                        scalar sqdist_14 = color[i * WH + xp * W + yp+14] - color[i * WH + xq * W + yq+14];
-                        scalar sqdist_15 = color[i * WH + xp * W + yp+15] - color[i * WH + xq * W + yq+15];
+                        scalar sqdist_0 = color[3 * (xp * W + yp) + i] - color[3 * (xq * W + yq) + i];
+                        scalar sqdist_1 = color[3 * (xp * W + yp+1) + i] - color[3 * (xq * W + yq + 1) + i];
+                        scalar sqdist_2 = color[3 * (xp * W + yp+2) + i] - color[3 * (xq * W + yq+2) + i];
+                        scalar sqdist_3 = color[3 * (xp * W + yp+3) + i] - color[3 * (xq * W + yq+3) + i];
+                        scalar sqdist_4 = color[3 * (xp * W + yp+4) + i] - color[3 * (xq * W + yq+4) + i];
+                        scalar sqdist_5 = color[3 * (xp * W + yp+5) + i] - color[3 * (xq * W + yq+5) + i];
+                        scalar sqdist_6 = color[3 * (xp * W + yp+6) + i] - color[3 * (xq * W + yq+6) + i];
+                        scalar sqdist_7 = color[3 * (xp * W + yp+7) + i] - color[3 * (xq * W + yq+7) + i];
+                        scalar sqdist_8 = color[3 * (xp * W + yp+8) + i] - color[3 * (xq * W + yq+8) + i];
+                        scalar sqdist_9 = color[3 * (xp * W + yp+9) + i] - color[3 * (xq * W + yq+9) + i];
+                        scalar sqdist_10 = color[3 * (xp * W + yp+10) + i] - color[3 * (xq * W + yq+10) + i];
+                        scalar sqdist_11 = color[3 * (xp * W + yp+11) + i] - color[3 * (xq * W + yq+11) + i];
+                        scalar sqdist_12 = color[3 * (xp * W + yp+12) + i] - color[3 * (xq * W + yq+12) + i];
+                        scalar sqdist_13 = color[3 * (xp * W + yp+13) + i] - color[3 * (xq * W + yq+13) + i];
+                        scalar sqdist_14 = color[3 * (xp * W + yp+14) + i] - color[3 * (xq * W + yq+14) + i];
+                        scalar sqdist_15 = color[3 * (xp * W + yp+15) + i] - color[3 * (xq * W + yq+15) + i];
 
                         sqdist_0 *= sqdist_0;
                         sqdist_1 *= sqdist_1;
@@ -901,39 +901,39 @@ void candidate_filtering_all2(scalar* output_r, scalar* output_g, scalar* output
                         sqdist_14 *= sqdist_14;
                         sqdist_15 *= sqdist_15;
 
-                        scalar var_cancel_0 = color_var[i * WH + xp * W + yp] + fmin(color_var[i * WH + xp * W + yp], color_var[i * WH + xq * W + yq]);
-                        scalar var_cancel_1 = color_var[i * WH + xp * W + yp+1] + fmin(color_var[i * WH + xp * W + yp+1], color_var[i * WH + xq * W + yq+1]);
-                        scalar var_cancel_2 = color_var[i * WH + xp * W + yp+2] + fmin(color_var[i * WH + xp * W + yp+2], color_var[i * WH + xq * W + yq+2]);
-                        scalar var_cancel_3 = color_var[i * WH + xp * W + yp+3] + fmin(color_var[i * WH + xp * W + yp+3], color_var[i * WH + xq * W + yq+3]);
-                        scalar var_cancel_4 = color_var[i * WH + xp * W + yp+4] + fmin(color_var[i * WH + xp * W + yp+4], color_var[i * WH + xq * W + yq+4]);
-                        scalar var_cancel_5 = color_var[i * WH + xp * W + yp+5] + fmin(color_var[i * WH + xp * W + yp+5], color_var[i * WH + xq * W + yq+5]);
-                        scalar var_cancel_6 = color_var[i * WH + xp * W + yp+6] + fmin(color_var[i * WH + xp * W + yp+6], color_var[i * WH + xq * W + yq+6]);
-                        scalar var_cancel_7 = color_var[i * WH + xp * W + yp+7] + fmin(color_var[i * WH + xp * W + yp+7], color_var[i * WH + xq * W + yq+7]);
-                        scalar var_cancel_8 = color_var[i * WH + xp * W + yp+8] + fmin(color_var[i * WH + xp * W + yp+8], color_var[i * WH + xq * W + yq+8]);
-                        scalar var_cancel_9 = color_var[i * WH + xp * W + yp+9] + fmin(color_var[i * WH + xp * W + yp+9], color_var[i * WH + xq * W + yq+9]);
-                        scalar var_cancel_10 = color_var[i * WH + xp * W + yp+10] + fmin(color_var[i * WH + xp * W + yp+10], color_var[i * WH + xq * W + yq+10]);
-                        scalar var_cancel_11 = color_var[i * WH + xp * W + yp+11] + fmin(color_var[i * WH + xp * W + yp+11], color_var[i * WH + xq * W + yq+11]);
-                        scalar var_cancel_12 = color_var[i * WH + xp * W + yp+12] + fmin(color_var[i * WH + xp * W + yp+12], color_var[i * WH + xq * W + yq+12]);
-                        scalar var_cancel_13 = color_var[i * WH + xp * W + yp+13] + fmin(color_var[i * WH + xp * W + yp+13], color_var[i * WH + xq * W + yq+13]);
-                        scalar var_cancel_14 = color_var[i * WH + xp * W + yp+14] + fmin(color_var[i * WH + xp * W + yp+14], color_var[i * WH + xq * W + yq+14]);
-                        scalar var_cancel_15 = color_var[i * WH + xp * W + yp+15] + fmin(color_var[i * WH + xp * W + yp+15], color_var[i * WH + xq * W + yq+15]);
+                        scalar var_cancel_0 = color_var[3 * (xp * W + yp) + i] + fmin(color_var[3 * (xp * W + yp) + i], color_var[3 * (xq * W + yq) + i]);
+                        scalar var_cancel_1 = color_var[3 * (xp * W + yp+1) + i] + fmin(color_var[3 * (xp * W + yp+1) + i], color_var[3 * (xq * W + yq+1) + i]);
+                        scalar var_cancel_2 = color_var[3 * (xp * W + yp+2) + i] + fmin(color_var[3 * (xp * W + yp+2) + i], color_var[3 * (xq * W + yq+2) + i]);
+                        scalar var_cancel_3 = color_var[3 * (xp * W + yp+3) + i] + fmin(color_var[3 * (xp * W + yp+3) + i], color_var[3 * (xq * W + yq) + i]);
+                        scalar var_cancel_4 = color_var[3 * (xp * W + yp+4) + i] + fmin(color_var[3 * (xp * W + yp+4) + i], color_var[3 * (xq * W + yq+4) + i]);
+                        scalar var_cancel_5 = color_var[3 * (xp * W + yp+5) + i] + fmin(color_var[3 * (xp * W + yp+5) + i], color_var[3 * (xq * W + yq) + i]);
+                        scalar var_cancel_6 = color_var[3 * (xp * W + yp+6) + i] + fmin(color_var[3 * (xp * W + yp+6) + i], color_var[3 * (xq * W + yq+6) + i]);
+                        scalar var_cancel_7 = color_var[3 * (xp * W + yp+7) + i] + fmin(color_var[3 * (xp * W + yp+7) + i], color_var[3 * (xq * W + yq) + i]);
+                        scalar var_cancel_8 = color_var[3 * (xp * W + yp+8) + i] + fmin(color_var[3 * (xp * W + yp+8) + i], color_var[3 * (xq * W + yq) + i]);
+                        scalar var_cancel_9 = color_var[3 * (xp * W + yp+9) + i] + fmin(color_var[3 * (xp * W + yp+9) + i], color_var[3 * (xq * W + yq+9) + i]);
+                        scalar var_cancel_10 = color_var[3 * (xp * W + yp+10) + i] + fmin(color_var[3 * (xp * W + yp+10) + i], color_var[3 * (xq * W + yq+10) + i]);
+                        scalar var_cancel_11 = color_var[3 * (xp * W + yp+11) + i] + fmin(color_var[3 * (xp * W + yp+11) + i], color_var[3 * (xq * W + yq+11) + i]);
+                        scalar var_cancel_12 = color_var[3 * (xp * W + yp+12) + i] + fmin(color_var[3 * (xp * W + yp+12) + i], color_var[3 * (xq * W + yq+12) + i]);
+                        scalar var_cancel_13 = color_var[3 * (xp * W + yp+13) + i] + fmin(color_var[3 * (xp * W + yp+13) + i], color_var[3 * (xq * W + yq+13) + i]);
+                        scalar var_cancel_14 = color_var[3 * (xp * W + yp+14) + i] + fmin(color_var[3 * (xp * W + yp+14) + i], color_var[3 * (xq * W + yq+14) + i]);
+                        scalar var_cancel_15 = color_var[3 * (xp * W + yp+15) + i] + fmin(color_var[3 * (xp * W + yp+15) + i], color_var[3 * (xq * W + yq+15) + i]);
 
-                        scalar var_term_0 = color_var[i * WH + xp * W + yp] + color_var[i * WH + xq * W + yq];
-                        scalar var_term_1 = color_var[i * WH + xp * W + yp+1] + color_var[i * WH + xq * W + yq+1];
-                        scalar var_term_2 = color_var[i * WH + xp * W + yp+2] + color_var[i * WH + xq * W + yq+2];
-                        scalar var_term_3 = color_var[i * WH + xp * W + yp+3] + color_var[i * WH + xq * W + yq+3];
-                        scalar var_term_4 = color_var[i * WH + xp * W + yp+4] + color_var[i * WH + xq * W + yq+4];
-                        scalar var_term_5 = color_var[i * WH + xp * W + yp+5] + color_var[i * WH + xq * W + yq+5];
-                        scalar var_term_6 = color_var[i * WH + xp * W + yp+6] + color_var[i * WH + xq * W + yq+6];
-                        scalar var_term_7 = color_var[i * WH + xp * W + yp+7] + color_var[i * WH + xq * W + yq+7];
-                        scalar var_term_8 = color_var[i * WH + xp * W + yp+8] + color_var[i * WH + xq * W + yq+8];
-                        scalar var_term_9 = color_var[i * WH + xp * W + yp+9] + color_var[i * WH + xq * W + yq+9];
-                        scalar var_term_10 = color_var[i * WH + xp * W + yp+10] + color_var[i * WH + xq * W + yq+10];
-                        scalar var_term_11 = color_var[i * WH + xp * W + yp+11] + color_var[i * WH + xq * W + yq+11];
-                        scalar var_term_12 = color_var[i * WH + xp * W + yp+12] + color_var[i * WH + xq * W + yq+12];
-                        scalar var_term_13 = color_var[i * WH + xp * W + yp+13] + color_var[i * WH + xq * W + yq+13];
-                        scalar var_term_14 = color_var[i * WH + xp * W + yp+14] + color_var[i * WH + xq * W + yq+14];
-                        scalar var_term_15 = color_var[i * WH + xp * W + yp+15] + color_var[i * WH + xq * W + yq+15];
+                        scalar var_term_0 = color_var[3 * (xp * W + yp) + i] + color_var[3 * (xq * W + yq) + i];
+                        scalar var_term_1 = color_var[3 * (xp * W + yp+1) + i] + color_var[3 * (xq * W + yq) + i];
+                        scalar var_term_2 = color_var[3 * (xp * W + yp+2) + i] + color_var[3 * (xq * W + yq+2) + i];
+                        scalar var_term_3 = color_var[3 * (xp * W + yp+3) + i] + color_var[3 * (xq * W + yq) + i];
+                        scalar var_term_4 = color_var[3 * (xp * W + yp+4) + i] + color_var[3 * (xq * W + yq+4) + i];
+                        scalar var_term_5 = color_var[3 * (xp * W + yp+5) + i] + color_var[3 * (xq * W + yq) + i];
+                        scalar var_term_6 = color_var[3 * (xp * W + yp+6) + i] + color_var[3 * (xq * W + yq+6) + i];
+                        scalar var_term_7 = color_var[3 * (xp * W + yp+7) + i] + color_var[3 * (xq * W + yq) + i];
+                        scalar var_term_8 = color_var[3 * (xp * W + yp+8) + i] + color_var[3 * (xq * W + yq) + i];
+                        scalar var_term_9 = color_var[3 * (xp * W + yp+9) + i] + color_var[3 * (xq * W + yq+9) + i];
+                        scalar var_term_10 = color_var[3 * (xp * W + yp+10) + i] + color_var[3 * (xq * W + yq+10) + i];
+                        scalar var_term_11 = color_var[3 * (xp * W + yp+11) + i] + color_var[3 * (xq * W + yq+11) + i];
+                        scalar var_term_12 = color_var[3 * (xp * W + yp+12) + i] + color_var[3 * (xq * W + yq+12) + i];
+                        scalar var_term_13 = color_var[3 * (xp * W + yp+13) + i] + color_var[3 * (xq * W + yq+13) + i];
+                        scalar var_term_14 = color_var[3 * (xp * W + yp+14) + i] + color_var[3 * (xq * W + yq+14) + i];
+                        scalar var_term_15 = color_var[3 * (xp * W + yp+15) + i] + color_var[3 * (xq * W + yq+15) + i];
 
                         scalar normalization_r_0 = EPSILON + k_c_squared_r*(var_term_0);
                         scalar normalization_r_1 = EPSILON + k_c_squared_r*(var_term_1);
@@ -1035,14 +1035,14 @@ void candidate_filtering_all2(scalar* output_r, scalar* output_g, scalar* output
 
                     for(int j=0; j<NB_FEATURES;++j){
                         
-                        scalar sqdist_0 = features[j * WH + xp * W + yp] - features[j * WH + xq * W + yq];
-                        scalar sqdist_1 = features[j * WH + xp * W + yp+1] - features[j * WH + xq * W + yq+1];
-                        scalar sqdist_2 = features[j * WH + xp * W + yp+2] - features[j * WH + xq * W + yq+2];
-                        scalar sqdist_3 = features[j * WH + xp * W + yp+3] - features[j * WH + xq * W + yq+3];
-                        scalar sqdist_4 = features[j * WH + xp * W + yp+4] - features[j * WH + xq * W + yq+4];
-                        scalar sqdist_5 = features[j * WH + xp * W + yp+5] - features[j * WH + xq * W + yq+5];
-                        scalar sqdist_6 = features[j * WH + xp * W + yp+6] - features[j * WH + xq * W + yq+6];
-                        scalar sqdist_7 = features[j * WH + xp * W + yp+7] - features[j * WH + xq * W + yq+7];
+                        scalar sqdist_0 = features[3 * (xp * W + yp) + j] - features[3 * (xq * W + yq) + j];
+                        scalar sqdist_1 = features[3 * (xp * W + yp+1) + j] - features[3 * (xq * W + yq+1) + j];
+                        scalar sqdist_2 = features[3 * (xp * W + yp+2) + j] - features[3 * (xq * W + yq+2) + j];
+                        scalar sqdist_3 = features[3 * (xp * W + yp+3) + j] - features[3 * (xq * W + yq+3) + j];
+                        scalar sqdist_4 = features[3 * (xp * W + yp+4) + j] - features[3 * (xq * W + yq+4) + j];
+                        scalar sqdist_5 = features[3 * (xp * W + yp+5) + j] - features[3 * (xq * W + yq+5) + j];
+                        scalar sqdist_6 = features[3 * (xp * W + yp+6) + j] - features[3 * (xq * W + yq+6) + j];
+                        scalar sqdist_7 = features[3 * (xp * W + yp+7) + j] - features[3 * (xq * W + yq+7) + j];
 
                         sqdist_0 *= sqdist_0;
                         sqdist_1 *= sqdist_1;
@@ -1053,23 +1053,23 @@ void candidate_filtering_all2(scalar* output_r, scalar* output_g, scalar* output
                         sqdist_6 *= sqdist_6;
                         sqdist_7 *= sqdist_7;
 
-                        scalar var_cancel_0 = features_var[j * WH + xp * W + yp] + fmin(features_var[j * WH + xp * W + yp], features_var[j * WH + xq * W + yq]);
-                        scalar var_cancel_1 = features_var[j * WH + xp * W + yp+1] + fmin(features_var[j * WH + xp * W + yp+1], features_var[j * WH + xq * W + yq+1]);
-                        scalar var_cancel_2 = features_var[j * WH + xp * W + yp+2] + fmin(features_var[j * WH + xp * W + yp+2], features_var[j * WH + xq * W + yq+2]);
-                        scalar var_cancel_3 = features_var[j * WH + xp * W + yp+3] + fmin(features_var[j * WH + xp * W + yp+3], features_var[j * WH + xq * W + yq+3]);
-                        scalar var_cancel_4 = features_var[j * WH + xp * W + yp+4] + fmin(features_var[j * WH + xp * W + yp+4], features_var[j * WH + xq * W + yq+4]);
-                        scalar var_cancel_5 = features_var[j * WH + xp * W + yp+5] + fmin(features_var[j * WH + xp * W + yp+5], features_var[j * WH + xq * W + yq+5]);
-                        scalar var_cancel_6 = features_var[j * WH + xp * W + yp+6] + fmin(features_var[j * WH + xp * W + yp+6], features_var[j * WH + xq * W + yq+6]);
-                        scalar var_cancel_7 = features_var[j * WH + xp * W + yp+7] + fmin(features_var[j * WH + xp * W + yp+7], features_var[j * WH + xq * W + yq+7]);
+                        scalar var_cancel_0 = features_var[3 * (xp * W + yp) + j] + fmin(features_var[3 * (xp * W + yp) + j], features_var[3 * (xq * W + yq) + j]);
+                        scalar var_cancel_1 = features_var[3 * (xp * W + yp+1) + j] + fmin(features_var[3 * (xp * W + yp+1) + j], features_var[3 * (xq * W + yq+1) + j]);
+                        scalar var_cancel_2 = features_var[3 * (xp * W + yp+2) + j] + fmin(features_var[3 * (xp * W + yp+2) + j], features_var[3 * (xq * W + yq) + j]);
+                        scalar var_cancel_3 = features_var[3 * (xp * W + yp+3) + j] + fmin(features_var[3 * (xp * W + yp+3) + j], features_var[3 * (xq * W + yq) + j]);
+                        scalar var_cancel_4 = features_var[3 * (xp * W + yp+4) + j] + fmin(features_var[3 * (xp * W + yp+4) + j], features_var[3 * (xq * W + yq) + j]);
+                        scalar var_cancel_5 = features_var[3 * (xp * W + yp+5) + j] + fmin(features_var[3 * (xp * W + yp+5) + j], features_var[3 * (xq * W + yq) + j]);
+                        scalar var_cancel_6 = features_var[3 * (xp * W + yp+6) + j] + fmin(features_var[3 * (xp * W + yp+6) + j], features_var[3 * (xq * W + yq) + j]);
+                        scalar var_cancel_7 = features_var[3 * (xp * W + yp+7) + j] + fmin(features_var[3 * (xp * W + yp+7) + j], features_var[3 * (xq * W + yq) + j]);
                         
-                        scalar var_max_0 = fmax(features_var[j * WH + xp * W + yp], gradients[j * WH + xp * W + yp]);
-                        scalar var_max_1 = fmax(features_var[j * WH + xp * W + yp+1], gradients[j * WH + xp * W + yp+1]);
-                        scalar var_max_2 = fmax(features_var[j * WH + xp * W + yp+2], gradients[j * WH + xp * W + yp+2]);
-                        scalar var_max_3 = fmax(features_var[j * WH + xp * W + yp+3], gradients[j * WH + xp * W + yp+3]);
-                        scalar var_max_4 = fmax(features_var[j * WH + xp * W + yp+4], gradients[j * WH + xp * W + yp+4]);
-                        scalar var_max_5 = fmax(features_var[j * WH + xp * W + yp+5], gradients[j * WH + xp * W + yp+5]);
-                        scalar var_max_6 = fmax(features_var[j * WH + xp * W + yp+6], gradients[j * WH + xp * W + yp+6]);
-                        scalar var_max_7 = fmax(features_var[j * WH + xp * W + yp+7], gradients[j * WH + xp * W + yp+7]);
+                        scalar var_max_0 = fmax(features_var[3 * (xp * W + yp) + j], gradients[3 * (xp * W + yp) + j]);
+                        scalar var_max_1 = fmax(features_var[3 * (xp * W + yp+1) + j], gradients[3 * (xp * W + yp+1) + j]);
+                        scalar var_max_2 = fmax(features_var[3 * (xp * W + yp+2) + j], gradients[3 * (xp * W + yp+2) + j]);
+                        scalar var_max_3 = fmax(features_var[3 * (xp * W + yp+3) + j], gradients[3 * (xp * W + yp+3) + j]);
+                        scalar var_max_4 = fmax(features_var[3 * (xp * W + yp+4) + j], gradients[3 * (xp * W + yp+4) + j]);
+                        scalar var_max_5 = fmax(features_var[3 * (xp * W + yp+5) + j], gradients[3 * (xp * W + yp+5) + j]);
+                        scalar var_max_6 = fmax(features_var[3 * (xp * W + yp+6) + j], gradients[3 * (xp * W + yp+6) + j]);
+                        scalar var_max_7 = fmax(features_var[3 * (xp * W + yp+7) + j], gradients[3 * (xp * W + yp+7) + j]);
 
                         scalar normalization_r_0 = k_f_squared_r*fmax(tau_r, var_max_0);
                         scalar normalization_r_1 = k_f_squared_r*fmax(tau_r, var_max_1);
@@ -1279,40 +1279,40 @@ void candidate_filtering_all2(scalar* output_r, scalar* output_g, scalar* output
                     scalar weight_14 = fmin(color_weight_14, features_weights_r[xp * W + yp+14]);
                     scalar weight_15 = fmin(color_weight_15, features_weights_r[xp * W + yp+15]);
                     
-                    weight_sum[0 * WH + xp * W + yp] += weight_0;
-                    weight_sum[0 * WH + xp * W + yp+1] += weight_1;
-                    weight_sum[0 * WH + xp * W + yp+2] += weight_2;
-                    weight_sum[0 * WH + xp * W + yp+3] += weight_3;
-                    weight_sum[0 * WH + xp * W + yp+4] += weight_4;
-                    weight_sum[0 * WH + xp * W + yp+5] += weight_5;
-                    weight_sum[0 * WH + xp * W + yp+6] += weight_6;
-                    weight_sum[0 * WH + xp * W + yp+7] += weight_7;
-                    weight_sum[0 * WH + xp * W + yp+8] += weight_8;
-                    weight_sum[0 * WH + xp * W + yp+9] += weight_9;
-                    weight_sum[0 * WH + xp * W + yp+10] += weight_10;
-                    weight_sum[0 * WH + xp * W + yp+11] += weight_11;
-                    weight_sum[0 * WH + xp * W + yp+12] += weight_12;
-                    weight_sum[0 * WH + xp * W + yp+13] += weight_13;
-                    weight_sum[0 * WH + xp * W + yp+14] += weight_14;
-                    weight_sum[0 * WH + xp * W + yp+15] += weight_15;
+                    weight_sum[3 * (xp * W + yp)] += weight_0;
+                    weight_sum[3 * (xp * W + yp+1)] += weight_1;
+                    weight_sum[3 * (xp * W + yp+2)] += weight_2;
+                    weight_sum[3 * (xp * W + yp+3)] += weight_3;
+                    weight_sum[3 * (xp * W + yp+4)] += weight_4;
+                    weight_sum[3 * (xp * W + yp+5)] += weight_5;
+                    weight_sum[3 * (xp * W + yp+6)] += weight_6;
+                    weight_sum[3 * (xp * W + yp+7)] += weight_7;
+                    weight_sum[3 * (xp * W + yp+8)] += weight_8;
+                    weight_sum[3 * (xp * W + yp+9)] += weight_9;
+                    weight_sum[3 * (xp * W + yp+10)] += weight_10;
+                    weight_sum[3 * (xp * W + yp+11)] += weight_11;
+                    weight_sum[3 * (xp * W + yp+12)] += weight_12;
+                    weight_sum[3 * (xp * W + yp+13)] += weight_13;
+                    weight_sum[3 * (xp * W + yp+14)] += weight_14;
+                    weight_sum[3 * (xp * W + yp+15)] += weight_15;
                     
                     for (int i=0; i<3; i++){
-                        output_r[i * WH + xp * W + yp] += weight_0 * color[i * WH + xq * W + yq];
-                        output_r[i * WH + xp * W + yp+1] += weight_1 * color[i * WH + xq * W + yq+1];
-                        output_r[i * WH + xp * W + yp+2] += weight_2 * color[i * WH + xq * W + yq+2];
-                        output_r[i * WH + xp * W + yp+3] += weight_3 * color[i * WH + xq * W + yq+3];
-                        output_r[i * WH + xp * W + yp+4] += weight_4 * color[i * WH + xq * W + yq+4];
-                        output_r[i * WH + xp * W + yp+5] += weight_5 * color[i * WH + xq * W + yq+5];
-                        output_r[i * WH + xp * W + yp+6] += weight_6 * color[i * WH + xq * W + yq+6];
-                        output_r[i * WH + xp * W + yp+7] += weight_7 * color[i * WH + xq * W + yq+7];
-                        output_r[i * WH + xp * W + yp+8] += weight_8 * color[i * WH + xq * W + yq+8];
-                        output_r[i * WH + xp * W + yp+9] += weight_9 * color[i * WH + xq * W + yq+9];
-                        output_r[i * WH + xp * W + yp+10] += weight_10 * color[i * WH + xq * W + yq+10];
-                        output_r[i * WH + xp * W + yp+11] += weight_11 * color[i * WH + xq * W + yq+11];
-                        output_r[i * WH + xp * W + yp+12] += weight_12 * color[i * WH + xq * W + yq+12];
-                        output_r[i * WH + xp * W + yp+13] += weight_13 * color[i * WH + xq * W + yq+13];
-                        output_r[i * WH + xp * W + yp+14] += weight_14 * color[i * WH + xq * W + yq+14];
-                        output_r[i * WH + xp * W + yp+15] += weight_15 * color[i * WH + xq * W + yq+15];
+                        output_r[3 * (xp * W + yp) + i] += weight_0 * color[3 * (xq * W + yq) + i];
+                        output_r[3 * (xp * W + yp+1) + i] += weight_1 * color[3 * (xq * W + yq) + i];
+                        output_r[3 * (xp * W + yp+2) + i] += weight_2 * color[3 * (xq * W + yq+2) + i];
+                        output_r[3 * (xp * W + yp+3) + i] += weight_3 * color[3 * (xq * W + yq) + i];
+                        output_r[3 * (xp * W + yp+4) + i] += weight_4 * color[3 * (xq * W + yq+4) + i];
+                        output_r[3 * (xp * W + yp+5) + i] += weight_5 * color[3 * (xq * W + yq) + i];
+                        output_r[3 * (xp * W + yp+6) + i] += weight_6 * color[3 * (xq * W + yq+6) + i];
+                        output_r[3 * (xp * W + yp+7) + i] += weight_7 * color[3 * (xq * W + yq) + i];
+                        output_r[3 * (xp * W + yp+8) + i] += weight_8 * color[3 * (xq * W + yq) + i];
+                        output_r[3 * (xp * W + yp+9) + i] += weight_9 * color[3 * (xq * W + yq+9) + i];
+                        output_r[3 * (xp * W + yp+10) + i] += weight_10 * color[3 * (xq * W + yq+10) + i];
+                        output_r[3 * (xp * W + yp+11) + i] += weight_11 * color[3 * (xq * W + yq+11) + i];
+                        output_r[3 * (xp * W + yp+12) + i] += weight_12 * color[3 * (xq * W + yq+12) + i];
+                        output_r[3 * (xp * W + yp+13) + i] += weight_13 * color[3 * (xq * W + yq+13) + i];
+                        output_r[3 * (xp * W + yp+14) + i] += weight_14 * color[3 * (xq * W + yq+14) + i];
+                        output_r[3 * (xp * W + yp+15) + i] += weight_15 * color[3 * (xq * W + yq+15) + i];
                     }
                 }
             }
@@ -1456,40 +1456,40 @@ void candidate_filtering_all2(scalar* output_r, scalar* output_g, scalar* output
                     scalar weight_14 = fmin(color_weight_14, features_weights_r[xp * W + yp+14]);
                     scalar weight_15 = fmin(color_weight_15, features_weights_r[xp * W + yp+15]);
 
-                    weight_sum[1 * WH + xp * W + yp] += weight_0;
-                    weight_sum[1 * WH + xp * W + yp+1] += weight_1;
-                    weight_sum[1 * WH + xp * W + yp+2] += weight_2;
-                    weight_sum[1 * WH + xp * W + yp+3] += weight_3;
-                    weight_sum[1 * WH + xp * W + yp+4] += weight_4;
-                    weight_sum[1 * WH + xp * W + yp+5] += weight_5;
-                    weight_sum[1 * WH + xp * W + yp+6] += weight_6;
-                    weight_sum[1 * WH + xp * W + yp+7] += weight_7;
-                    weight_sum[1 * WH + xp * W + yp+8] += weight_8;
-                    weight_sum[1 * WH + xp * W + yp+9] += weight_9;
-                    weight_sum[1 * WH + xp * W + yp+10] += weight_10;
-                    weight_sum[1 * WH + xp * W + yp+11] += weight_11;
-                    weight_sum[1 * WH + xp * W + yp+12] += weight_12;
-                    weight_sum[1 * WH + xp * W + yp+13] += weight_13;
-                    weight_sum[1 * WH + xp * W + yp+14] += weight_14;
-                    weight_sum[1 * WH + xp * W + yp+15] += weight_15;
+                    weight_sum[1 + 3 * (xp * W + yp)] += weight_0;
+                    weight_sum[1 + 3 * (xp * W + yp+1)] += weight_1;
+                    weight_sum[1 + 3 * (xp * W + yp+2)] += weight_2;
+                    weight_sum[1 + 3 * (xp * W + yp+3)] += weight_3;
+                    weight_sum[1 + 3 * (xp * W + yp+4)] += weight_4;
+                    weight_sum[1 + 3 * (xp * W + yp+5)] += weight_5;
+                    weight_sum[1 + 3 * (xp * W + yp+6)] += weight_6;
+                    weight_sum[1 + 3 * (xp * W + yp+7)] += weight_7;
+                    weight_sum[1 + 3 * (xp * W + yp+8)] += weight_8;
+                    weight_sum[1 + 3 * (xp * W + yp+9)] += weight_9;
+                    weight_sum[1 + 3 * (xp * W + yp+10)] += weight_10;
+                    weight_sum[1 + 3 * (xp * W + yp+11)] += weight_11;
+                    weight_sum[1 + 3 * (xp * W + yp+12)] += weight_12;
+                    weight_sum[1 + 3 * (xp * W + yp+13)] += weight_13;
+                    weight_sum[1 + 3 * (xp * W + yp+14)] += weight_14;
+                    weight_sum[1 + 3 * (xp * W + yp+15)] += weight_15;
                     
                     for (int i=0; i<3; i++){
-                        output_g[i * WH + xp * W + yp] += weight_0 * color[i * WH + xq * W + yq];
-                        output_g[i * WH + xp * W + yp+1] += weight_1 * color[i * WH + xq * W + yq+1];
-                        output_g[i * WH + xp * W + yp+2] += weight_2 * color[i * WH + xq * W + yq+2];
-                        output_g[i * WH + xp * W + yp+3] += weight_3 * color[i * WH + xq * W + yq+3];
-                        output_g[i * WH + xp * W + yp+4] += weight_4 * color[i * WH + xq * W + yq+4];
-                        output_g[i * WH + xp * W + yp+5] += weight_5 * color[i * WH + xq * W + yq+5];
-                        output_g[i * WH + xp * W + yp+6] += weight_6 * color[i * WH + xq * W + yq+6];
-                        output_g[i * WH + xp * W + yp+7] += weight_7 * color[i * WH + xq * W + yq+7];
-                        output_g[i * WH + xp * W + yp+8] += weight_8 * color[i * WH + xq * W + yq+8];
-                        output_g[i * WH + xp * W + yp+9] += weight_9 * color[i * WH + xq * W + yq+9];
-                        output_g[i * WH + xp * W + yp+10] += weight_10 * color[i * WH + xq * W + yq+10];
-                        output_g[i * WH + xp * W + yp+11] += weight_11 * color[i * WH + xq * W + yq+11];
-                        output_g[i * WH + xp * W + yp+12] += weight_12 * color[i * WH + xq * W + yq+12];
-                        output_g[i * WH + xp * W + yp+13] += weight_13 * color[i * WH + xq * W + yq+13];
-                        output_g[i * WH + xp * W + yp+14] += weight_14 * color[i * WH + xq * W + yq+14];
-                        output_g[i * WH + xp * W + yp+15] += weight_15 * color[i * WH + xq * W + yq+15];
+                        output_g[3 * (xp * W + yp) + i] += weight_0 * color[3 * (xq * W + yq) + i];
+                        output_g[3 * (xp * W + yp+1) + i] += weight_1 * color[3 * (xq * W + yq) + i];
+                        output_g[3 * (xp * W + yp+2) + i] += weight_2 * color[3 * (xq * W + yq+2) + i];
+                        output_g[3 * (xp * W + yp+3) + i] += weight_3 * color[3 * (xq * W + yq) + i];
+                        output_g[3 * (xp * W + yp+4) + i] += weight_4 * color[3 * (xq * W + yq+4) + i];
+                        output_g[3 * (xp * W + yp+5) + i] += weight_5 * color[3 * (xq * W + yq) + i];
+                        output_g[3 * (xp * W + yp+6) + i] += weight_6 * color[3 * (xq * W + yq+6) + i];
+                        output_g[3 * (xp * W + yp+7) + i] += weight_7 * color[3 * (xq * W + yq) + i];
+                        output_g[3 * (xp * W + yp+8) + i] += weight_8 * color[3 * (xq * W + yq) + i];
+                        output_g[3 * (xp * W + yp+9) + i] += weight_9 * color[3 * (xq * W + yq+9) + i];
+                        output_g[3 * (xp * W + yp+10) + i] += weight_10 * color[3 * (xq * W + yq+10) + i];
+                        output_g[3 * (xp * W + yp+11) + i] += weight_11 * color[3 * (xq * W + yq+11) + i];
+                        output_g[3 * (xp * W + yp+12) + i] += weight_12 * color[3 * (xq * W + yq+12) + i];
+                        output_g[3 * (xp * W + yp+13) + i] += weight_13 * color[3 * (xq * W + yq+13) + i];
+                        output_g[3 * (xp * W + yp+14) + i] += weight_14 * color[3 * (xq * W + yq+14) + i];
+                        output_g[3 * (xp * W + yp+15) + i] += weight_15 * color[3 * (xq * W + yq+15) + i];
                     }
                 }
             }
@@ -1523,40 +1523,40 @@ void candidate_filtering_all2(scalar* output_r, scalar* output_g, scalar* output
                     scalar weight_14 = features_weights_b[xp * W + yp+14];
                     scalar weight_15 = features_weights_b[xp * W + yp+15];
                     
-                    weight_sum[2 * WH + xp * W + yp] += weight_0;
-                    weight_sum[2 * WH + xp * W + yp+1] += weight_1;
-                    weight_sum[2 * WH + xp * W + yp+2] += weight_2;
-                    weight_sum[2 * WH + xp * W + yp+3] += weight_3;
-                    weight_sum[2 * WH + xp * W + yp+4] += weight_4;
-                    weight_sum[2 * WH + xp * W + yp+5] += weight_5;
-                    weight_sum[2 * WH + xp * W + yp+6] += weight_6;
-                    weight_sum[2 * WH + xp * W + yp+7] += weight_7;
-                    weight_sum[2 * WH + xp * W + yp+8] += weight_8;
-                    weight_sum[2 * WH + xp * W + yp+9] += weight_9;
-                    weight_sum[2 * WH + xp * W + yp+10] += weight_10;
-                    weight_sum[2 * WH + xp * W + yp+11] += weight_11;
-                    weight_sum[2 * WH + xp * W + yp+12] += weight_12;
-                    weight_sum[2 * WH + xp * W + yp+13] += weight_13;
-                    weight_sum[2 * WH + xp * W + yp+14] += weight_14;
-                    weight_sum[2 * WH + xp * W + yp+15] += weight_15;
+                    weight_sum[2 + 3 * (xp * W + yp)] += weight_0;
+                    weight_sum[2 + 3 * (xp * W + yp+1)] += weight_1;
+                    weight_sum[2 + 3 * (xp * W + yp+2)] += weight_2;
+                    weight_sum[2 + 3 * (xp * W + yp+3)] += weight_3;
+                    weight_sum[2 + 3 * (xp * W + yp+4)] += weight_4;
+                    weight_sum[2 + 3 * (xp * W + yp+5)] += weight_5;
+                    weight_sum[2 + 3 * (xp * W + yp+6)] += weight_6;
+                    weight_sum[2 + 3 * (xp * W + yp+7)] += weight_7;
+                    weight_sum[2 + 3 * (xp * W + yp+8)] += weight_8;
+                    weight_sum[2 + 3 * (xp * W + yp+9)] += weight_9;
+                    weight_sum[2 + 3 * (xp * W + yp+10)] += weight_10;
+                    weight_sum[2 + 3 * (xp * W + yp+11)] += weight_11;
+                    weight_sum[2 + 3 * (xp * W + yp+12)] += weight_12;
+                    weight_sum[2 + 3 * (xp * W + yp+13)] += weight_13;
+                    weight_sum[2 + 3 * (xp * W + yp+14)] += weight_14;
+                    weight_sum[2 + 3 * (xp * W + yp+15)] += weight_15;
                     
                     for (int i=0; i<3; i++){
-                        output_b[i * WH + xp * W + yp] += weight_0 * color[i * WH + xq * W + yq];
-                        output_b[i * WH + xp * W + yp+1] += weight_1 * color[i * WH + xq * W + yq+1];
-                        output_b[i * WH + xp * W + yp+2] += weight_2 * color[i * WH + xq * W + yq+2];
-                        output_b[i * WH + xp * W + yp+3] += weight_3 * color[i * WH + xq * W + yq+3];
-                        output_b[i * WH + xp * W + yp+4] += weight_4 * color[i * WH + xq * W + yq+4];
-                        output_b[i * WH + xp * W + yp+5] += weight_5 * color[i * WH + xq * W + yq+5];
-                        output_b[i * WH + xp * W + yp+6] += weight_6 * color[i * WH + xq * W + yq+6];
-                        output_b[i * WH + xp * W + yp+7] += weight_7 * color[i * WH + xq * W + yq+7];
-                        output_b[i * WH + xp * W + yp+8] += weight_8 * color[i * WH + xq * W + yq+8];
-                        output_b[i * WH + xp * W + yp+9] += weight_9 * color[i * WH + xq * W + yq+9];
-                        output_b[i * WH + xp * W + yp+10] += weight_10 * color[i * WH + xq * W + yq+10];
-                        output_b[i * WH + xp * W + yp+11] += weight_11 * color[i * WH + xq * W + yq+11];
-                        output_b[i * WH + xp * W + yp+12] += weight_12 * color[i * WH + xq * W + yq+12];
-                        output_b[i * WH + xp * W + yp+13] += weight_13 * color[i * WH + xq * W + yq+13];
-                        output_b[i * WH + xp * W + yp+14] += weight_14 * color[i * WH + xq * W + yq+14];
-                        output_b[i * WH + xp * W + yp+15] += weight_15 * color[i * WH + xq * W + yq+15];
+                        output_b[3 * (xp * W + yp) + i] += weight_0 * color[3 * (xq * W + yq) + i];
+                        output_b[3 * (xp * W + yp+1) + i] += weight_1 * color[3 * (xq * W + yq) + i];
+                        output_b[3 * (xp * W + yp+2) + i] += weight_2 * color[3 * (xq * W + yq+2) + i];
+                        output_b[3 * (xp * W + yp+3) + i] += weight_3 * color[3 * (xq * W + yq) + i];
+                        output_b[3 * (xp * W + yp+4) + i] += weight_4 * color[3 * (xq * W + yq+4) + i];
+                        output_b[3 * (xp * W + yp+5) + i] += weight_5 * color[3 * (xq * W + yq) + i];
+                        output_b[3 * (xp * W + yp+6) + i] += weight_6 * color[3 * (xq * W + yq+6) + i];
+                        output_b[3 * (xp * W + yp+7) + i] += weight_7 * color[3 * (xq * W + yq) + i];
+                        output_b[3 * (xp * W + yp+8) + i] += weight_8 * color[3 * (xq * W + yq) + i];
+                        output_b[3 * (xp * W + yp+9) + i] += weight_9 * color[3 * (xq * W + yq+9) + i];
+                        output_b[3 * (xp * W + yp+10) + i] += weight_10 * color[3 * (xq * W + yq+10) + i];
+                        output_b[3 * (xp * W + yp+11) + i] += weight_11 * color[3 * (xq * W + yq+11) + i];
+                        output_b[3 * (xp * W + yp+12) + i] += weight_12 * color[3 * (xq * W + yq+12) + i];
+                        output_b[3 * (xp * W + yp+13) + i] += weight_13 * color[3 * (xq * W + yq+13) + i];
+                        output_b[3 * (xp * W + yp+14) + i] += weight_14 * color[3 * (xq * W + yq+14) + i];
+                        output_b[3 * (xp * W + yp+15) + i] += weight_15 * color[3 * (xq * W + yq+15) + i];
                     }
                 }
             }
@@ -1568,40 +1568,40 @@ void candidate_filtering_all2(scalar* output_r, scalar* output_g, scalar* output
     for(int xp = R + f_r; xp < W - R - f_r; ++xp) {
         for(int yp = R + f_r; yp < H - R - f_r; yp+=16) {
         
-            scalar w_0 = weight_sum[0 * WH + xp * W + yp];
-            scalar w_1 = weight_sum[0 * WH + xp * W + yp+1];
-            scalar w_2 = weight_sum[0 * WH + xp * W + yp+2];
-            scalar w_3 = weight_sum[0 * WH + xp * W + yp+3];
-            scalar w_4 = weight_sum[0 * WH + xp * W + yp+4];
-            scalar w_5 = weight_sum[0 * WH + xp * W + yp+5];
-            scalar w_6 = weight_sum[0 * WH + xp * W + yp+6];
-            scalar w_7 = weight_sum[0 * WH + xp * W + yp+7];
-            scalar w_8 = weight_sum[0 * WH + xp * W + yp+8];
-            scalar w_9 = weight_sum[0 * WH + xp * W + yp+9];
-            scalar w_10 = weight_sum[0 * WH + xp * W + yp+10];
-            scalar w_11 = weight_sum[0 * WH + xp * W + yp+11];
-            scalar w_12 = weight_sum[0 * WH + xp * W + yp+12];
-            scalar w_13 = weight_sum[0 * WH + xp * W + yp+13];
-            scalar w_14 = weight_sum[0 * WH + xp * W + yp+14];
-            scalar w_15 = weight_sum[0 * WH + xp * W + yp+15];
+            scalar w_0 = weight_sum[3 * (xp * W + yp)];
+            scalar w_1 = weight_sum[3 * (xp * W + yp+1)];
+            scalar w_2 = weight_sum[3 * (xp * W + yp+2)];
+            scalar w_3 = weight_sum[3 * (xp * W + yp+3)];
+            scalar w_4 = weight_sum[3 * (xp * W + yp+4)];
+            scalar w_5 = weight_sum[3 * (xp * W + yp+5)];
+            scalar w_6 = weight_sum[3 * (xp * W + yp+6)];
+            scalar w_7 = weight_sum[3 * (xp * W + yp+7)];
+            scalar w_8 = weight_sum[3 * (xp * W + yp+8)];
+            scalar w_9 = weight_sum[3 * (xp * W + yp+9)];
+            scalar w_10 = weight_sum[3 * (xp * W + yp+10)];
+            scalar w_11 = weight_sum[3 * (xp * W + yp+11)];
+            scalar w_12 = weight_sum[3 * (xp * W + yp+12)];
+            scalar w_13 = weight_sum[3 * (xp * W + yp+13)];
+            scalar w_14 = weight_sum[3 * (xp * W + yp+14)];
+            scalar w_15 = weight_sum[3 * (xp * W + yp+15)];
 
             for (int i=0; i<3; i++){
-                output_r[i * WH + xp * W + yp] /= w_0;
-                output_r[i * WH + xp * W + yp+1] /= w_1;
-                output_r[i * WH + xp * W + yp+2] /= w_2;
-                output_r[i * WH + xp * W + yp+3] /= w_3;
-                output_r[i * WH + xp * W + yp+4] /= w_4;
-                output_r[i * WH + xp * W + yp+5] /= w_5;
-                output_r[i * WH + xp * W + yp+6] /= w_6;
-                output_r[i * WH + xp * W + yp+7] /= w_7;
-                output_r[i * WH + xp * W + yp+8] /= w_8;
-                output_r[i * WH + xp * W + yp+9] /= w_9;
-                output_r[i * WH + xp * W + yp+10] /= w_10;
-                output_r[i * WH + xp * W + yp+11] /= w_11;
-                output_r[i * WH + xp * W + yp+12] /= w_12;
-                output_r[i * WH + xp * W + yp+13] /= w_13;
-                output_r[i * WH + xp * W + yp+14] /= w_14;
-                output_r[i * WH + xp * W + yp+15] /= w_15;
+                output_r[3 * (xp * W + yp) + i] /= w_0;
+                output_r[3 * (xp * W + yp+1) + i] /= w_1;
+                output_r[3 * (xp * W + yp+2) + i] /= w_2;
+                output_r[3 * (xp * W + yp+3) + i] /= w_3;
+                output_r[3 * (xp * W + yp+4) + i] /= w_4;
+                output_r[3 * (xp * W + yp+5) + i] /= w_5;
+                output_r[3 * (xp * W + yp+6) + i] /= w_6;
+                output_r[3 * (xp * W + yp+7) + i] /= w_7;
+                output_r[3 * (xp * W + yp+8) + i] /= w_8;
+                output_r[3 * (xp * W + yp+9) + i] /= w_9;
+                output_r[3 * (xp * W + yp+10) + i] /= w_10;
+                output_r[3 * (xp * W + yp+11) + i] /= w_11;
+                output_r[3 * (xp * W + yp+12) + i] /= w_12;
+                output_r[3 * (xp * W + yp+13) + i] /= w_13;
+                output_r[3 * (xp * W + yp+14) + i] /= w_14;
+                output_r[3 * (xp * W + yp+15) + i] /= w_15;
             }
         }
     }
@@ -1610,40 +1610,40 @@ void candidate_filtering_all2(scalar* output_r, scalar* output_g, scalar* output
    for(int xp = R + f_g; xp < W - R - f_g; ++xp) {
         for(int yp = R + f_g; yp < H - R - f_g; yp+=16) {
         
-            scalar w_0 = weight_sum[1 * WH + xp * W + yp];
-            scalar w_1 = weight_sum[1 * WH + xp * W + yp+1];
-            scalar w_2 = weight_sum[1 * WH + xp * W + yp+2];
-            scalar w_3 = weight_sum[1 * WH + xp * W + yp+3];
-            scalar w_4 = weight_sum[1 * WH + xp * W + yp+4];
-            scalar w_5 = weight_sum[1 * WH + xp * W + yp+5];
-            scalar w_6 = weight_sum[1 * WH + xp * W + yp+6];
-            scalar w_7 = weight_sum[1 * WH + xp * W + yp+7];
-            scalar w_8 = weight_sum[1 * WH + xp * W + yp+8];
-            scalar w_9 = weight_sum[1 * WH + xp * W + yp+9];
-            scalar w_10 = weight_sum[1 * WH + xp * W + yp+10];
-            scalar w_11 = weight_sum[1 * WH + xp * W + yp+11];
-            scalar w_12 = weight_sum[1 * WH + xp * W + yp+12];
-            scalar w_13 = weight_sum[1 * WH + xp * W + yp+13];
-            scalar w_14 = weight_sum[1 * WH + xp * W + yp+14];
-            scalar w_15 = weight_sum[1 * WH + xp * W + yp+15];
+            scalar w_0 = weight_sum[1 + 3 * (xp * W + yp)];
+            scalar w_1 = weight_sum[1 + 3 * (xp * W + yp+1)];
+            scalar w_2 = weight_sum[1 + 3 * (xp * W + yp+2)];
+            scalar w_3 = weight_sum[1 + 3 * (xp * W + yp+3)];
+            scalar w_4 = weight_sum[1 + 3 * (xp * W + yp+4)];
+            scalar w_5 = weight_sum[1 + 3 * (xp * W + yp+5)];
+            scalar w_6 = weight_sum[1 + 3 * (xp * W + yp+6)];
+            scalar w_7 = weight_sum[1 + 3 * (xp * W + yp+7)];
+            scalar w_8 = weight_sum[1 + 3 * (xp * W + yp+8)];
+            scalar w_9 = weight_sum[1 + 3 * (xp * W + yp+9)];
+            scalar w_10 = weight_sum[1 + 3 * (xp * W + yp+10)];
+            scalar w_11 = weight_sum[1 + 3 * (xp * W + yp+11)];
+            scalar w_12 = weight_sum[1 + 3 * (xp * W + yp+12)];
+            scalar w_13 = weight_sum[1 + 3 * (xp * W + yp+13)];
+            scalar w_14 = weight_sum[1 + 3 * (xp * W + yp+14)];
+            scalar w_15 = weight_sum[1 + 3 * (xp * W + yp+15)];
 
             for (int i=0; i<3; i++){
-                output_g[i * WH + xp * W + yp] /= w_0;
-                output_g[i * WH + xp * W + yp+1] /= w_1;
-                output_g[i * WH + xp * W + yp+2] /= w_2;
-                output_g[i * WH + xp * W + yp+3] /= w_3;
-                output_g[i * WH + xp * W + yp+4] /= w_4;
-                output_g[i * WH + xp * W + yp+5] /= w_5;
-                output_g[i * WH + xp * W + yp+6] /= w_6;
-                output_g[i * WH + xp * W + yp+7] /= w_7;
-                output_g[i * WH + xp * W + yp+8] /= w_8;
-                output_g[i * WH + xp * W + yp+9] /= w_9;
-                output_g[i * WH + xp * W + yp+10] /= w_10;
-                output_g[i * WH + xp * W + yp+11] /= w_11;
-                output_g[i * WH + xp * W + yp+12] /= w_12;
-                output_g[i * WH + xp * W + yp+13] /= w_13;
-                output_g[i * WH + xp * W + yp+14] /= w_14;
-                output_g[i * WH + xp * W + yp+15] /= w_15;
+                output_g[3 * (xp * W + yp) + i] /= w_0;
+                output_g[3 * (xp * W + yp+1) + i] /= w_1;
+                output_g[3 * (xp * W + yp+2) + i] /= w_2;
+                output_g[3 * (xp * W + yp+3) + i] /= w_3;
+                output_g[3 * (xp * W + yp+4) + i] /= w_4;
+                output_g[3 * (xp * W + yp+5) + i] /= w_5;
+                output_g[3 * (xp * W + yp+6) + i] /= w_6;
+                output_g[3 * (xp * W + yp+7) + i] /= w_7;
+                output_g[3 * (xp * W + yp+8) + i] /= w_8;
+                output_g[3 * (xp * W + yp+9) + i] /= w_9;
+                output_g[3 * (xp * W + yp+10) + i] /= w_10;
+                output_g[3 * (xp * W + yp+11) + i] /= w_11;
+                output_g[3 * (xp * W + yp+12) + i] /= w_12;
+                output_g[3 * (xp * W + yp+13) + i] /= w_13;
+                output_g[3 * (xp * W + yp+14) + i] /= w_14;
+                output_g[3 * (xp * W + yp+15) + i] /= w_15;
             }
         }
     }
@@ -1652,40 +1652,40 @@ void candidate_filtering_all2(scalar* output_r, scalar* output_g, scalar* output
    for(int xp = R + f_b; xp < W - R - f_b; ++xp) {
         for(int yp = R + f_b; yp < H - R - f_b; yp+=16) {
         
-            scalar w_0 = weight_sum[2 * WH + xp * W + yp];
-            scalar w_1 = weight_sum[2 * WH + xp * W + yp+1];
-            scalar w_2 = weight_sum[2 * WH + xp * W + yp+2];
-            scalar w_3 = weight_sum[2 * WH + xp * W + yp+3];
-            scalar w_4 = weight_sum[2 * WH + xp * W + yp+4];
-            scalar w_5 = weight_sum[2 * WH + xp * W + yp+5];
-            scalar w_6 = weight_sum[2 * WH + xp * W + yp+6];
-            scalar w_7 = weight_sum[2 * WH + xp * W + yp+7];
-            scalar w_8 = weight_sum[2 * WH + xp * W + yp+8];
-            scalar w_9 = weight_sum[2 * WH + xp * W + yp+9];
-            scalar w_10 = weight_sum[2 * WH + xp * W + yp+10];
-            scalar w_11 = weight_sum[2 * WH + xp * W + yp+11];
-            scalar w_12 = weight_sum[2 * WH + xp * W + yp+12];
-            scalar w_13 = weight_sum[2 * WH + xp * W + yp+13];
-            scalar w_14 = weight_sum[2 * WH + xp * W + yp+14];
-            scalar w_15 = weight_sum[2 * WH + xp * W + yp+15];
+            scalar w_0 = weight_sum[2 + 3 * (xp * W + yp)];
+            scalar w_1 = weight_sum[2 + 3 * (xp * W + yp+1)];
+            scalar w_2 = weight_sum[2 + 3 * (xp * W + yp+2)];
+            scalar w_3 = weight_sum[2 + 3 * (xp * W + yp+3)];
+            scalar w_4 = weight_sum[2 + 3 * (xp * W + yp+4)];
+            scalar w_5 = weight_sum[2 + 3 * (xp * W + yp+5)];
+            scalar w_6 = weight_sum[2 + 3 * (xp * W + yp+6)];
+            scalar w_7 = weight_sum[2 + 3 * (xp * W + yp+7)];
+            scalar w_8 = weight_sum[2 + 3 * (xp * W + yp+8)];
+            scalar w_9 = weight_sum[2 + 3 * (xp * W + yp+9)];
+            scalar w_10 = weight_sum[2 + 3 * (xp * W + yp+10)];
+            scalar w_11 = weight_sum[2 + 3 * (xp * W + yp+11)];
+            scalar w_12 = weight_sum[2 + 3 * (xp * W + yp+12)];
+            scalar w_13 = weight_sum[2 + 3 * (xp * W + yp+13)];
+            scalar w_14 = weight_sum[2 + 3 * (xp * W + yp+14)];
+            scalar w_15 = weight_sum[2 + 3 * (xp * W + yp+15)];
 
             for (int i=0; i<3; i++){
-                output_b[i * WH + xp * W + yp] /= w_0;
-                output_b[i * WH + xp * W + yp+1] /= w_1;
-                output_b[i * WH + xp * W + yp+2] /= w_2;
-                output_b[i * WH + xp * W + yp+3] /= w_3;
-                output_b[i * WH + xp * W + yp+4] /= w_4;
-                output_b[i * WH + xp * W + yp+5] /= w_5;
-                output_b[i * WH + xp * W + yp+6] /= w_6;
-                output_b[i * WH + xp * W + yp+7] /= w_7;
-                output_b[i * WH + xp * W + yp+8] /= w_8;
-                output_b[i * WH + xp * W + yp+9] /= w_9;
-                output_b[i * WH + xp * W + yp+10] /= w_10;
-                output_b[i * WH + xp * W + yp+11] /= w_11;
-                output_b[i * WH + xp * W + yp+12] /= w_12;
-                output_b[i * WH + xp * W + yp+13] /= w_13;
-                output_b[i * WH + xp * W + yp+14] /= w_14;
-                output_b[i * WH + xp * W + yp+15] /= w_15;
+                output_b[3 * (xp * W + yp) + i] /= w_0;
+                output_b[3 * (xp * W + yp+1) + i] /= w_1;
+                output_b[3 * (xp * W + yp+2) + i] /= w_2;
+                output_b[3 * (xp * W + yp+3) + i] /= w_3;
+                output_b[3 * (xp * W + yp+4) + i] /= w_4;
+                output_b[3 * (xp * W + yp+5) + i] /= w_5;
+                output_b[3 * (xp * W + yp+6) + i] /= w_6;
+                output_b[3 * (xp * W + yp+7) + i] /= w_7;
+                output_b[3 * (xp * W + yp+8) + i] /= w_8;
+                output_b[3 * (xp * W + yp+9) + i] /= w_9;
+                output_b[3 * (xp * W + yp+10) + i] /= w_10;
+                output_b[3 * (xp * W + yp+11) + i] /= w_11;
+                output_b[3 * (xp * W + yp+12) + i] /= w_12;
+                output_b[3 * (xp * W + yp+13) + i] /= w_13;
+                output_b[3 * (xp * W + yp+14) + i] /= w_14;
+                output_b[3 * (xp * W + yp+15) + i] /= w_15;
             }
         }
     }
@@ -1696,19 +1696,19 @@ void candidate_filtering_all2(scalar* output_r, scalar* output_g, scalar* output
     for (int i = 0; i < 3; i++){
         for (int xp = 0; xp < W; xp++){
             for(int yp = 0; yp < R + f_r; yp++){
-                output_r[i * WH + xp * W + yp] = color[i * WH + xp * W + yp];
-                output_r[i * WH + xp * W + H - yp - 1] = color[i * WH + xp * W + H - yp - 1];
-                output_b[i * WH + xp * W + yp] = color[i * WH + xp * W + yp];
-                output_b[i * WH + xp * W + H - yp - 1] = color[i * WH + xp * W + H - yp - 1];
+                output_r[3 * (xp * W + yp) + i] = color[3 * (xp * W + yp) + i];
+                output_r[i + 3 * (xp * W + H - yp - 1)] = color[i + 3 * (xp * W + H - yp - 1)];
+                output_b[3 * (xp * W + yp) + i] = color[3 * (xp * W + yp) + i];
+                output_b[i + 3 * (xp * W + H - yp - 1)] = color[i + 3 * (xp * W + H - yp - 1)];
             }
         }
         for(int xp = 0; xp < R + f_r; xp++){
             for (int yp = R + f_r ; yp < H - R - f_r; yp++){
             
-                output_r[i * WH + xp * W + yp] = color[i * WH + xp * W + yp];
-                output_r[i * WH + (W - xp - 1) * W + yp] = color[i * WH + (W - xp - 1) * W + yp];
-                output_b[i * WH + xp * W + yp] = color[i * WH + xp * W + yp];
-                output_b[i * WH + (W - xp - 1) * W + yp] = color[i * WH + (W - xp - 1) * W + yp];
+                output_r[3 * (xp * W + yp) + i] = color[3 * (xp * W + yp) + i];
+                output_r[3 * ((W - xp - 1) * W + yp) + i] = color[3 * ((W - xp - 1) * W + yp) + i];
+                output_b[3 * (xp * W + yp) + i] = color[3 * (xp * W + yp) + i];
+                output_b[3 * ((W - xp - 1) * W + yp) + i] = color[3 * ((W - xp - 1) * W + yp) + i];
              }
         }
     }
@@ -1717,14 +1717,14 @@ void candidate_filtering_all2(scalar* output_r, scalar* output_g, scalar* output
     for (int i = 0; i < 3; i++){
         for (int xp = 0; xp < W; xp++){
             for(int yp = 0; yp < R + f_g; yp++){
-                output_g[i * WH + xp * W + yp] = color[i * WH + xp * W + yp];
-                output_g[i * WH + xp * W + H - yp - 1] = color[i * WH + xp * W + H - yp - 1];
+                output_g[3 * (xp * W + yp) + i] = color[3 * (xp * W + yp) + i];
+                output_g[i + 3 * (xp * W + H - yp - 1)] = color[i + 3 * (xp * W + H - yp - 1)];
             }
         }
         for(int xp = 0; xp < R + f_g; xp++){
             for (int yp = R + f_g ; yp < H - R - f_g; yp++){
-                output_g[i * WH + xp * W + yp] = color[i * WH + xp * W + yp];
-                output_g[i * WH + (W - xp - 1) * W + yp] = color[i * WH + (W - xp - 1) * W + yp];
+                output_g[3 * (xp * W + yp) + i] = color[3 * (xp * W + yp) + i];
+                output_g[3 * ((W - xp - 1) * W + yp) + i] = color[3 * ((W - xp - 1) * W + yp) + i];
             }
         }
     }

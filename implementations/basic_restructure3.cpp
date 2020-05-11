@@ -45,8 +45,13 @@ using namespace std;
     scalar* f_var_filtered;
     f_filtered = (scalar*) calloc(3 * WH, sizeof(scalar));
     f_var_filtered = (scalar*) calloc(3 * WH, sizeof(scalar));
-
+    // for (int i = 0; i < W; i ++) {
+    //     for (int j = 0; j < H; j ++) {
+    //         cout << f[3*(i*W+j)] << " "  << f[3*(i*W+j)+1] << " "  << f[3*(i*W+j)+2] << "\n";
+    //     }
+    // }
     feature_prefiltering(f_filtered, f_var_filtered, f, f_var, p_pre, W, H);
+
     
     // DEBUGGING PART
     if(DEBUG) {
@@ -73,6 +78,12 @@ using namespace std;
     b = (scalar*) calloc(3 * WH, sizeof(scalar));       
     candidate_filtering_all2(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, W, H);
 
+
+    for (int i = 0; i < W; i ++) {
+        for (int j = 0; j < H; j ++) {
+            cout << r[3*(i*W+j)] << " "  << r[3*(i*W+j)+1] << " "  << r[3*(i*W+j)+2] << "\n";
+        }
+    }
     
     // DEBUGGING PART
     if(DEBUG) {

@@ -149,25 +149,30 @@ int main(int argc, char **argv)
   features = (scalar*) malloc(3 * WH * sizeof(scalar));
   features_var = (scalar*) malloc(3 * WH * sizeof(scalar));
 
-  // (a) Features
-  copy(f_albedo, f_albedo + WH, features);
-  copy(f_depth, f_depth + WH, features + WH);
-  copy(f_normal, f_normal + WH, features + 2*WH);
+  // // (a) Features
+  // copy(f_albedo, f_albedo + WH, features);
+  // copy(f_depth, f_depth + WH, features + WH);
+  // copy(f_normal, f_normal + WH, features + 2*WH);
 
-  // (b) Feature Variances
-  copy(f_albedo_var, f_albedo_var + WH, features_var);
-  copy(f_depth_var, f_depth_var + WH, features_var + WH);
-  copy(f_normal_var, f_normal_var + WH, features_var + 2*WH);
+  // // (b) Feature Variances
+  // copy(f_albedo_var, f_albedo_var + WH, features_var);
+  // copy(f_depth_var, f_depth_var + WH, features_var + WH);
+  // copy(f_normal_var, f_normal_var + WH, features_var + 2*WH);
 
-  // DEBUGGING: Output loaded buffer
-  if(debug_EXR_loading){
-    for (int i = 0; i < H; i ++) {
-      for (int j = 0; j < W; j ++) {
-        cout << features[0 * WH + j * W + i] << " " << features[1 * WH + j * W + i] << " " << features[2 * WH + j * W + i] << " ";
-      }
-      cout << "\n";
+  for (int i = 0; i < W; i ++) {
+    for (int j = 0; j < H; j ++) {
+
+      features[3 * (i * W + j) + 0] = f_albedo[3 * (i * W + j) + 0];
+      features[3 * (i * W + j) + 1] = f_depth[3 * (i * W + j) + 0];
+      features[3 * (i * W + j) + 2] = f_normal[3 * (i * W + j) + 0];
+
+      features_var[3 * (i * W + j) + 0] = f_albedo_var[3 * (i * W + j) + 0];
+      features_var[3 * (i * W + j) + 1] = f_depth_var[3 * (i * W + j) + 0];
+      features_var[3 * (i * W + j) + 2] = f_normal_var[3 * (i * W + j) + 0];
+
     }
   }
+  
   
   // ------------------------------------
   // (..) ...
