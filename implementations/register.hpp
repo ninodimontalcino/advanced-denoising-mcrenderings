@@ -3,20 +3,21 @@
 
 #include "../denoise.h"
 
-void basic_implementation(buffer out_img, buffer c, buffer c_var, buffer f, buffer f_var, int R, int img_width, int img_height);
-void basic_restructure(buffer out_img, buffer c, buffer c_var, buffer f, buffer f_var, int R, int img_width, int img_height);
-void basic_restructure2(buffer out_img, buffer c, buffer c_var, buffer f, buffer f_var, int R, int img_width, int img_height);
-void basic_restructure_ILP_Test(buffer out_img, buffer c, buffer c_var, buffer f, buffer f_var, int R, int img_width, int img_height);
+// 1D Arrays
+void basic_implementation(scalar *out_img, scalar* c, scalar* c_var, scalar* f, scalar* f_var, int R, int W, int H);
+void basic_restructure1(scalar* out_img, scalar*  c, scalar*  c_var, scalar*  f, scalar*  f_var, int R, int W, int H);
+void basic_restructure2(scalar* out_img, scalar* c, scalar* c_var, scalar* f, scalar* f_var, int R, int W, int H);
+void basic_restructure3(scalar* out_img, scalar* c, scalar* c_var, scalar* f, scalar* f_var, int R, int W, int H);
 
 /* -------------------------------------------------------------------------
  * FUNCTION REGISTRATION
  * ------------------------------------------------------------------------- */ 
 void register_functions()
 {
-    //add_function(&basic_implementation, "Basic Implementation", 1);
-    //add_function(&basic_restructure, "Restructure (no precomputation)", 1);
+    add_function(&basic_implementation, "Basic Implementation", 1);
+    add_function(&basic_restructure1, "Restructure (no precomputation)", 1);
     add_function(&basic_restructure2, "Restructure - With some precomputations (prefiltering, candidates)", 1);
-    add_function(&basic_restructure_ILP_Test, "Restructure - With some precomputations (prefiltering, candidates)", 1);
+    add_function(&basic_restructure3, "Restructure - With some precomputations (prefiltering, candidates) + ILP", 1);
 }
 
 #endif

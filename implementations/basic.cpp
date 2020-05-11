@@ -22,17 +22,19 @@ using namespace std;
                                     f[2] := normal
         - f_var (buffer)	    Variance Buffer of Features
         - R (int)               Window radius
-        - img_width (int)       Image Width
-        - img_height (int)      Image Height
+        - W (int)       Image Width
+        - H (int)      Image Height
 å
     \return void --> denoised image in buffer out_img
  */
- void basic_implementation(buffer out_img, buffer c, buffer c_var, buffer f, buffer f_var, int R, int img_width, int img_height){
+ void basic_implementation(scalar *out_img, scalar* c, scalar* c_var, scalar* f, scalar* f_var, int R, int W, int H){
 
     if(DEBUG) {
         cout << "--------------------------------------------------" << endl;
         cout << " Starting Algorithm " << endl;
     }
+
+    int WH = W*H;
 
     // ----------------------------------------------
     // (1) Sample Variance Scaling
@@ -43,17 +45,17 @@ using namespace std;
     // (2) Feature Prefiltering
     // ----------------------------------------------
     Flt_parameters p_pre = { .kc = 1., .kf = INFINITY, .tau = 0., .f = 3, .r = 5};
-    buffer f_filtered, f_var_filtered;
-    allocate_buffer(&f_filtered, img_width, img_height);
-    allocate_buffer(&f_var_filtered, img_width, img_height);
-    flt_buffer_basic(f_filtered, f, f, f_var, p_pre, img_width, img_height);
-    flt_buffer_basic(f_var_filtered, f_var, f, f_var, p_pre, img_width, img_height);
+    scalar *f_filtered, *f_var_filtered;
+    allocate_buffer(&f_filtered, W, H);
+    allocate_buffer(&f_var_filtered, W, H);
+    flt_buffer_basic(f_filtered, f, f, f_var, p_pre, W, H);
+    flt_buffer_basic(f_var_filtered, f_var, f, f_var, p_pre, W, H);
     
     // DEBUGGING PART
     if(DEBUG) {
-        write_channel_exr("temp/albedo_filtered.exr", &f_filtered[0], img_width, img_height);
-        write_channel_exr("temp/depth_filtered.exr", &f_filtered[1], img_width, img_height);
-        write_channel_exr("temp/normal_filtered.exr", &f_filtered[2], img_width, img_height);
+        write_channel_exr("temp/albedo_filtered.exr", f_filtered, W, H);
+        write_channel_exr("temp/depth_filtered.exr", f_filtered + WH, W, H);
+        write_channel_exr("temp/normal_filtered.exr", f_filtered + 2*WH, W, H);
         cout << "\t - Feature Prefiltering done" << endl;
     }
 
@@ -62,40 +64,40 @@ using namespace std;
     // ----------------------------------------------
     // (a) Candidate Filter: FIRST
     Flt_parameters p_r = { .kc = 2.0, .kf = 0.6, .tau = 0.001, .f = 1, .r = R};
-    buffer r, d_r;
-    allocate_buffer(&r, img_width, img_height);
-    allocate_buffer(&d_r, img_width, img_height);
-    flt(r, d_r, c, c, c_var, f_filtered, f_var_filtered, p_r, img_width, img_height);
+    scalar *r, *d_r;
+    allocate_buffer(&r, W, H);
+    allocate_buffer(&d_r, W, H);
+    flt(r, d_r, c, c, c_var, f_filtered, f_var_filtered, p_r, W, H);
     
     // DEBUGGING PART
     if(DEBUG) {
-        write_buffer_exr("temp/candidate_FIRST.exr", &r, img_width, img_height);
+        write_buffer_exr("temp/candidate_FIRST.exr", r, W, H);
         cout << "\t - Candidate FIRST done" << endl;
     }
 
     // (b) Candidate Filter: SECOND
     Flt_parameters p_g = { .kc = 2.0, .kf = 0.6, .tau = 0.001, .f = 3, .r = R};
-    buffer g, d_g;
-    allocate_buffer(&g, img_width, img_height);
-    allocate_buffer(&d_g, img_width, img_height);
-    flt(g, d_g, c, c, c_var, f_filtered, f_var_filtered, p_g, img_width, img_height);
+    scalar *g, *d_g;
+    allocate_buffer(&g, W, H);
+    allocate_buffer(&d_g, W, H);
+    flt(g, d_g, c, c, c_var, f_filtered, f_var_filtered, p_g, W, H);
     
     // DEBUGGING PART
     if(DEBUG) {
-        write_buffer_exr("temp/candidate_SECOND.exr", &g, img_width, img_height);
+        write_buffer_exr("temp/candidate_SECOND.exr", g, W, H);
         cout << "\t - Candidate SECOND done" << endl;
     }
 
     // (c) Candidate Filter: THIRD
     Flt_parameters p_b = { .kc = INFINITY, .kf = 0.6, .tau = 0.0001, .f = 1, .r = R};
-    buffer b, d_b;
-    allocate_buffer(&b, img_width, img_height);
-    allocate_buffer(&d_b, img_width, img_height);
-    flt(b, d_b, c, c, c_var, f_filtered, f_var_filtered, p_b, img_width, img_height);
+    scalar *b, *d_b;
+    allocate_buffer(&b, W, H);
+    allocate_buffer(&d_b, W, H);
+    flt(b, d_b, c, c, c_var, f_filtered, f_var_filtered, p_b, W, H);
     
     // DEBUGGING PART
     if(DEBUG) {
-        write_buffer_exr("temp/candidate_THIRD.exr", &b, img_width, img_height);
+        write_buffer_exr("temp/candidate_THIRD.exr", b, W, H);
         cout << "\t - Candidate THIRD done" << endl;
     }
 
@@ -104,82 +106,82 @@ using namespace std;
     // ----------------------------------------------
 
     // (a) Compute SURE error estimates
-    channel sure_r, sure_g, sure_b;
-    allocate_channel(&sure_r, img_width, img_height);
-    allocate_channel(&sure_g, img_width, img_height);
-    allocate_channel(&sure_b, img_width, img_height);
-    sure(sure_r, c, c_var, r, d_r, img_width, img_height);
-    sure(sure_g, c, c_var, g, d_g, img_width, img_height);
-    sure(sure_b, c, c_var, b, d_b, img_width, img_height);
+    scalar *sure_r, *sure_g, *sure_b;
+    allocate_channel(&sure_r, W, H);
+    allocate_channel(&sure_g, W, H);
+    allocate_channel(&sure_b, W, H);
+    sure(sure_r, c, c_var, r, d_r, W, H);
+    sure(sure_g, c, c_var, g, d_g, W, H);
+    sure(sure_b, c, c_var, b, d_b, W, H);
     
     // DEBUGGING PART
     if(DEBUG) {
-        write_channel_exr("temp/sure_r.exr", &sure_r, img_width, img_height);
-        write_channel_exr("temp/sure_g.exr", &sure_g, img_width, img_height);
-        write_channel_exr("temp/sure_b.exr", &sure_b, img_width, img_height);   
+        write_channel_exr("temp/sure_r_.exr", sure_r, W, H);
+        write_channel_exr("temp/sure_g_.exr", sure_g, W, H);
+        write_channel_exr("temp/sure_b_.exr", sure_b, W, H);   
         cout << "\t - Sure Error Estimates done" << endl;
     }
 
     // (b) Filter error estimates
     Flt_parameters p_sure = { .kc = 1.0, .kf = INFINITY, .tau = 0.001, .f = 1, .r = 1};
-    channel e_r, e_g, e_b;
-    allocate_channel(&e_r, img_width, img_height);
-    allocate_channel(&e_g, img_width, img_height);
-    allocate_channel(&e_b, img_width, img_height);
-    flt_channel_basic(e_r, sure_r, c, c_var, p_sure, img_width, img_height);
-    flt_channel_basic(e_g, sure_g, c, c_var, p_sure, img_width, img_height);
-    flt_channel_basic(e_b, sure_b, c, c_var, p_sure, img_width, img_height);
+    scalar *e_r, *e_g, *e_b;
+    allocate_channel(&e_r, W, H);
+    allocate_channel(&e_g, W, H);
+    allocate_channel(&e_b, W, H);
+    flt_channel_basic(e_r, sure_r, c, c_var, p_sure, W, H);
+    flt_channel_basic(e_g, sure_g, c, c_var, p_sure, W, H);
+    flt_channel_basic(e_b, sure_b, c, c_var, p_sure, W, H);
     
     // DEBUG PART
     if(DEBUG) {
-        write_channel_exr("temp/e_r.exr", &e_r, img_width, img_height);
-        write_channel_exr("temp/e_g.exr", &e_g, img_width, img_height);
-        write_channel_exr("temp/e_b.exr", &e_b, img_width, img_height);
+        write_channel_exr("temp/e_r.exr", e_r, W, H);
+        write_channel_exr("temp/e_g.exr", e_g, W, H);
+        write_channel_exr("temp/e_b.exr", e_b, W, H);
         cout << "\t - Filtered Sure Error Estimates done" << endl;
     }
 
     // ----------------------------------------------
     // (5) Compute Binary Selection Maps
     // ----------------------------------------------
-    channel sel_r, sel_g, sel_b;
-    allocate_channel(&sel_r, img_width, img_height);
-    allocate_channel(&sel_g, img_width, img_height);
-    allocate_channel(&sel_b, img_width, img_width);
+    scalar *sel_r, *sel_g, *sel_b;
+    allocate_channel(&sel_r, W, H);
+    allocate_channel(&sel_g, W, H);
+    allocate_channel(&sel_b, W, W);
     
     // Compute selection maps
-    for (int x = 0; x < img_width; x++){
-        for (int y = 0; y < img_height; y++){
-                sel_r[x][y] = e_r[x][y] < e_g[x][y] && e_r[x][y] < e_b[x][y]; // && d_r[0][x][y] < d_g[0][x][y];
-                sel_g[x][y] = e_g[x][y] < e_r[x][y] && e_g[x][y] < e_b[x][y];
-                sel_b[x][y] = e_b[x][y] < e_r[x][y] && e_g[x][y] < e_b[x][y];
+    for (int x = 0; x < W; x++){
+        for (int y = 0; y < H; y++){
+                sel_r[x * W + y] = e_r[x * W + y] < e_g[x * W + y] && e_r[x * W + y] < e_b[x * W + y]; // && d_r[0][x][y] < d_g[0][x][y];
+                sel_g[x * W + y] = e_g[x * W + y] < e_r[x * W + y] && e_g[x * W + y] < e_b[x * W + y];
+                sel_b[x * W + y] = e_b[x * W + y] < e_r[x * W + y] && e_g[x * W + y] < e_b[x * W + y];
         }
     }
 
     // DEBUG PART
     if(DEBUG) {
-        write_channel_exr("temp/sel_r.exr", &sel_r, img_width, img_height);
-        write_channel_exr("temp/sel_g.exr", &sel_g, img_width, img_height);
-        write_channel_exr("temp/sel_b.exr", &sel_b, img_width, img_height);
+        write_channel_exr("temp/sel_r.exr", sel_r, W, H);
+        write_channel_exr("temp/sel_g.exr", sel_g, W, H);
+        write_channel_exr("temp/sel_b.exr", sel_b, W, H);
         cout << "\t - Selection Maps done" << endl;
     }
 
     // ----------------------------------------------
     // (6) Filter Selection Maps
     // ----------------------------------------------
-    Flt_parameters p_sel = { .kc = 1.0, .kf = INFINITY, .tau = 0.0001, .f = 1, .r = 5};
-    channel sel_r_filtered, sel_g_filtered,  sel_b_filtered;
-    allocate_channel(&sel_r_filtered, img_width, img_height);
-    allocate_channel(&sel_g_filtered, img_width, img_height);
-    allocate_channel(&sel_b_filtered, img_width, img_height);
-    flt_channel_basic(sel_r_filtered, sel_r, c, c_var, p_sel, img_width, img_height);
-    flt_channel_basic(sel_g_filtered, sel_g, c, c_var, p_sel, img_width, img_height);
-    flt_channel_basic(sel_b_filtered, sel_b, c, c_var, p_sel, img_width, img_height);
+    Flt_parameters p_sel = { .kc = 1.0, .kf = INFINITY, .tau = 0.001, .f = 1, .r = 5};
+    scalar *sel_r_filtered, *sel_g_filtered,  *sel_b_filtered;
+    allocate_channel(&sel_r_filtered, W, H);
+    allocate_channel(&sel_g_filtered, W, H);
+    allocate_channel(&sel_b_filtered, W, H);
+    flt_channel_basic(sel_r_filtered, sel_r, c, c_var, p_sel, W, H);
+    flt_channel_basic(sel_g_filtered, sel_g, c, c_var, p_sel, W, H);
+    flt_channel_basic(sel_b_filtered, sel_b, c, c_var, p_sel, W, H);
 
     // DEBUG PART
     if(DEBUG) {
-        write_channel_exr("temp/sel_r_filtered.exr", &sel_r_filtered, img_width, img_height);
-        write_channel_exr("temp/sel_g_filtered.exr", &sel_g_filtered, img_width, img_height);
-        write_channel_exr("temp/sel_b_filtered.exr", &sel_b_filtered, img_width, img_height);
+        write_channel_exr("temp/sel_r_filtered.exr", sel_r_filtered, W, H);
+        write_channel_exr("temp/sel_g_filtered.exr", sel_g_filtered, W, H);
+        write_channel_exr("temp/sel_b_filtered.exr", sel_b_filtered, W, H);
         cout << "\t - Filter Selection Maps done" << endl;
     }
 
@@ -189,24 +191,24 @@ using namespace std;
     scalar w_r, w_g, w_b, norm;
 
     for (int i = 0; i < 3; i++){
-        for (int x = 0; x < img_width; x++){
-            for (int y = 0; y < img_height; y++){
+        for (int x = 0; x < W; x++){
+            for (int y = 0; y < H; y++){
 
                 // Retrieve weights and normalization term => such that weights sum up to 1
-                w_r = sel_r_filtered[x][y];
-                w_g = sel_g_filtered[x][y];
-                w_b = sel_b_filtered[x][y];
+                w_r = sel_r_filtered[x * W + y];
+                w_g = sel_g_filtered[x * W + y];
+                w_b = sel_b_filtered[x * W + y];
 
                 norm = w_r + w_g + w_b;
 
                 // Set candidate r as base => for boundary parts and pixels with norm == 0
-                out_img[i][x][y] = r[i][x][y];
+                out_img[i * WH + x * W + y] = r[i * WH + x * W + y];
 
                 // Averaging of candidate filters
                 if (norm > EPSILON and norm != INFINITY){
-                    out_img[i][x][y] =  (w_r * r[i][x][y] / norm) 
-                                      + (w_g * g[i][x][y] / norm)
-                                      + (w_b * b[i][x][y] / norm);
+                    out_img[i * WH + x * W + y] =  (w_r * r[i * WH + x * W + y] / norm) 
+                                      + (w_g * g[i * WH + x * W + y] / norm)
+                                      + (w_b * b[i * WH + x * W + y] / norm);
                 }
             }
         }
@@ -214,7 +216,7 @@ using namespace std;
 
     // DEBUG PART 
     if(DEBUG) {
-        write_buffer_exr("temp/pass1.exr", &out_img, img_width, img_height);
+        write_buffer_exr("temp/pass1.exr", out_img, W, H);
         cout << "\t - Pass1 done" << endl;
     }
 
@@ -225,38 +227,38 @@ using namespace std;
     // Therefore we can use pass1 as output
     
     // Flt_parameters p_final= { .kc = 0.45, .kf = INFINITY, .tau = 0.0001, .f = 1, .r = R};
-    // flt_buffer_basic(out_img, pass1, pass1, c_var, p_final, img_width, img_height);    
+    // flt_buffer_basic(out_img, pass1, pass1, c_var, p_final, W, H);    
 
     // ----------------------------------------------
     // (9) Memory Deallocation
     // ----------------------------------------------
     // Free filtered filters
-    free_buffer(&f_filtered, img_width);
-    free_buffer(&f_var_filtered, img_width);
+    free_buffer(&f_filtered);
+    free_buffer(&f_var_filtered);
 
     // Free candidate filters and their derivates
-    free_buffer(&r, img_width);
-    free_buffer(&d_r, img_width);
-    free_buffer(&g, img_width);
-    free_buffer(&d_g, img_width);
-    free_buffer(&b, img_width);
-    free_buffer(&d_b, img_width);
+    free_buffer(&r);
+    free_buffer(&d_r);
+    free_buffer(&g);
+    free_buffer(&d_g);
+    free_buffer(&b);
+    free_buffer(&d_b);
 
     // Free sure estimates (unfiltered and filtered)
-    free_channel(&sure_r, img_width);
-    free_channel(&sure_g, img_width);
-    free_channel(&sure_b, img_width);
-    free_channel(&e_r, img_width);
-    free_channel(&e_g, img_width);
-    free_channel(&e_b, img_width);
+    free_channel(&sure_r);
+    free_channel(&sure_g);
+    free_channel(&sure_b);
+    free_channel(&e_r);
+    free_channel(&e_g);
+    free_channel(&e_b);
 
     // Free selection maps (unfiltered and filtered)
-    free_channel(&sel_r, img_width);
-    free_channel(&sel_g, img_width);
-    free_channel(&sel_b, img_width);
-    free_channel(&sel_r_filtered, img_width);
-    free_channel(&sel_g_filtered, img_width);
-    free_channel(&sel_b_filtered, img_width);
+    free_channel(&sel_r);
+    free_channel(&sel_g);
+    free_channel(&sel_b);
+    free_channel(&sel_r_filtered);
+    free_channel(&sel_g_filtered);
+    free_channel(&sel_b_filtered);
 
 
  }

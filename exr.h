@@ -39,7 +39,7 @@ using namespace IMATH_NAMESPACE;
 		- buf			buffer containing loaded EXR image
 
 */
-void load_exr(const char fileName[], buffer* buf, int &img_width, int &img_eight);				
+void load_exr(const char fileName[], scalar** buf, int &img_width, int &img_eight);			
 
 /*! ------------------------------------
 	EXR Writing
@@ -54,8 +54,8 @@ void load_exr(const char fileName[], buffer* buf, int &img_width, int &img_eight
 		--> write an EXR file
 
 */
-void write_buffer_exr(const char fileName[],  buffer* buf, int img_width, int img_height);
-void write_channel_exr(const char fileName[], channel* buf, int img_width, int img_height);
+void write_buffer_exr(const char fileName[],  scalar* buf, int img_width, int img_height);
+void write_channel_exr(const char fileName[], scalar* buf, int img_width, int img_height);
 
 
 // ------------------------------------------------------------------------------------------------------------------

@@ -5,7 +5,7 @@ typedef float scalar;
 typedef scalar** channel;
 typedef scalar*** buffer;
 
-#define EPSILON 0.0000000001
+#define EPSILON 0.000000000001
 #define NB_FEATURES 3
 
 typedef struct
@@ -27,11 +27,11 @@ typedef struct
         - c_var (buffer):       variance of c
         - cand (buffer):        candidate filter
         - cand_d (buffer):      derivative of candidate filter
-        - img_width (int):      image width
-        - img_height (int):     image height
+        - W (int):      image width
+        - H (int):     image height
 
 */
-void sure(channel output, buffer c, buffer c_var, buffer cand, buffer cand_d, int img_width, int img_height);
+void sure(scalar*  output, scalar* c, scalar* c_var, scalar* cand, scalar* cand_d, int W, int H);
 
 /* -------------------------------------------------------
     Basic Filtering (Buffer)
@@ -47,7 +47,7 @@ void sure(channel output, buffer c, buffer c_var, buffer cand, buffer cand_d, in
         - output (buffer):  filtered image in buffer output
    
 */
-void flt_buffer_basic(buffer output, buffer input, buffer u, buffer var_u, Flt_parameters p, int img_width, int img_height);
+void flt_buffer_basic(scalar* output, scalar* input, scalar* u, scalar* var_u, Flt_parameters p, int W, int H);
 
 
 /* -------------------------------------------------------
@@ -64,7 +64,7 @@ void flt_buffer_basic(buffer output, buffer input, buffer u, buffer var_u, Flt_p
         - output (buffer):  filtered image in buffer output
    
 */
-void flt_channel_basic(channel output, channel input, buffer u, buffer var_u, Flt_parameters p, int img_width, int img_height);
+void flt_channel_basic(scalar*  output, scalar* input, scalar* u, scalar* var_u, Flt_parameters p, int W, int H);
 
 /* -------------------------------------------------------
     Main Filtering (color and feature input)
@@ -84,15 +84,14 @@ void flt_channel_basic(channel output, channel input, buffer u, buffer var_u, Fl
         - d_out_d_in (buffer)    Corresponding derrivative "d_out_d_in" 
         
 */        
-void flt(buffer out, buffer d_out_d_in, buffer input, buffer u, buffer var_u, buffer f, buffer var_f, Flt_parameters p, int img_width, int img_height);
+void flt(scalar* out, scalar* d_out_d_in, scalar* input, scalar* u, scalar* var_u, scalar* f, scalar* var_f, Flt_parameters p, int W, int H);
 
-scalar per_pixel_distance(channel u, channel var_u, scalar kc, int xp, int yp, int xq, int yq);
-scalar nl_means_weights(buffer u, buffer var_u, Flt_parameters p, int xp, int yp, int xq, int yq);
-scalar color_weight(buffer u, buffer var_u, Flt_parameters p, int xp, int yp, int xq, int yq);
+scalar per_pixel_distance(scalar*  u, scalar*  var_u, scalar kc, int xp, int yp, int xq, int yq, int W, int H);
+scalar nl_means_weights(scalar* u, scalar* var_u, Flt_parameters p, int xp, int yp, int xq, int yq, int W, int H);
+scalar color_weight(scalar* u, scalar* var_u, Flt_parameters p, int xp, int yp, int xq, int yq, int W, int H);
 
-void compute_gradient(channel gradient, channel u, int d, int img_width, int img_height);
-scalar feature_distance(channel f, channel var_f, channel gradient, Flt_parameters p, int xp, int yp, int xq, int yq);
-scalar feature_weight(channel *f, channel *var_f, channel *gradients, Flt_parameters p, int xp, int yp, int xq, int yq);
-
+void compute_gradient(scalar*  gradient, scalar* u, int d, int W, int H);
+scalar feature_distance(scalar*  f, scalar*  var_f, scalar*  gradient, Flt_parameters p, int xp, int yp, int xq, int yq, int W, int H);
+scalar feature_weight(scalar* f, scalar*  var_f, scalar* gradients, Flt_parameters p, int xp, int yp, int xq, int yq, int W, int H);
 
 #endif //FLT_H

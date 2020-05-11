@@ -21,12 +21,12 @@
 
 */
 scalar rmse(buffer denoised, buffer gt, int img_width, int img_height);
+scalar rmse(scalar* denoised, scalar* gt, int img_width, int img_height);
 
 
 bool compare_scalar(scalar x, scalar y);
-bool compare_buffers(buffer buf1, buffer buf2, int img_width, int img_height);
-
-double squared_diff(buffer buf1, buffer buf2, int img_width, int img_height);
-void maxAbsError(double res[4], buffer buf1, buffer buf2, int img_width, int img_height);
+bool compare_buffers(scalar* buf1, scalar* buf2, int W, int H);
+double squared_diff(scalar* buf1, scalar* buf2, int img_width, int img_height);
+void maxAbsError(double res[4], scalar* buf1, scalar* buf2, int img_width, int img_height);
 
 #endif //VALIDATION_H

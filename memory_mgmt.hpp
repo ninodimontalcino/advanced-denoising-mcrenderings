@@ -11,14 +11,15 @@
  * ToDo: Cache Alignment
  * -----------------------------------------------------------------*/
 
-// MEMORY ALLOCATION
-void allocate_buffer(buffer *buf, int img_width, int img_height);
-void allocate_buffer_zero(buffer *buf, int img_width, int img_height);
-void allocate_channel(channel *buf, int img_width, int img_height);
-void allocate_channel_zero(channel *buf, int img_width, int img_height);
 
-// MEMORY FREEING
-void free_buffer(buffer *buf, int img_width);
-void free_channel(channel *buf, int img_width);
+
+void allocate_buffer(scalar **buf, int W, int H);
+void allocate_buffer_zero(scalar **buf, int W, int H);
+
+void allocate_channel(scalar **channel, int W, int H);
+void allocate_channel_zero(scalar **channel, int W, int H);
+
+void free_buffer(scalar **buf);
+void free_channel(scalar **channel);
 
 #endif 

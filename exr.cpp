@@ -2,46 +2,50 @@
 #include "memory_mgmt.hpp"
 
 
-void load_exr(const char fileName[], buffer* buf, int &img_width, int &img_height) 
+void load_exr(const char fileName[], scalar** buf, int &W, int &H) 
 {
         
         // Read RGB Channels
         Array2D<float> pixelsR, pixelsG, pixelsB;
-        readGZ1(fileName, pixelsR, pixelsG, pixelsB, img_width, img_height);
+        readGZ1(fileName, pixelsR, pixelsG, pixelsB, W, H);
+
+        int WH = W * H;
 
         // Memory Allocation
-        allocate_buffer(buf, img_width, img_height);
+        (*buf) = (scalar*) malloc(3 * W * H * sizeof(scalar));
 
         // Fill buffer with corresponding values -> c[channel][x][y]
-        for (int i = 0; i < img_width; i++) {
-            for (int j=0; j<img_height; j++) {
-                (*buf)[0][i][j] = pixelsR[j][i];
-                (*buf)[1][i][j] = pixelsG[j][i];
-                (*buf)[2][i][j] = pixelsB[j][i];
+        for (int i = 0; i < W; i++) {
+            for (int j=0; j<H; j++) {
+                (*buf)[0 * WH + i * W + j] = pixelsR[j][i];
+                (*buf)[1 * WH + i * W + j] = pixelsG[j][i];
+                (*buf)[2 * WH + i * W + j] = pixelsB[j][i];
             }
         }
 }
 
 
-void write_buffer_exr(const char fileName[], buffer* buf, int img_width, int img_height){
+void write_buffer_exr(const char fileName[], scalar* buf, int W, int H){
+
+    int WH = W * H;
 
     // Write information from buffer in 2DArrays
     Array2D<float> pixelsR, pixelsG, pixelsB;
-    pixelsR.resizeErase(img_height, img_width);
-    pixelsG.resizeErase(img_height, img_width);
-    pixelsB.resizeErase(img_height, img_width);
+    pixelsR.resizeErase(H, W);
+    pixelsG.resizeErase(H, W);
+    pixelsB.resizeErase(H, W);
 
-    for (int x = 0; x < img_width; x++){
-        for (int y = 0; y < img_height; y++){
-            pixelsR[y][x] = (*buf)[0][x][y];
-            pixelsG[y][x] = (*buf)[1][x][y];
-            pixelsB[y][x] = (*buf)[2][x][y];
+    for (int x = 0; x < W; x++){
+        for (int y = 0; y < H; y++){
+            pixelsR[y][x] = buf[0 * WH + x * W  + y];
+            pixelsG[y][x] = buf[1 * WH + x * W  + y];
+            pixelsB[y][x] = buf[2 * WH + x * W  + y];
         }
     }
 
 
     // Defining Header => we write 3 channels (R,G,B)
-    Header header (img_width, img_height); 
+    Header header (W, H); 
     header.channels().insert ("R", Channel (IMF::FLOAT)); 
     header.channels().insert ("G", Channel (IMF::FLOAT));
     header.channels().insert ("B", Channel (IMF::FLOAT)); 
@@ -56,43 +60,42 @@ void write_buffer_exr(const char fileName[], buffer* buf, int img_width, int img
                         Slice (IMF::FLOAT,
                         (char *) &pixelsR[0][0],                        
                         sizeof (pixelsR[0][0]) * 1,      
-                        sizeof (pixelsR[0][0]) * img_width            
+                        sizeof (pixelsR[0][0]) * W            
                         ));
 
     frameBuffer.insert ("G",
                         Slice (IMF::FLOAT,
                         (char *) &pixelsG[0][0],                        
                         sizeof (pixelsG[0][0]) * 1,      
-                        sizeof (pixelsG[0][0]) * img_width  
+                        sizeof (pixelsG[0][0]) * W  
                         ));
 
     frameBuffer.insert ("B",
                         Slice (IMF::FLOAT,
                         (char *) &pixelsB[0][0],                        
                         sizeof (pixelsB[0][0]) * 1,      
-                        sizeof (pixelsB[0][0]) * img_width    
+                        sizeof (pixelsB[0][0]) * W    
                         ));
 
     file.setFrameBuffer(frameBuffer);
-    file.writePixels(img_height);         
+    file.writePixels(H);         
 
 }
 
-
-void write_channel_exr(const char fileName[], channel* c, int img_width, int img_height){
+void write_channel_exr(const char fileName[], scalar* c, int W, int H){
 
     // Write information from buffer in 2DArrays
     Array2D<float> pixels;
-    pixels.resizeErase(img_height, img_width);
+    pixels.resizeErase(H, W);
 
-    for (int x = 0; x < img_width; x++){
-        for (int y = 0; y < img_width; y++){
-            pixels[y][x] = (*c)[x][y];
+    for (int x = 0; x < W; x++){
+        for (int y = 0; y < H; y++){
+            pixels[y][x] = c[x * W + y];
         }
     }
 
     // Defining Header => we write 3 channels (R,G,B)
-    Header header (img_width, img_height); 
+    Header header (W, H); 
     header.channels().insert ("R", Channel (IMF::FLOAT)); 
     header.channels().insert ("G", Channel (IMF::FLOAT));
     header.channels().insert ("B", Channel (IMF::FLOAT)); 
@@ -107,25 +110,25 @@ void write_channel_exr(const char fileName[], channel* c, int img_width, int img
                         Slice (IMF::FLOAT,
                         (char *) &pixels[0][0],                        
                         sizeof (pixels[0][0]) * 1,      
-                        sizeof (pixels[0][0]) * img_width            
+                        sizeof (pixels[0][0]) * W            
                         ));
 
     frameBuffer.insert ("G",
                         Slice (IMF::FLOAT,
                         (char *) &pixels[0][0],                        
                         sizeof (pixels[0][0]) * 1,      
-                        sizeof (pixels[0][0]) * img_width  
+                        sizeof (pixels[0][0]) * W  
                         ));
 
     frameBuffer.insert ("B",
                         Slice (IMF::FLOAT,
                         (char *) &pixels[0][0],                        
                         sizeof (pixels[0][0]) * 1,      
-                        sizeof (pixels[0][0]) * img_width    
+                        sizeof (pixels[0][0]) * W    
                         ));
 
     file.setFrameBuffer(frameBuffer);
-    file.writePixels(img_height);         
+    file.writePixels(H);         
 
 }
 
