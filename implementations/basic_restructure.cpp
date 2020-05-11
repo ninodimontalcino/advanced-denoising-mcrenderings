@@ -172,29 +172,29 @@ using namespace std;
     // (7) Candidate Filter averaging
     // ----------------------------------------------
     scalar w_r, w_g, w_b, norm;
-    for (int i = 0; i < 3; i++){
         for (int x = 0; x < W; x++){
             for (int y = 0; y < H; y++){
+                for (int i = 0; i < 3; i ++) {
 
-                // Retrieve weights and normalization term => such that weights sum up to 1
-                w_r = sel_filtered[0 + 3 *  (x * W + y)];
-                w_g = sel_filtered[1 + 3 *  (x * W + y)];
-                w_b = sel_filtered[2 + 3 *  (x * W + y)];
+                    // Retrieve weights and normalization term => such that weights sum up to 1
+                    w_r = sel_filtered[0 + 3 *  (x * W + y)];
+                    w_g = sel_filtered[1 + 3 *  (x * W + y)];
+                    w_b = sel_filtered[2 + 3 *  (x * W + y)];
 
-                norm = w_r + w_g + w_b;
-            
-                // Set candidate r as base => for boundary parts and pixels with norm == 0
-                out_img[i + 3 *  (x * W + y)] = r[i + 3 *  (x * W + y)];
+                    norm = w_r + w_g + w_b;
+                
+                    // Set candidate r as base => for boundary parts and pixels with norm == 0
+                    out_img[i + 3 *  (x * W + y)] = r[i + 3 *  (x * W + y)];
 
-                // Averaging of candidate filters
-                if (norm > EPSILON and norm != INFINITY){
-                    out_img[i + 3 *  (x * W + y)] =  ((w_r * r[i + 3 *  (x * W + y)]) 
-                                                  + (w_g * g[i + 3 *  (x * W + y)])
-                                                  + (w_b * b[i + 3 *  (x * W + y)]))/norm;
+                    // Averaging of candidate filters
+                    if (norm > EPSILON and norm != INFINITY){
+                        out_img[i + 3 *  (x * W + y)] =  ((w_r * r[i + 3 *  (x * W + y)]) 
+                                                    + (w_g * g[i + 3 *  (x * W + y)])
+                                                    + (w_b * b[i + 3 *  (x * W + y)]))/norm;
+                    }
                 }
             }
         }
-    }
 
     // DEBUG PART 
     if(DEBUG) {
