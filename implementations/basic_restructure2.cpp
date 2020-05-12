@@ -72,11 +72,6 @@ using namespace std;
     g = (scalar*) calloc(3 * WH, sizeof(scalar)); 
     b = (scalar*) calloc(3 * WH, sizeof(scalar));       
     candidate_filtering_all(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, W, H);
-    // for (int i = 0; i < W; i ++) {
-    //     for (int j = 0; j < H; j ++) {
-    //         cout << b[3*(i*W+j)] << " "  << b[3*(i*W+j)+1] << " "  << b[3*(i*W+j)+2] << "\n";
-    //     }
-    // }
     
     // DEBUGGING PART
     if(DEBUG) {
@@ -94,12 +89,6 @@ using namespace std;
     scalar* sure;
     sure = (scalar*) calloc(3 * W * H, sizeof(scalar)); 
     sure_all(sure, c, c_var, r, g, b, W, H);
-
-    // for (int i = 0; i < W; i ++) {
-    //     for (int j = 0; j < H; j ++) {
-    //         cout << sure[3*(i*W+j)] << " "  << sure[3*(i*W+j)+1] << " "  << sure[3*(i*W+j)+2] << "\n";
-    //     }
-    // }
     
     // DEBUGGING PART
     if(DEBUG) {

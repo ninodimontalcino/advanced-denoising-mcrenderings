@@ -45,12 +45,7 @@ using namespace std;
     scalar* f_var_filtered;
     f_filtered = (scalar*) calloc(3 * WH, sizeof(scalar));
     f_var_filtered = (scalar*) calloc(3 * WH, sizeof(scalar));
-    // for (int i = 0; i < W; i ++) {
-    //     for (int j = 0; j < H; j ++) {
-    //         cout << f[3*(i*W+j)] << " "  << f[3*(i*W+j)+1] << " "  << f[3*(i*W+j)+2] << "\n";
-    //     }
-    // }
-    feature_prefiltering(f_filtered, f_var_filtered, f, f_var, p_pre, W, H);
+    feature_prefiltering_ILP(f_filtered, f_var_filtered, f, f_var, p_pre, W, H);
 
     
     // DEBUGGING PART
@@ -76,14 +71,7 @@ using namespace std;
     r = (scalar*) calloc(3 * WH, sizeof(scalar)); 
     g = (scalar*) calloc(3 * WH, sizeof(scalar)); 
     b = (scalar*) calloc(3 * WH, sizeof(scalar));       
-    candidate_filtering_all2(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, W, H);
-
-
-    // for (int i = 0; i < W; i ++) {
-    //     for (int j = 0; j < H; j ++) {
-    //         cout << r[3*(i*W+j)] << " "  << r[3*(i*W+j)+1] << " "  << r[3*(i*W+j)+2] << "\n";
-    //     }
-    // }
+    candidate_filtering_all_ILP(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, W, H);
     
     // DEBUGGING PART
     if(DEBUG) {
@@ -100,7 +88,7 @@ using namespace std;
     // (a) Compute SURE error estimates
     scalar* sure;
     sure = (scalar*) calloc(3 * W * H, sizeof(scalar)); 
-    sure_all(sure, c, c_var, r, g, b, W, H);
+    sure_all_ILP(sure, c, c_var, r, g, b, W, H);
     
     // DEBUGGING PART
     if(DEBUG) {
@@ -114,7 +102,7 @@ using namespace std;
     Flt_parameters p_sure = { .kc = 1.0, .kf = INFINITY, .tau = 0.001, .f = 1, .r = 1};
     scalar* e;
     e = (scalar*) calloc(3 * W * H,  sizeof(scalar)); 
-    filtering_basic(e, sure, c, c_var, p_sure, W, H);
+    filtering_basic_ILP(e, sure, c, c_var, p_sure, W, H);
     
     // DEBUG PART
     if(DEBUG) {
@@ -153,7 +141,7 @@ using namespace std;
     Flt_parameters p_sel = { .kc = 1.0, .kf = INFINITY, .tau = 0.001, .f = 1, .r = 5};
     scalar* sel_filtered;
     sel_filtered = (scalar*) calloc(3 * W * H, sizeof(scalar)); 
-    filtering_basic(sel_filtered, sel, c, c_var, p_sel, W, H);
+    filtering_basic_ILP(sel_filtered, sel, c, c_var, p_sel, W, H);
 
     // DEBUG PART
     if(DEBUG) {

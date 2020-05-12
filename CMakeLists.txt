@@ -60,6 +60,7 @@ add_executable(main
               memory_mgmt.cpp 
               flt.cpp 
               flt_restructure.cpp 
+              flt_restructureILP.cpp 
               validation.cpp
 
               # Implementations (BASIC and OPTIMIZED)
