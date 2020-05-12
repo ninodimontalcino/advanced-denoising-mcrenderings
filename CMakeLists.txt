@@ -61,6 +61,7 @@ add_executable(main
               flt.cpp 
               flt_restructure.cpp 
               flt_restructureILP.cpp 
+              flt_restructureSSA.cpp 
               validation.cpp
 
               # Implementations (BASIC and OPTIMIZED)
@@ -69,6 +70,7 @@ add_executable(main
               implementations/basic_restructure.cpp
               implementations/basic_restructure2.cpp
               implementations/basic_restructure3.cpp
+              implementations/basic_restructure4.cpp
 
               )
 

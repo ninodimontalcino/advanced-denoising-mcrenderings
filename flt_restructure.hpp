@@ -29,4 +29,7 @@ void filtering_basic_ILP(scalar* output, scalar* input, scalar* c, scalar* c_var
 void feature_prefiltering_ILP(scalar* output, scalar* output_var, scalar* features, scalar* features_var, Flt_parameters p, int img_width, int img_height);
 void candidate_filtering_all_ILP(scalar* output_r, scalar* output_g, scalar* output_b, scalar* color, scalar* color_var, scalar* features, scalar* features_var, Flt_parameters* p, int img_width, int img_height);
 
+// More ILP and SSA
+void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* output_b, scalar* color, scalar* color_var, scalar* features, scalar* features_var, int R, int img_width, int img_height);
+
 #endif //FLT_RESTRUCTURE_H
