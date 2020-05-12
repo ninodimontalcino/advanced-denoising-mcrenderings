@@ -49,29 +49,433 @@ void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* out
     scalar *gradients;
     gradients = (scalar*) malloc(3 * W * H * sizeof(scalar));
 
+    scalar diffL_A0, diffR_A0, diffU_A0, diffD_A0;
+    scalar diffL_A1, diffR_A1, diffU_A1, diffD_A1;
+    scalar diffL_A2, diffR_A2, diffU_A2, diffD_A2;
+    scalar diffsqL_A0, diffsqR_A0, diffsqU_A0, diffsqD_A0;
+    scalar diffsqL_A1, diffsqR_A1, diffsqU_A1, diffsqD_A1;
+    scalar diffsqL_A2, diffsqR_A2, diffsqU_A2, diffsqD_A2;
+    scalar gradH_A0, gradV_A0;
+    scalar gradH_A1, gradV_A1;
+    scalar gradH_A2, gradV_A2;
+    scalar diffL_B0, diffR_B0, diffU_B0, diffD_B0;
+    scalar diffL_B1, diffR_B1, diffU_B1, diffD_B1;
+    scalar diffL_B2, diffR_B2, diffU_B2, diffD_B2;
+    scalar diffsqL_B0, diffsqR_B0, diffsqU_B0, diffsqD_B0;
+    scalar diffsqL_B1, diffsqR_B1, diffsqU_B1, diffsqD_B1;
+    scalar diffsqL_B2, diffsqR_B2, diffsqU_B2, diffsqD_B2;
+    scalar gradH_B0, gradV_B0;
+    scalar gradH_B1, gradV_B1;
+    scalar gradH_B2, gradV_B2;
+    scalar diffL_C0, diffR_C0, diffU_C0, diffD_C0;
+    scalar diffL_C1, diffR_C1, diffU_C1, diffD_C1;
+    scalar diffL_C2, diffR_C2, diffU_C2, diffD_C2;
+    scalar diffsqL_C0, diffsqR_C0, diffsqU_C0, diffsqD_C0;
+    scalar diffsqL_C1, diffsqR_C1, diffsqU_C1, diffsqD_C1;
+    scalar diffsqL_C2, diffsqR_C2, diffsqU_C2, diffsqD_C2;
+    scalar gradH_C0, gradV_C0;
+    scalar gradH_C1, gradV_C1;
+    scalar gradH_C2, gradV_C2;
+    scalar diffL_D0, diffR_D0, diffU_D0, diffD_D0;
+    scalar diffL_D1, diffR_D1, diffU_D1, diffD_D1;
+    scalar diffL_D2, diffR_D2, diffU_D2, diffD_D2;
+    scalar diffsqL_D0, diffsqR_D0, diffsqU_D0, diffsqD_D0;
+    scalar diffsqL_D1, diffsqR_D1, diffsqU_D1, diffsqD_D1;
+    scalar diffsqL_D2, diffsqR_D2, diffsqU_D2, diffsqD_D2;
+    scalar gradH_D0, gradV_D0;
+    scalar gradH_D1, gradV_D1;
+    scalar gradH_D2, gradV_D2;
+    scalar diffL_E0, diffR_E0, diffU_E0, diffD_E0;
+    scalar diffL_E1, diffR_E1, diffU_E1, diffD_E1;
+    scalar diffL_E2, diffR_E2, diffU_E2, diffD_E2;
+    scalar diffsqL_E0, diffsqR_E0, diffsqU_E0, diffsqD_E0;
+    scalar diffsqL_E1, diffsqR_E1, diffsqU_E1, diffsqD_E1;
+    scalar diffsqL_E2, diffsqR_E2, diffsqU_E2, diffsqD_E2;
+    scalar gradH_E0, gradV_E0;
+    scalar gradH_E1, gradV_E1;
+    scalar gradH_E2, gradV_E2;
+    scalar diffL_F0, diffR_F0, diffU_F0, diffD_F0;
+    scalar diffL_F1, diffR_F1, diffU_F1, diffD_F1;
+    scalar diffL_F2, diffR_F2, diffU_F2, diffD_F2;
+    scalar diffsqL_F0, diffsqR_F0, diffsqU_F0, diffsqD_F0;
+    scalar diffsqL_F1, diffsqR_F1, diffsqU_F1, diffsqD_F1;
+    scalar diffsqL_F2, diffsqR_F2, diffsqU_F2, diffsqD_F2;
+    scalar gradH_F0, gradV_F0;
+    scalar gradH_F1, gradV_F1;
+    scalar gradH_F2, gradV_F2;
+    scalar diffL_G0, diffR_G0, diffU_G0, diffD_G0;
+    scalar diffL_G1, diffR_G1, diffU_G1, diffD_G1;
+    scalar diffL_G2, diffR_G2, diffU_G2, diffD_G2;
+    scalar diffsqL_G0, diffsqR_G0, diffsqU_G0, diffsqD_G0;
+    scalar diffsqL_G1, diffsqR_G1, diffsqU_G1, diffsqD_G1;
+    scalar diffsqL_G2, diffsqR_G2, diffsqU_G2, diffsqD_G2;
+    scalar gradH_G0, gradV_G0;
+    scalar gradH_G1, gradV_G1;
+    scalar gradH_G2, gradV_G2;
+    scalar diffL_H0, diffR_H0, diffU_H0, diffD_H0;
+    scalar diffL_H1, diffR_H1, diffU_H1, diffD_H1;
+    scalar diffL_H2, diffR_H2, diffU_H2, diffD_H2;
+    scalar diffsqL_H0, diffsqR_H0, diffsqU_H0, diffsqD_H0;
+    scalar diffsqL_H1, diffsqR_H1, diffsqU_H1, diffsqD_H1;
+    scalar diffsqL_H2, diffsqR_H2, diffsqU_H2, diffsqD_H2;
+    scalar gradH_H0, gradV_H0;
+    scalar gradH_H1, gradV_H1;
+    scalar gradH_H2, gradV_H2;
+
+
     for(int x =  R+F_R; x < W - R - F_R; ++x) {
-        for(int y =  R+F_R; y < H -  R - F_R; ++y) {
+        int y = R+F_R;
+        for(y; y < H -  R - F_R; y += 8) {
+                // All operations have latency 4 and are executed on ports 0&1
+                // Therefore we exectute the following:
+                // Port 0: L0|L0²|U0|U0²|gradH0|L1|L1²|U1|U1²|gradH1|grad0
+                // Port 1: R0|R0²|D0|D0²|gradV0|R1|R1²|D1|D1²|gradV1|grad1
+                // We need to unroll 8 times to have correct scheduling:
+                // A0A1 | C2D0 | F1F2
+                //  A2B0 | D1D2 | G0G1
+                //   B1B2 | E0E1 | G2H0
+                //    C0C1 | E2F0 | H1H2
+
+                // A0A1
+                diffL_A0 = features[3 * (x * W + y) + 0] - features[3 * ((x - 1) * W + y) + 0];
+                diffR_A0 = features[3 * (x * W + y) + 0] - features[3 * ((x + 1) * W + y) + 0];
+                diffsqL_A0 = diffL_A0 * diffL_A0;
+                diffsqR_A0 = diffR_A0 * diffR_A0;
+                diffU_A0 = features[3 * (x * W + y) + 0] - features[3 * (x * W + y - 1) + 0];
+                diffD_A0 = features[3 * (x * W + y) + 0] - features[3 * (x * W + y + 1) + 0];
+                diffsqU_A0 = diffU_A0 * diffU_A0;
+                diffsqD_A0 = diffD_A0 * diffD_A0;
+                gradH_A0 = fmin(diffsqL_A0, diffsqR_A0);
+                gradV_A0 = fmin(diffsqU_A0, diffsqD_A0);
+
+                diffL_A1 = features[3 * (x * W + y) + 1] - features[3 * ((x - 1) * W + y) + 1];
+                diffR_A1 = features[3 * (x * W + y) + 1] - features[3 * ((x + 1) * W + y) + 1];
+                diffsqL_A1 = diffL_A1 * diffL_A1;
+                diffsqR_A1 = diffR_A1 * diffR_A1;
+                diffU_A1 = features[3 * (x * W + y) + 1] - features[3 * (x * W + y - 1) + 1];
+                diffD_A1 = features[3 * (x * W + y) + 1] - features[3 * (x * W + y + 1) + 1];
+                diffsqU_A1 = diffU_A1 * diffU_A1;
+                diffsqD_A1 = diffD_A1 * diffD_A1;
+                gradH_A1 = fmin(diffsqL_A1, diffsqR_A1);
+                gradV_A1 = fmin(diffsqU_A1, diffsqD_A1);
+
+                gradients[3 * (x * W + y) + 0] = gradH_A0 + gradV_A0;
+                gradients[3 * (x * W + y) + 1] = gradH_A1 + gradV_A1;
+
+                // A2B0
+                diffL_A2 = features[3 * (x * W + y) + 2] - features[3 * ((x - 1) * W + y) + 2];
+                diffR_A2 = features[3 * (x * W + y) + 2] - features[3 * ((x + 1) * W + y) + 2];
+                diffsqL_A2 = diffL_A2 * diffL_A2;
+                diffsqR_A2 = diffR_A2 * diffR_A2;
+                diffU_A2 = features[3 * (x * W + y) + 2] - features[3 * (x * W + y - 1) + 2];
+                diffD_A2 = features[3 * (x * W + y) + 2] - features[3 * (x * W + y + 1) + 2];
+                diffsqU_A2 = diffU_A2 * diffU_A2;
+                diffsqD_A2 = diffD_A2 * diffD_A2;
+                gradH_A2 = fmin(diffsqL_A2, diffsqR_A2);
+                gradV_A2 = fmin(diffsqU_A2, diffsqD_A2);
+
+                diffL_B0 = features[3 * (x * W + y + 1) + 0] - features[3 * ((x - 0) * W + y + 1) + 0];
+                diffR_B0 = features[3 * (x * W + y + 1) + 0] - features[3 * ((x + 0) * W + y + 1) + 0];
+                diffsqL_B0 = diffL_B0 * diffL_B0;
+                diffsqR_B0 = diffR_B0 * diffR_B0;
+                diffU_B0 = features[3 * (x * W + y + 1) + 0] - features[3 * (x * W + y + 1 - 0) + 0];
+                diffD_B0 = features[3 * (x * W + y + 1) + 0] - features[3 * (x * W + y + 1 + 0) + 0];
+                diffsqU_B0 = diffU_B0 * diffU_B0;
+                diffsqD_B0 = diffD_B0 * diffD_B0;
+                gradH_B0 = fmin(diffsqL_B0, diffsqR_B0);
+                gradV_B0 = fmin(diffsqU_B0, diffsqD_B0);
+
+                gradients[3 * (x * W + y) + 0] = gradH_A2 + gradV_A2;
+                gradients[3 * (x * W + y + 1) + 0] = gradH_B0 + gradV_B0;
+
+                // B1B2
+                diffL_B1 = features[3 * (x * W + y + 1) + 1] - features[3 * ((x - 1) * W + y + 1) + 1];
+                diffR_B1 = features[3 * (x * W + y + 1) + 1] - features[3 * ((x + 1) * W + y + 1) + 1];
+                diffsqL_B1 = diffL_B1 * diffL_B1;
+                diffsqR_B1 = diffR_B1 * diffR_B1;
+                diffU_B1 = features[3 * (x * W + y + 1) + 1] - features[3 * (x * W + y + 1 - 1) + 1];
+                diffD_B1 = features[3 * (x * W + y + 1) + 1] - features[3 * (x * W + y + 1 + 1) + 1];
+                diffsqU_B1 = diffU_B1 * diffU_B1;
+                diffsqD_B1 = diffD_B1 * diffD_B1;
+                gradH_B1 = fmin(diffsqL_B1, diffsqR_B1);
+                gradV_B1 = fmin(diffsqU_B1, diffsqD_B1);
+
+                diffL_B2 = features[3 * (x * W + y + 1) + 2] - features[3 * ((x - 1) * W + y + 1) + 2];
+                diffR_B2 = features[3 * (x * W + y + 1) + 2] - features[3 * ((x + 1) * W + y + 1) + 2];
+                diffsqL_B2 = diffL_B2 * diffL_B2;
+                diffsqR_B2 = diffR_B2 * diffR_B2;
+                diffU_B2 = features[3 * (x * W + y + 1) + 2] - features[3 * (x * W + y + 1 - 1) + 2];
+                diffD_B2 = features[3 * (x * W + y + 1) + 2] - features[3 * (x * W + y + 1 + 1) + 2];
+                diffsqU_B2 = diffU_B2 * diffU_B2;
+                diffsqD_B2 = diffD_B2 * diffD_B2;
+                gradH_B2 = fmin(diffsqL_B2, diffsqR_B2);
+                gradV_B2 = fmin(diffsqU_B2, diffsqD_B2);
+
+                gradients[3 * (x * W + y + 1) + 1] = gradH_B1 + gradV_B1;
+                gradients[3 * (x * W + y + 1) + 2] = gradH_B2 + gradV_B2;
+
+                // C0C1
+                diffL_C0 = features[3 * (x * W + y + 2) + 0] - features[3 * ((x - 1) * W + y + 2) + 0];
+                diffR_C0 = features[3 * (x * W + y + 2) + 0] - features[3 * ((x + 1) * W + y + 2) + 0];
+                diffsqL_C0 = diffL_C0 * diffL_C0;
+                diffsqR_C0 = diffR_C0 * diffR_C0;
+                diffU_C0 = features[3 * (x * W + y + 2) + 0] - features[3 * (x * W + y + 2 - 1) + 0];
+                diffD_C0 = features[3 * (x * W + y + 2) + 0] - features[3 * (x * W + y + 2 + 1) + 0];
+                diffsqU_C0 = diffU_C0 * diffU_C0;
+                diffsqD_C0 = diffD_C0 * diffD_C0;
+                gradH_C0 = fmin(diffsqL_C0, diffsqR_C0);
+                gradV_C0 = fmin(diffsqU_C0, diffsqD_C0);
+
+                diffL_C1 = features[3 * (x * W + y + 2) + 1] - features[3 * ((x - 1) * W + y + 2) + 1];
+                diffR_C1 = features[3 * (x * W + y + 2) + 1] - features[3 * ((x + 1) * W + y + 2) + 1];
+                diffsqL_C1 = diffL_C1 * diffL_C1;
+                diffsqR_C1 = diffR_C1 * diffR_C1;
+                diffU_C1 = features[3 * (x * W + y + 2) + 1] - features[3 * (x * W + y + 2 - 1) + 1];
+                diffD_C1 = features[3 * (x * W + y + 2) + 1] - features[3 * (x * W + y + 2 + 1) + 1];
+                diffsqU_C1 = diffU_C1 * diffU_C1;
+                diffsqD_C1 = diffD_C1 * diffD_C1;
+                gradH_C1 = fmin(diffsqL_C1, diffsqR_C1);
+                gradV_C1 = fmin(diffsqU_C1, diffsqD_C1);
+
+                gradients[3 * (x * W + y + 2) + 0] = gradH_C0 + gradV_C0;
+                gradients[3 * (x * W + y + 2) + 1] = gradH_C1 + gradV_C1;
+
+                // C2D0
+                diffL_C2 = features[3 * (x * W + y + 2) + 2] - features[3 * ((x - 1) * W + y + 2) + 2];
+                diffR_C2 = features[3 * (x * W + y + 2) + 2] - features[3 * ((x + 1) * W + y + 2) + 2];
+                diffsqL_C2 = diffL_C2 * diffL_C2;
+                diffsqR_C2 = diffR_C2 * diffR_C2;
+                diffU_C2 = features[3 * (x * W + y + 2) + 2] - features[3 * (x * W + y + 2 - 1) + 2];
+                diffD_C2 = features[3 * (x * W + y + 2) + 2] - features[3 * (x * W + y + 2 + 1) + 2];
+                diffsqU_C2 = diffU_C2 * diffU_C2;
+                diffsqD_C2 = diffD_C2 * diffD_C2;
+                gradH_C2 = fmin(diffsqL_C2, diffsqR_C2);
+                gradV_C2 = fmin(diffsqU_C2, diffsqD_C2);
+
+                diffL_D0 = features[3 * (x * W + y + 3) + 0] - features[3 * ((x - 0) * W + y + 3) + 0];
+                diffR_D0 = features[3 * (x * W + y + 3) + 0] - features[3 * ((x + 0) * W + y + 3) + 0];
+                diffsqL_D0 = diffL_D0 * diffL_D0;
+                diffsqR_D0 = diffR_D0 * diffR_D0;
+                diffU_D0 = features[3 * (x * W + y + 3) + 0] - features[3 * (x * W + y + 3 - 0) + 0];
+                diffD_D0 = features[3 * (x * W + y + 3) + 0] - features[3 * (x * W + y + 3 + 0) + 0];
+                diffsqU_D0 = diffU_D0 * diffU_D0;
+                diffsqD_D0 = diffD_D0 * diffD_D0;
+                gradH_D0 = fmin(diffsqL_D0, diffsqR_D0);
+                gradV_D0 = fmin(diffsqU_D0, diffsqD_D0);
+
+                gradients[3 * (x * W + y + 2) + 0] = gradH_C2 + gradV_C2;
+                gradients[3 * (x * W + y + 3) + 0] = gradH_D0 + gradV_D0;
+
+                // D1D2
+                diffL_D1 = features[3 * (x * W + y + 3) + 1] - features[3 * ((x - 1) * W + y + 3) + 1];
+                diffR_D1 = features[3 * (x * W + y + 3) + 1] - features[3 * ((x + 1) * W + y + 3) + 1];
+                diffsqL_D1 = diffL_D1 * diffL_D1;
+                diffsqR_D1 = diffR_D1 * diffR_D1;
+                diffU_D1 = features[3 * (x * W + y + 3) + 1] - features[3 * (x * W + y + 3 - 1) + 1];
+                diffD_D1 = features[3 * (x * W + y + 3) + 1] - features[3 * (x * W + y + 3 + 1) + 1];
+                diffsqU_D1 = diffU_D1 * diffU_D1;
+                diffsqD_D1 = diffD_D1 * diffD_D1;
+                gradH_D1 = fmin(diffsqL_D1, diffsqR_D1);
+                gradV_D1 = fmin(diffsqU_D1, diffsqD_D1);
+
+                diffL_D2 = features[3 * (x * W + y + 3) + 2] - features[3 * ((x - 1) * W + y + 3) + 2];
+                diffR_D2 = features[3 * (x * W + y + 3) + 2] - features[3 * ((x + 1) * W + y + 3) + 2];
+                diffsqL_D2 = diffL_D2 * diffL_D2;
+                diffsqR_D2 = diffR_D2 * diffR_D2;
+                diffU_D2 = features[3 * (x * W + y + 3) + 2] - features[3 * (x * W + y + 3 - 1) + 2];
+                diffD_D2 = features[3 * (x * W + y + 3) + 2] - features[3 * (x * W + y + 3 + 1) + 2];
+                diffsqU_D2 = diffU_D2 * diffU_D2;
+                diffsqD_D2 = diffD_D2 * diffD_D2;
+                gradH_D2 = fmin(diffsqL_D2, diffsqR_D2);
+                gradV_D2 = fmin(diffsqU_D2, diffsqD_D2);
+
+                gradients[3 * (x * W + y + 3) + 1] = gradH_D1 + gradV_D1;
+                gradients[3 * (x * W + y + 3) + 2] = gradH_D2 + gradV_D2;
+
+                // E0E1
+                diffL_E0 = features[3 * (x * W + y + 4) + 0] - features[3 * ((x - 1) * W + y + 4) + 0];
+                diffR_E0 = features[3 * (x * W + y + 4) + 0] - features[3 * ((x + 1) * W + y + 4) + 0];
+                diffsqL_E0 = diffL_E0 * diffL_E0;
+                diffsqR_E0 = diffR_E0 * diffR_E0;
+                diffU_E0 = features[3 * (x * W + y + 4) + 0] - features[3 * (x * W + y + 4 - 1) + 0];
+                diffD_E0 = features[3 * (x * W + y + 4) + 0] - features[3 * (x * W + y + 4 + 1) + 0];
+                diffsqU_E0 = diffU_E0 * diffU_E0;
+                diffsqD_E0 = diffD_E0 * diffD_E0;
+                gradH_E0 = fmin(diffsqL_E0, diffsqR_E0);
+                gradV_E0 = fmin(diffsqU_E0, diffsqD_E0);
+
+                diffL_E1 = features[3 * (x * W + y + 4) + 1] - features[3 * ((x - 1) * W + y + 4) + 1];
+                diffR_E1 = features[3 * (x * W + y + 4) + 1] - features[3 * ((x + 1) * W + y + 4) + 1];
+                diffsqL_E1 = diffL_E1 * diffL_E1;
+                diffsqR_E1 = diffR_E1 * diffR_E1;
+                diffU_E1 = features[3 * (x * W + y + 4) + 1] - features[3 * (x * W + y + 4 - 1) + 1];
+                diffD_E1 = features[3 * (x * W + y + 4) + 1] - features[3 * (x * W + y + 4 + 1) + 1];
+                diffsqU_E1 = diffU_E1 * diffU_E1;
+                diffsqD_E1 = diffD_E1 * diffD_E1;
+                gradH_E1 = fmin(diffsqL_E1, diffsqR_E1);
+                gradV_E1 = fmin(diffsqU_E1, diffsqD_E1);
+
+                gradients[3 * (x * W + y + 4) + 0] = gradH_E0 + gradV_E0;
+                gradients[3 * (x * W + y + 4) + 1] = gradH_E1 + gradV_E1;
+
+                // E2F0
+                diffL_E2 = features[3 * (x * W + y + 4) + 2] - features[3 * ((x - 1) * W + y + 4) + 2];
+                diffR_E2 = features[3 * (x * W + y + 4) + 2] - features[3 * ((x + 1) * W + y + 4) + 2];
+                diffsqL_E2 = diffL_E2 * diffL_E2;
+                diffsqR_E2 = diffR_E2 * diffR_E2;
+                diffU_E2 = features[3 * (x * W + y + 4) + 2] - features[3 * (x * W + y + 4 - 1) + 2];
+                diffD_E2 = features[3 * (x * W + y + 4) + 2] - features[3 * (x * W + y + 4 + 1) + 2];
+                diffsqU_E2 = diffU_E2 * diffU_E2;
+                diffsqD_E2 = diffD_E2 * diffD_E2;
+                gradH_E2 = fmin(diffsqL_E2, diffsqR_E2);
+                gradV_E2 = fmin(diffsqU_E2, diffsqD_E2);
+
+                diffL_F0 = features[3 * (x * W + y + 5) + 0] - features[3 * ((x - 0) * W + y + 5) + 0];
+                diffR_F0 = features[3 * (x * W + y + 5) + 0] - features[3 * ((x + 0) * W + y + 5) + 0];
+                diffsqL_F0 = diffL_F0 * diffL_F0;
+                diffsqR_F0 = diffR_F0 * diffR_F0;
+                diffU_F0 = features[3 * (x * W + y + 5) + 0] - features[3 * (x * W + y + 5 - 0) + 0];
+                diffD_F0 = features[3 * (x * W + y + 5) + 0] - features[3 * (x * W + y + 5 + 0) + 0];
+                diffsqU_F0 = diffU_F0 * diffU_F0;
+                diffsqD_F0 = diffD_F0 * diffD_F0;
+                gradH_F0 = fmin(diffsqL_F0, diffsqR_F0);
+                gradV_F0 = fmin(diffsqU_F0, diffsqD_F0);
+
+                gradients[3 * (x * W + y + 4) + 0] = gradH_E2 + gradV_E2;
+                gradients[3 * (x * W + y + 5) + 0] = gradH_F0 + gradV_F0;
+
+                // F1F2
+                diffL_F1 = features[3 * (x * W + y + 5) + 1] - features[3 * ((x - 1) * W + y + 5) + 1];
+                diffR_F1 = features[3 * (x * W + y + 5) + 1] - features[3 * ((x + 1) * W + y + 5) + 1];
+                diffsqL_F1 = diffL_F1 * diffL_F1;
+                diffsqR_F1 = diffR_F1 * diffR_F1;
+                diffU_F1 = features[3 * (x * W + y + 5) + 1] - features[3 * (x * W + y + 5 - 1) + 1];
+                diffD_F1 = features[3 * (x * W + y + 5) + 1] - features[3 * (x * W + y + 5 + 1) + 1];
+                diffsqU_F1 = diffU_F1 * diffU_F1;
+                diffsqD_F1 = diffD_F1 * diffD_F1;
+                gradH_F1 = fmin(diffsqL_F1, diffsqR_F1);
+                gradV_F1 = fmin(diffsqU_F1, diffsqD_F1);
+
+                diffL_F2 = features[3 * (x * W + y + 5) + 2] - features[3 * ((x - 1) * W + y + 5) + 2];
+                diffR_F2 = features[3 * (x * W + y + 5) + 2] - features[3 * ((x + 1) * W + y + 5) + 2];
+                diffsqL_F2 = diffL_F2 * diffL_F2;
+                diffsqR_F2 = diffR_F2 * diffR_F2;
+                diffU_F2 = features[3 * (x * W + y + 5) + 2] - features[3 * (x * W + y + 5 - 1) + 2];
+                diffD_F2 = features[3 * (x * W + y + 5) + 2] - features[3 * (x * W + y + 5 + 1) + 2];
+                diffsqU_F2 = diffU_F2 * diffU_F2;
+                diffsqD_F2 = diffD_F2 * diffD_F2;
+                gradH_F2 = fmin(diffsqL_F2, diffsqR_F2);
+                gradV_F2 = fmin(diffsqU_F2, diffsqD_F2);
+
+                gradients[3 * (x * W + y + 5) + 1] = gradH_F1 + gradV_F1;
+                gradients[3 * (x * W + y + 5) + 2] = gradH_F2 + gradV_F2;
+
+                // G0G1
+                diffL_G0 = features[3 * (x * W + y + 6) + 0] - features[3 * ((x - 1) * W + y + 6) + 0];
+                diffR_G0 = features[3 * (x * W + y + 6) + 0] - features[3 * ((x + 1) * W + y + 6) + 0];
+                diffsqL_G0 = diffL_G0 * diffL_G0;
+                diffsqR_G0 = diffR_G0 * diffR_G0;
+                diffU_G0 = features[3 * (x * W + y + 6) + 0] - features[3 * (x * W + y + 6 - 1) + 0];
+                diffD_G0 = features[3 * (x * W + y + 6) + 0] - features[3 * (x * W + y + 6 + 1) + 0];
+                diffsqU_G0 = diffU_G0 * diffU_G0;
+                diffsqD_G0 = diffD_G0 * diffD_G0;
+                gradH_G0 = fmin(diffsqL_G0, diffsqR_G0);
+                gradV_G0 = fmin(diffsqU_G0, diffsqD_G0);
+
+                diffL_G1 = features[3 * (x * W + y + 6) + 1] - features[3 * ((x - 1) * W + y + 6) + 1];
+                diffR_G1 = features[3 * (x * W + y + 6) + 1] - features[3 * ((x + 1) * W + y + 6) + 1];
+                diffsqL_G1 = diffL_G1 * diffL_G1;
+                diffsqR_G1 = diffR_G1 * diffR_G1;
+                diffU_G1 = features[3 * (x * W + y + 6) + 1] - features[3 * (x * W + y + 6 - 1) + 1];
+                diffD_G1 = features[3 * (x * W + y + 6) + 1] - features[3 * (x * W + y + 6 + 1) + 1];
+                diffsqU_G1 = diffU_G1 * diffU_G1;
+                diffsqD_G1 = diffD_G1 * diffD_G1;
+                gradH_G1 = fmin(diffsqL_G1, diffsqR_G1);
+                gradV_G1 = fmin(diffsqU_G1, diffsqD_G1);
+
+                gradients[3 * (x * W + y + 6) + 0] = gradH_G0 + gradV_G0;
+                gradients[3 * (x * W + y + 6) + 1] = gradH_G1 + gradV_G1;
+
+                // G2H0
+                diffL_G2 = features[3 * (x * W + y + 6) + 2] - features[3 * ((x - 1) * W + y + 6) + 2];
+                diffR_G2 = features[3 * (x * W + y + 6) + 2] - features[3 * ((x + 1) * W + y + 6) + 2];
+                diffsqL_G2 = diffL_G2 * diffL_G2;
+                diffsqR_G2 = diffR_G2 * diffR_G2;
+                diffU_G2 = features[3 * (x * W + y + 6) + 2] - features[3 * (x * W + y + 6 - 1) + 2];
+                diffD_G2 = features[3 * (x * W + y + 6) + 2] - features[3 * (x * W + y + 6 + 1) + 2];
+                diffsqU_G2 = diffU_G2 * diffU_G2;
+                diffsqD_G2 = diffD_G2 * diffD_G2;
+                gradH_G2 = fmin(diffsqL_G2, diffsqR_G2);
+                gradV_G2 = fmin(diffsqU_G2, diffsqD_G2);
+
+                diffL_H0 = features[3 * (x * W + y + 7) + 0] - features[3 * ((x - 0) * W + y + 7) + 0];
+                diffR_H0 = features[3 * (x * W + y + 7) + 0] - features[3 * ((x + 0) * W + y + 7) + 0];
+                diffsqL_H0 = diffL_H0 * diffL_H0;
+                diffsqR_H0 = diffR_H0 * diffR_H0;
+                diffU_H0 = features[3 * (x * W + y + 7) + 0] - features[3 * (x * W + y + 7 - 0) + 0];
+                diffD_H0 = features[3 * (x * W + y + 7) + 0] - features[3 * (x * W + y + 7 + 0) + 0];
+                diffsqU_H0 = diffU_H0 * diffU_H0;
+                diffsqD_H0 = diffD_H0 * diffD_H0;
+                gradH_H0 = fmin(diffsqL_H0, diffsqR_H0);
+                gradV_H0 = fmin(diffsqU_H0, diffsqD_H0);
+
+                gradients[3 * (x * W + y + 6) + 0] = gradH_G2 + gradV_G2;
+                gradients[3 * (x * W + y + 7) + 0] = gradH_H0 + gradV_H0;
+
+                // H1H2
+                diffL_H1 = features[3 * (x * W + y + 7) + 1] - features[3 * ((x - 1) * W + y + 7) + 1];
+                diffR_H1 = features[3 * (x * W + y + 7) + 1] - features[3 * ((x + 1) * W + y + 7) + 1];
+                diffsqL_H1 = diffL_H1 * diffL_H1;
+                diffsqR_H1 = diffR_H1 * diffR_H1;
+                diffU_H1 = features[3 * (x * W + y + 7) + 1] - features[3 * (x * W + y + 7 - 1) + 1];
+                diffD_H1 = features[3 * (x * W + y + 7) + 1] - features[3 * (x * W + y + 7 + 1) + 1];
+                diffsqU_H1 = diffU_H1 * diffU_H1;
+                diffsqD_H1 = diffD_H1 * diffD_H1;
+                gradH_H1 = fmin(diffsqL_H1, diffsqR_H1);
+                gradV_H1 = fmin(diffsqU_H1, diffsqD_H1);
+
+                diffL_H2 = features[3 * (x * W + y + 7) + 2] - features[3 * ((x - 1) * W + y + 7) + 2];
+                diffR_H2 = features[3 * (x * W + y + 7) + 2] - features[3 * ((x + 1) * W + y + 7) + 2];
+                diffsqL_H2 = diffL_H2 * diffL_H2;
+                diffsqR_H2 = diffR_H2 * diffR_H2;
+                diffU_H2 = features[3 * (x * W + y + 7) + 2] - features[3 * (x * W + y + 7 - 1) + 2];
+                diffD_H2 = features[3 * (x * W + y + 7) + 2] - features[3 * (x * W + y + 7 + 1) + 2];
+                diffsqU_H2 = diffU_H2 * diffU_H2;
+                diffsqD_H2 = diffD_H2 * diffD_H2;
+                gradH_H2 = fmin(diffsqL_H2, diffsqR_H2);
+                gradV_H2 = fmin(diffsqU_H2, diffsqD_H2);
+
+                gradients[3 * (x * W + y + 7) + 1] = gradH_H1 + gradV_H1;
+                gradients[3 * (x * W + y + 7) + 2] = gradH_H2 + gradV_H2;
                 
-                scalar diffL_00 = features[3 * (x * W + y) + 0] - features[3 * ((x - 1) * W + y) + 0];
-                scalar diffL_01 = features[3 * (x * W + y) + 1] - features[3 * ((x - 1) * W + y) + 1];
-                scalar diffL_02 = features[3 * (x * W + y) + 2] - features[3 * ((x - 1) * W + y) + 2];
-
-                scalar diffR_00 = features[3 * (x * W + y) + 0] - features[3 * ((x + 1) * W + y) + 0];
-                scalar diffR_01 = features[3 * (x * W + y) + 1] - features[3 * ((x + 1) * W + y) + 1];
-                scalar diffR_02 = features[3 * (x * W + y) + 2] - features[3 * ((x + 1) * W + y) + 2];
-
-                scalar diffU_00 = features[3 * (x * W + y) + 0] - features[3 * (x * W + y - 1) + 0];
-                scalar diffU_01 = features[3 * (x * W + y) + 1] - features[3 * (x * W + y - 1) + 1];
-                scalar diffU_02 = features[3 * (x * W + y) + 2] - features[3 * (x * W + y - 1) + 2];
-
-                scalar diffD_00 = features[3 * (x * W + y) + 0] - features[3 * (x * W + y + 1) + 0];
-                scalar diffD_01 = features[3 * (x * W + y) + 1] - features[3 * (x * W + y + 1) + 1];
-                scalar diffD_02 = features[3 * (x * W + y) + 2] - features[3 * (x * W + y + 1) + 2];
-
-                gradients[3 * (x * W + y) + 0] = fmin(diffL_01*diffL_01, diffR_00*diffR_00) + fmin(diffU_00*diffU_00, diffD_00*diffD_00);
-                gradients[3 * (x * W + y) + 1] = fmin(diffL_01*diffL_01, diffR_01*diffR_01) + fmin(diffU_01*diffU_01, diffD_01*diffD_01);
-                gradients[3 * (x * W + y) + 2] = fmin(diffL_02*diffL_02, diffR_02*diffR_02) + fmin(diffU_02*diffU_02, diffD_02*diffD_02);
         } 
+
+        // Remaining
+        if(y > H -  R - F_R)
+            y -= 8;
+
+        for(y; y < H -  R - F_R; ++y) {  
+            scalar diffL_00 = features[3 * (x * W + y) + 0] - features[3 * ((x - 1) * W + y) + 0];
+            scalar diffL_01 = features[3 * (x * W + y) + 1] - features[3 * ((x - 1) * W + y) + 1];
+            scalar diffL_02 = features[3 * (x * W + y) + 2] - features[3 * ((x - 1) * W + y) + 2];
+
+            scalar diffR_00 = features[3 * (x * W + y) + 0] - features[3 * ((x + 1) * W + y) + 0];
+            scalar diffR_01 = features[3 * (x * W + y) + 1] - features[3 * ((x + 1) * W + y) + 1];
+            scalar diffR_02 = features[3 * (x * W + y) + 2] - features[3 * ((x + 1) * W + y) + 2];
+
+            scalar diffU_00 = features[3 * (x * W + y) + 0] - features[3 * (x * W + y - 1) + 0];
+            scalar diffU_01 = features[3 * (x * W + y) + 1] - features[3 * (x * W + y - 1) + 1];
+            scalar diffU_02 = features[3 * (x * W + y) + 2] - features[3 * (x * W + y - 1) + 2];
+
+            scalar diffD_00 = features[3 * (x * W + y) + 0] - features[3 * (x * W + y + 1) + 0];
+            scalar diffD_01 = features[3 * (x * W + y) + 1] - features[3 * (x * W + y + 1) + 1];
+            scalar diffD_02 = features[3 * (x * W + y) + 2] - features[3 * (x * W + y + 1) + 2];
+
+            gradients[3 * (x * W + y) + 0] = fmin(diffL_01*diffL_01, diffR_00*diffR_00) + fmin(diffU_00*diffU_00, diffD_00*diffD_00);
+            gradients[3 * (x * W + y) + 1] = fmin(diffL_01*diffL_01, diffR_01*diffR_01) + fmin(diffU_01*diffU_01, diffD_01*diffD_01);
+            gradients[3 * (x * W + y) + 2] = fmin(diffL_02*diffL_02, diffR_02*diffR_02) + fmin(diffU_02*diffU_02, diffD_02*diffD_02);
+        } 
+
     }
 
     // Precompute size of neighbourhood
