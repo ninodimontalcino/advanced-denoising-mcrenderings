@@ -71,7 +71,7 @@ using namespace std;
     r = (scalar*) calloc(3 * WH, sizeof(scalar)); 
     g = (scalar*) calloc(3 * WH, sizeof(scalar)); 
     b = (scalar*) calloc(3 * WH, sizeof(scalar));       
-    candidate_filtering_all2(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, W, H);
+    candidate_filtering_all_vec(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, W, H);
 
     
     // DEBUGGING PART
