@@ -53,6 +53,7 @@ add_executable(main
               flt.hpp 
               flt_restructure.hpp
               validation.hpp
+              avx_mathfun.h
 
               # General Source Files
               main.cpp 
