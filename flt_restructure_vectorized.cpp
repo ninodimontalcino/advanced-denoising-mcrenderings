@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <immintrin.h>
 
 #include "flt_restructure.hpp"
 #include "memory_mgmt.hpp"
@@ -12,38 +13,52 @@ void sure_all_vec(scalar* sure, scalar* c, scalar* c_var, scalar* cand_r, scalar
 
     int WH = W*H;
     
-    scalar d_r, d_g, d_b, v;
+    __m256 d_r_vec, d_g_vec, d_b_vec, v_vec, c_vec;
     
     for (int x = 0; x < W; x++){
-        for (int y = 0; y < H; y++){
+        for (int y = 0; y < H; y+=8){
 
-            scalar sure_r = 0.f;
-            scalar sure_g = 0.f;
-            scalar sure_b = 0.f;
+
+            __m256 sure_r_vec = _mm256_setzero_ps();
+            __m256 sure_g_vec = _mm256_setzero_ps();
+            __m256 sure_b_vec = _mm256_setzero_ps();
 
             // Sum over color channels
             for (int i = 0; i < 3; i++){    
 
-                // Calculate terms
-                d_r = cand_r[i * WH + x * W + y] - c[i * WH + x * W + y];
-                d_r *= d_r;
-                d_g = cand_g[i * WH + x * W + y] - c[i * WH + x * W + y];
-                d_g *= d_g;
-                d_b = cand_b[i * WH + x * W + y] - c[i * WH + x * W + y];
-                d_b *= d_b;
-                v = c_var[i * WH + x * W + y];
-                v *= v;
+                // Loading
+                c_vec = _mm256_loadu_ps(c+(i * WH + x * W + y));
+                d_r_vec = _mm256_loadu_ps(cand_r+(i * WH + x * W + y));
+                d_g_vec = _mm256_loadu_ps(cand_g+(i * WH + x * W + y));
+                d_b_vec = _mm256_loadu_ps(cand_b+(i * WH + x * W + y));
+                v_vec = _mm256_loadu_ps(c_var+(i * WH + x * W + y));
+
+                // d_r = d_r - c
+                d_r_vec = _mm256_sub_ps(d_r_vec, c_vec);
+                d_g_vec = _mm256_sub_ps(d_g_vec, c_vec);
+                d_b_vec = _mm256_sub_ps(d_b_vec, c_vec);
+
+                // Squared
+                v_vec = _mm256_mul_ps(v_vec, v_vec);
+                d_r_vec = _mm256_mul_ps(d_r_vec, d_r_vec);
+                d_g_vec = _mm256_mul_ps(d_g_vec, d_g_vec);
+                d_b_vec = _mm256_mul_ps(d_b_vec, d_b_vec);
+
+                // Difference d_r = d_r-v
+                d_r_vec = _mm256_sub_ps(d_r_vec, v_vec);
+                d_g_vec = _mm256_sub_ps(d_g_vec, v_vec);
+                d_b_vec = _mm256_sub_ps(d_b_vec, v_vec);
 
                 // Summing up
-                sure_r += d_r - v; 
-                sure_g += d_g - v; 
-                sure_b += d_b - v; 
+                sure_r_vec = _mm256_add_ps(sure_r_vec, d_r_vec);
+                sure_g_vec = _mm256_add_ps(sure_g_vec, d_g_vec);
+                sure_b_vec = _mm256_add_ps(sure_b_vec, d_b_vec);
 
             }
             // Store sure error estimate
-            sure[0 * WH + x * W + y] = sure_r;
-            sure[1 * WH + x * W + y] = sure_g;
-            sure[2 * WH + x * W + y] = sure_b;
+            _mm256_storeu_ps(sure+(0 * WH + x * W + y), sure_r_vec);
+            _mm256_storeu_ps(sure+(1 * WH + x * W + y), sure_g_vec);
+            _mm256_storeu_ps(sure+(2 * WH + x * W + y), sure_b_vec);
         }
     }
 }
