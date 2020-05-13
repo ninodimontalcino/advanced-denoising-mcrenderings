@@ -59,7 +59,8 @@ add_executable(main
               exr.cpp
               memory_mgmt.cpp 
               flt.cpp 
-              flt_restructure.cpp 
+              flt_restructure.cpp
+              flt_restructure_vectorized.cpp
               validation.cpp
 
               # Implementations (BASIC and OPTIMIZED)
@@ -68,7 +69,7 @@ add_executable(main
               implementations/basic_restructure.cpp
               implementations/basic_restructure2.cpp
               implementations/basic_restructure3.cpp
-
+              implementations/basic_restructure4.cpp
               )
 
 # --------------------------
