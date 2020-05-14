@@ -7,10 +7,7 @@
 #include "flt_restructure.hpp"
 #include "memory_mgmt.hpp"
 
-
-void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* output_b, scalar* color, scalar* color_var, scalar* features, scalar* features_var, int R, int W, int H){
-
-    // Get parameters
+// Get parameters
 #define F_R 1
 #define F_G 3
 #define F_B 1
@@ -23,36 +20,7 @@ void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* out
 #define KF_SQUARED_G 0.36
 #define KF_SQUARED_B 0.36
 
-    // Handling Inner Part   
-    // -------------------
-
-    // Allocate buffer weights_sum for normalizing
-    scalar* weight_sum;
-    allocate_buffer_zero(&weight_sum, W, H);
-
-    // Init temp channel
-    scalar* temp;
-    scalar* temp2_r;
-    scalar* temp2_g;
-    allocate_channel(&temp, W, H); 
-    allocate_channel(&temp2_r, W, H); 
-    allocate_channel(&temp2_g, W, H); 
-
-    // Allocate feature weights buffer
-    scalar* features_weights_r_num;
-    scalar* features_weights_r_den;
-    scalar* features_weights_b;
-    allocate_channel(&features_weights_r_num, W, H);
-    allocate_channel(&features_weights_r_den, W, H);
-    allocate_channel(&features_weights_b, W, H);
-
-
-    // Compute gradients
-    scalar *gradients;
-    gradients = (scalar*) malloc(3 * W * H * sizeof(scalar));
-    {
-    
-
+void compute_gradients_SSA(scalar *gradients, scalar *features, const int W, const int H, const int R) {
     scalar diffL_A0, diffR_A0, diffU_A0, diffD_A0;
     scalar diffL_A1, diffR_A1, diffU_A1, diffD_A1;
     scalar diffL_A2, diffR_A2, diffU_A2, diffD_A2;
@@ -481,19 +449,10 @@ void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* out
         } 
 
     }
-    }
-    
-    // Precompute size of neighbourhood
-    scalar neigh_r = 3*(2*F_R+1)*(2*F_R+1);
-    scalar neigh_g = 3*(2*F_G+1)*(2*F_G+1);
-    scalar neigh_b = 3*(2*F_B+1)*(2*F_B+1);
+}
 
-    // Covering the neighbourhood
-    for (int r_x = -R; r_x <= R; r_x++){
-        for (int r_y = -R; r_y <= R; r_y++){
-        
-            // Compute Color Weight for all pixels with fixed r
-           for(int xp = R; xp < W - R; ++xp) {
+void color_weights_SSA(scalar *temp, scalar *color, scalar *color_var, const int r_x, const int r_y, const int W, const int H, const int R) {
+            for(int xp = R; xp < W - R; ++xp) {
                 for(int yp = R; yp < H - R; ++yp) {
 
                     int xq = xp + r_x;
@@ -526,8 +485,9 @@ void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* out
                     temp[xp * W + yp] = ((dist_var_00) / normalization_r_00) + ((dist_var_01) / normalization_r_01) + ((dist_var_02) / normalization_r_02);
                 }
             }
+}
 
-            // Precompute feature weights
+void precompute_features_SSA(scalar *features_weights_r_num, scalar *features_weights_r_den, scalar *features_weights_b, scalar *features, scalar *features_var, scalar *gradients, const int r_x, const int r_y, const int R, const int W, const int H) {
             for(int xp = R + F_B; xp < W - R - F_B; ++xp) {
                 for(int yp = R + F_B; yp < H - R - F_B; yp+=4) {
                     
@@ -638,14 +598,9 @@ void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* out
                     features_weights_b[xp * W + yp+3] = exp(-df_b_0_num / df_b_0_den);
                 } 
             }
-            
+}
 
-            // Next Steps: Box-Filtering for Patch Contribution 
-            // => Use Box-Filter Seperability => linear scans of data
-            
-            // ----------------------------------------------
-            // Candidate R
-            // ----------------------------------------------
+void candidate_R_SSA(scalar *output_r, scalar *weight_sum, scalar *temp, scalar *temp2_r, scalar *features_weights_r_num, scalar *features_weights_r_den, scalar *color, const int r_x, const int r_y, const int neigh_r, const int R, const int W, const int H) {
             // (1) Convolve along height
             for(int xp = R; xp < W - R; ++xp) {
                 for(int yp = R + F_R; yp < H - R - F_R; yp+=8) {
@@ -827,10 +782,9 @@ void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* out
                     }
                 }
             }
+}
 
-            // ----------------------------------------------
-            // Candidate G
-            // ----------------------------------------------
+void candidate_G_SSA(scalar *output_g, scalar *weight_sum, scalar *temp, scalar *temp2_g, scalar *features_weights_r_num, scalar *features_weights_r_den, scalar *color, const int r_x, const int r_y, const int neigh_g, const int R, const int W, const int H) {
             // (1) Convolve along height
             for(int xp = R; xp < W - R; ++xp) {
                 for(int yp = R + F_G; yp < H - R - F_G; yp+=8) {
@@ -1011,12 +965,9 @@ void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* out
                     }
                 }
             }
+}
 
-            // ----------------------------------------------
-            // Candidate B 
-            // => no color weight computation due to kc = Inf
-            // ----------------------------------------------
-
+void candidate_B_SSA(scalar *output_b, scalar *weight_sum, scalar *color, scalar *features_weights_b, const int r_x, const int r_y, const int R, const int H, const int W) {
             for(int xp = R + F_B; xp < W - R - F_B; ++xp) {
                 for(int yp = R + F_B; yp < H - R - F_B; yp+=4) {
 
@@ -1084,11 +1035,9 @@ void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* out
                     }
                 }
             }
+}
 
-        }
-    }
-
-    // Final Weight Normalization R
+void normalize_R_SSA(scalar *output_r, scalar *weight_sum, const int R, const int W, const int H) {
     for(int xp = R + F_R; xp < W - R - F_R; ++xp) {
         for(int yp = R + F_R; yp < H - R - F_R; yp+=4) {
         
@@ -1111,123 +1060,63 @@ void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* out
             scalar w_15 = weight_sum[3 * (xp * W + yp+15)];
             */
 
-            for (int i=0; i<3; i++){
+            for (int i=0; i<3; i++)
                 output_r[3 * (xp * W + yp) + i] /= w_0;
+            for (int i=0; i<3; i++)
                 output_r[3 * (xp * W + yp+1) + i] /= w_1;
+            for (int i=0; i<3; i++)
                 output_r[3 * (xp * W + yp+2) + i] /= w_2;
+            for (int i=0; i<3; i++)
                 output_r[3 * (xp * W + yp+3) + i] /= w_3;
-                /*
-                output_r[3 * (xp * W + yp+4) + i] /= w_4;
-                output_r[3 * (xp * W + yp+5) + i] /= w_5;
-                output_r[3 * (xp * W + yp+6) + i] /= w_6;
-                output_r[3 * (xp * W + yp+7) + i] /= w_7;
-                output_r[3 * (xp * W + yp+8) + i] /= w_8;
-                output_r[3 * (xp * W + yp+9) + i] /= w_9;
-                output_r[3 * (xp * W + yp+10) + i] /= w_10;
-                output_r[3 * (xp * W + yp+11) + i] /= w_11;
-                output_r[3 * (xp * W + yp+12) + i] /= w_12;
-                output_r[3 * (xp * W + yp+13) + i] /= w_13;
-                output_r[3 * (xp * W + yp+14) + i] /= w_14;
-                output_r[3 * (xp * W + yp+15) + i] /= w_15;
-                */
-            }
         }
     }
+}
 
-    // Final Weight Normalization G
-   for(int xp = R + F_G; xp < W - R - F_G; ++xp) {
+void normalize_G_SSA(scalar *output_g, scalar *weight_sum, const int R, const int W, const int H) {
+    for(int xp = R + F_G; xp < W - R - F_G; ++xp) {
         for(int yp = R + F_G; yp < H - R - F_G; yp+=4) {
         
             scalar w_0 = weight_sum[1 + 3 * (xp * W + yp)];
             scalar w_1 = weight_sum[1 + 3 * (xp * W + yp+1)];
             scalar w_2 = weight_sum[1 + 3 * (xp * W + yp+2)];
             scalar w_3 = weight_sum[1 + 3 * (xp * W + yp+3)];
-            /*
-            scalar w_4 = weight_sum[1 + 3 * (xp * W + yp+4)];
-            scalar w_5 = weight_sum[1 + 3 * (xp * W + yp+5)];
-            scalar w_6 = weight_sum[1 + 3 * (xp * W + yp+6)];
-            scalar w_7 = weight_sum[1 + 3 * (xp * W + yp+7)];
-            scalar w_8 = weight_sum[1 + 3 * (xp * W + yp+8)];
-            scalar w_9 = weight_sum[1 + 3 * (xp * W + yp+9)];
-            scalar w_10 = weight_sum[1 + 3 * (xp * W + yp+10)];
-            scalar w_11 = weight_sum[1 + 3 * (xp * W + yp+11)];
-            scalar w_12 = weight_sum[1 + 3 * (xp * W + yp+12)];
-            scalar w_13 = weight_sum[1 + 3 * (xp * W + yp+13)];
-            scalar w_14 = weight_sum[1 + 3 * (xp * W + yp+14)];
-            scalar w_15 = weight_sum[1 + 3 * (xp * W + yp+15)];
-            */
 
-            for (int i=0; i<3; i++){
+
+            for (int i=0; i<3; i++)
                 output_g[3 * (xp * W + yp) + i] /= w_0;
+            for (int i=0; i<3; i++)
                 output_g[3 * (xp * W + yp+1) + i] /= w_1;
+            for (int i=0; i<3; i++)
                 output_g[3 * (xp * W + yp+2) + i] /= w_2;
+            for (int i=0; i<3; i++)
                 output_g[3 * (xp * W + yp+3) + i] /= w_3;
-                /*
-                output_g[3 * (xp * W + yp+4) + i] /= w_4;
-                output_g[3 * (xp * W + yp+5) + i] /= w_5;
-                output_g[3 * (xp * W + yp+6) + i] /= w_6;
-                output_g[3 * (xp * W + yp+7) + i] /= w_7;
-                output_g[3 * (xp * W + yp+8) + i] /= w_8;
-                output_g[3 * (xp * W + yp+9) + i] /= w_9;
-                output_g[3 * (xp * W + yp+10) + i] /= w_10;
-                output_g[3 * (xp * W + yp+11) + i] /= w_11;
-                output_g[3 * (xp * W + yp+12) + i] /= w_12;
-                output_g[3 * (xp * W + yp+13) + i] /= w_13;
-                output_g[3 * (xp * W + yp+14) + i] /= w_14;
-                output_g[3 * (xp * W + yp+15) + i] /= w_15;
-                */
-            }
+
         }
     }
+}
 
-    // Final Weight Normalization B
-   for(int xp = R + F_B; xp < W - R - F_B; ++xp) {
+void normalize_B_SSA(scalar *output_b, scalar *weight_sum, const int R, const int W, const int H) {
+    for(int xp = R + F_B; xp < W - R - F_B; ++xp) {
         for(int yp = R + F_B; yp < H - R - F_B; yp+=4) {
         
             scalar w_0 = weight_sum[2 + 3 * (xp * W + yp)];
             scalar w_1 = weight_sum[2 + 3 * (xp * W + yp+1)];
             scalar w_2 = weight_sum[2 + 3 * (xp * W + yp+2)];
             scalar w_3 = weight_sum[2 + 3 * (xp * W + yp+3)];
-            /*
-            scalar w_4 = weight_sum[2 + 3 * (xp * W + yp+4)];
-            scalar w_5 = weight_sum[2 + 3 * (xp * W + yp+5)];
-            scalar w_6 = weight_sum[2 + 3 * (xp * W + yp+6)];
-            scalar w_7 = weight_sum[2 + 3 * (xp * W + yp+7)];
-            scalar w_8 = weight_sum[2 + 3 * (xp * W + yp+8)];
-            scalar w_9 = weight_sum[2 + 3 * (xp * W + yp+9)];
-            scalar w_10 = weight_sum[2 + 3 * (xp * W + yp+10)];
-            scalar w_11 = weight_sum[2 + 3 * (xp * W + yp+11)];
-            scalar w_12 = weight_sum[2 + 3 * (xp * W + yp+12)];
-            scalar w_13 = weight_sum[2 + 3 * (xp * W + yp+13)];
-            scalar w_14 = weight_sum[2 + 3 * (xp * W + yp+14)];
-            scalar w_15 = weight_sum[2 + 3 * (xp * W + yp+15)];
-            */
 
-            for (int i=0; i<3; i++){
+            for (int i=0; i<3; i++)
                 output_b[3 * (xp * W + yp) + i] /= w_0;
+            for (int i=0; i<3; i++)
                 output_b[3 * (xp * W + yp+1) + i] /= w_1;
+            for (int i=0; i<3; i++)
                 output_b[3 * (xp * W + yp+2) + i] /= w_2;
+            for (int i=0; i<3; i++)
                 output_b[3 * (xp * W + yp+3) + i] /= w_3;
-                /*
-                output_b[3 * (xp * W + yp+4) + i] /= w_4;
-                output_b[3 * (xp * W + yp+5) + i] /= w_5;
-                output_b[3 * (xp * W + yp+6) + i] /= w_6;
-                output_b[3 * (xp * W + yp+7) + i] /= w_7;
-                output_b[3 * (xp * W + yp+8) + i] /= w_8;
-                output_b[3 * (xp * W + yp+9) + i] /= w_9;
-                output_b[3 * (xp * W + yp+10) + i] /= w_10;
-                output_b[3 * (xp * W + yp+11) + i] /= w_11;
-                output_b[3 * (xp * W + yp+12) + i] /= w_12;
-                output_b[3 * (xp * W + yp+13) + i] /= w_13;
-                output_b[3 * (xp * W + yp+14) + i] /= w_14;
-                output_b[3 * (xp * W + yp+15) + i] /= w_15;
-                */
-            }
         }
     }
+}
 
-    // Handline Border Cases 
-    // ----------------------------------
+void border_cases_SSA(scalar *output_r, scalar *output_g, scalar *output_b, scalar *color, const int W, const int H, const int R) {
     // Candidate FIRST and THIRD (due to f_r = f_b)
     for (int xp = 0; xp < W; xp++){
         for(int yp = 0; yp < R + F_R; yp++){
@@ -1267,6 +1156,93 @@ void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* out
             }
         }
     }
+}
+
+
+void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* output_b, scalar* color, scalar* color_var, scalar* features, scalar* features_var, int R, int W, int H){
+    // Handling Inner Part   
+    // -------------------
+
+    // Allocate buffer weights_sum for normalizing
+    scalar* weight_sum;
+    allocate_buffer_zero(&weight_sum, W, H);
+
+    // Init temp channel
+    scalar* temp;
+    scalar* temp2_r;
+    scalar* temp2_g;
+    allocate_channel(&temp, W, H); 
+    allocate_channel(&temp2_r, W, H); 
+    allocate_channel(&temp2_g, W, H); 
+
+    // Allocate feature weights buffer
+    scalar* features_weights_r_num;
+    scalar* features_weights_r_den;
+    scalar* features_weights_b;
+    allocate_channel(&features_weights_r_num, W, H);
+    allocate_channel(&features_weights_r_den, W, H);
+    allocate_channel(&features_weights_b, W, H);
+
+
+    // Compute gradients
+    scalar *gradients;
+    gradients = (scalar*) malloc(3 * W * H * sizeof(scalar));
+    compute_gradients_SSA(gradients, features, W, H, R);
+    
+    // Precompute size of neighbourhood
+    scalar neigh_r = 3*(2*F_R+1)*(2*F_R+1);
+    scalar neigh_g = 3*(2*F_G+1)*(2*F_G+1);
+    scalar neigh_b = 3*(2*F_B+1)*(2*F_B+1);
+
+    // Covering the neighbourhood
+    for (int r_x = -R; r_x <= R; r_x++){
+        for (int r_y = -R; r_y <= R; r_y++){
+        
+            // Compute Color Weight for all pixels with fixed r
+           color_weights_SSA(temp, color, color_var, r_x, r_y, W, H, R);
+
+
+            // Precompute feature weights
+            precompute_features_SSA(features_weights_r_num, features_weights_r_den, features_weights_b, features, features_var, gradients, r_x, r_y, R, W, H);
+
+
+            // Next Steps: Box-Filtering for Patch Contribution 
+            // => Use Box-Filter Seperability => linear scans of data
+            
+            // ----------------------------------------------
+            // Candidate R
+            // ----------------------------------------------
+            candidate_R_SSA(output_r, weight_sum, temp, temp2_r, features_weights_r_num, features_weights_r_den, color, r_x, r_y, neigh_r, R, W, H);
+
+            // ----------------------------------------------
+            // Candidate G
+            // ----------------------------------------------
+            candidate_G_SSA(output_g, weight_sum, temp, temp2_g, features_weights_r_num, features_weights_r_den, color, r_x, r_y, neigh_g, R, W, H);
+            
+
+            // ----------------------------------------------
+            // Candidate B 
+            // => no color weight computation due to kc = Inf
+            // ----------------------------------------------
+            candidate_B_SSA(output_b, weight_sum, color, features_weights_b, r_x, r_y,  R, H, W);
+
+        }
+    }
+
+    // Final Weight Normalization R
+    normalize_R_SSA(output_r, weight_sum, R, W, H);
+
+    // Final Weight Normalization G
+    normalize_G_SSA(output_g, weight_sum, R, W, H);
+
+    // Final Weight Normalization B
+    normalize_B_SSA(output_b, weight_sum, R, W, H);
+   
+
+    // Handline Border Cases 
+    // ----------------------------------
+    border_cases_SSA(output_r, output_g, output_b, color, W, H, R);
+    
 
     // Free memory
     free(weight_sum);
