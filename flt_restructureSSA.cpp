@@ -39,15 +39,19 @@ void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* out
     allocate_channel(&temp2_g, W, H); 
 
     // Allocate feature weights buffer
-    scalar* features_weights_r;
+    scalar* features_weights_r_num;
+    scalar* features_weights_r_den;
     scalar* features_weights_b;
-    allocate_channel(&features_weights_r, W, H);
+    allocate_channel(&features_weights_r_num, W, H);
+    allocate_channel(&features_weights_r_den, W, H);
     allocate_channel(&features_weights_b, W, H);
 
 
     // Compute gradients
     scalar *gradients;
     gradients = (scalar*) malloc(3 * W * H * sizeof(scalar));
+    {
+    
 
     scalar diffL_A0, diffR_A0, diffU_A0, diffD_A0;
     scalar diffL_A1, diffR_A1, diffU_A1, diffD_A1;
@@ -477,7 +481,8 @@ void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* out
         } 
 
     }
-
+    }
+    
     // Precompute size of neighbourhood
     scalar neigh_r = 3*(2*F_R+1)*(2*F_R+1);
     scalar neigh_g = 3*(2*F_G+1)*(2*F_G+1);
@@ -519,8 +524,6 @@ void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* out
                     scalar dist_var_02 = sqdist_02 - var_cancel_02;
 
                     temp[xp * W + yp] = ((dist_var_00) / normalization_r_00) + ((dist_var_01) / normalization_r_01) + ((dist_var_02) / normalization_r_02);
-                    
-
                 }
             }
 
@@ -531,15 +534,23 @@ void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* out
                     int xq = xp + r_x;
                     int yq = yp + r_y;
 
-                    scalar df_r_0 = 0.f;
-                    scalar df_r_1 = 0.f;
-                    scalar df_r_2 = 0.f;
-                    scalar df_r_3 = 0.f;
+                    scalar df_r_0_num = 0.f;
+                    scalar df_r_1_num = 0.f;
+                    scalar df_r_2_num = 0.f;
+                    scalar df_r_3_num = 0.f;
+                    scalar df_r_0_den = 1.f;
+                    scalar df_r_1_den = 1.f;
+                    scalar df_r_2_den = 1.f;
+                    scalar df_r_3_den = 1.f;
 
-                    scalar df_b_0 = 0.f;
-                    scalar df_b_1 = 0.f;
-                    scalar df_b_2 = 0.f;
-                    scalar df_b_3 = 0.f;
+                    scalar df_b_0_num = 0.f;
+                    scalar df_b_1_num = 0.f;
+                    scalar df_b_2_num = 0.f;
+                    scalar df_b_3_num = 0.f;
+                    scalar df_b_0_den = 1.f;
+                    scalar df_b_1_den = 1.f;
+                    scalar df_b_2_den = 1.f;
+                    scalar df_b_3_den = 1.f;
 
                     for(int j=0; j<NB_FEATURES;++j){
                         
@@ -578,25 +589,53 @@ void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* out
                         scalar dist_var_2 = sqdist_2 - var_cancel_2;
                         scalar dist_var_3 = sqdist_3 - var_cancel_3;
 
-                        df_r_0 = fmax(df_r_0, (dist_var_0)/normalization_r_0);
-                        df_r_1 = fmax(df_r_1, (dist_var_1)/normalization_r_1);
-                        df_r_2 = fmax(df_r_2, (dist_var_2)/normalization_r_2);
-                        df_r_3 = fmax(df_r_3, (dist_var_3)/normalization_r_3);
+                        if(df_r_0_num * normalization_r_0 <= df_r_0_den * dist_var_0) {
+                            df_r_0_num = dist_var_0;
+                            df_r_0_den = normalization_r_0;
+                        }
+                        if(df_r_1_num * normalization_r_1 <= df_r_1_den * dist_var_1) {
+                            df_r_1_num = dist_var_1;
+                            df_r_1_den = normalization_r_1;
+                        }
+                        if(df_r_2_num * normalization_r_2 <= df_r_2_den * dist_var_2) {
+                            df_r_2_num = dist_var_2;
+                            df_r_2_den = normalization_r_2;
+                        }
+                        if(df_r_3_num * normalization_r_3 <= df_r_3_den * dist_var_3) {
+                            df_r_3_num = dist_var_3;
+                            df_r_3_den = normalization_r_3;
+                        }
 
-                        df_b_0 = fmax(df_b_0, (dist_var_0)/normalization_b_0);
-                        df_b_1 = fmax(df_b_1, (dist_var_1)/normalization_b_1);
-                        df_b_2 = fmax(df_b_2, (dist_var_2)/normalization_b_2);
-                        df_b_3 = fmax(df_b_3, (dist_var_3)/normalization_b_3);
+                        if(df_b_0_num * normalization_b_0 <= df_b_0_den * dist_var_0) {
+                            df_b_0_num = dist_var_0;
+                            df_b_0_den = normalization_b_0;
+                        }
+                        if(df_b_1_num * normalization_b_1 <= df_b_1_den * dist_var_1) {
+                            df_b_1_num = dist_var_1;
+                            df_b_1_den = normalization_b_1;
+                        }
+                        if(df_b_2_num * normalization_b_2 <= df_b_2_den * dist_var_2) {
+                            df_b_2_num = dist_var_2;
+                            df_b_2_den = normalization_b_2;
+                        }
+                        if(df_b_3_num * normalization_b_3 <= df_b_3_den * dist_var_3) {
+                            df_b_3_num = dist_var_3;
+                            df_b_3_den = normalization_b_3;
+                        }
                     }
 
-                    features_weights_r[xp * W + yp] = exp(-df_r_0);
-                    features_weights_b[xp * W + yp] = exp(-df_b_0);
-                    features_weights_r[xp * W + yp+1] = exp(-df_r_1);
-                    features_weights_b[xp * W + yp+1] = exp(-df_b_1);
-                    features_weights_r[xp * W + yp+2] = exp(-df_r_2);
-                    features_weights_b[xp * W + yp+2] = exp(-df_b_2);
-                    features_weights_r[xp * W + yp+3] = exp(-df_r_3);
-                    features_weights_b[xp * W + yp+3] = exp(-df_b_3);
+                    features_weights_r_num[xp * W + yp] = df_r_0_num;
+                    features_weights_r_den[xp * W + yp] = df_r_0_den;
+                    features_weights_r_num[xp * W + yp+1] = df_r_1_num;
+                    features_weights_r_den[xp * W + yp+1] = df_r_1_den;
+                    features_weights_r_num[xp * W + yp+2] = df_r_2_num;
+                    features_weights_r_den[xp * W + yp+2] = df_r_2_den;
+                    features_weights_r_num[xp * W + yp+3] = df_r_3_num;
+                    features_weights_r_den[xp * W + yp+3] = df_r_3_den;
+                    features_weights_b[xp * W + yp] = exp(-df_b_0_num / df_b_0_den);
+                    features_weights_b[xp * W + yp+1] = exp(-df_b_0_num / df_b_0_den);
+                    features_weights_b[xp * W + yp+2] = exp(-df_b_0_num / df_b_0_den);
+                    features_weights_b[xp * W + yp+3] = exp(-df_b_0_num / df_b_0_den);
                 } 
             }
             
@@ -718,44 +757,34 @@ void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* out
                         */
                     }
 
-                    scalar color_weight_0 = exp(-fmax(0.f, (sum_0 / neigh_r)));
-                    scalar color_weight_1 = exp(-fmax(0.f, (sum_1 / neigh_r)));
-                    scalar color_weight_2 = exp(-fmax(0.f, (sum_2 / neigh_r)));
-                    scalar color_weight_3 = exp(-fmax(0.f, (sum_3 / neigh_r)));
-                    /*
-                    scalar color_weight_4 = exp(-fmax(0.f, (sum_4 / neigh_r)));
-                    scalar color_weight_5 = exp(-fmax(0.f, (sum_5 / neigh_r)));
-                    scalar color_weight_6 = exp(-fmax(0.f, (sum_6 / neigh_r)));
-                    scalar color_weight_7 = exp(-fmax(0.f, (sum_7 / neigh_r)));
-                    scalar color_weight_8 = exp(-fmax(0.f, (sum_8 / neigh_r)));
-                    scalar color_weight_9 = exp(-fmax(0.f, (sum_9 / neigh_r)));
-                    scalar color_weight_10 = exp(-fmax(0.f, (sum_10 / neigh_r)));
-                    scalar color_weight_11 = exp(-fmax(0.f, (sum_11 / neigh_r)));
-                    scalar color_weight_12 = exp(-fmax(0.f, (sum_12 / neigh_r)));
-                    scalar color_weight_13 = exp(-fmax(0.f, (sum_13 / neigh_r)));
-                    scalar color_weight_14 = exp(-fmax(0.f, (sum_14 / neigh_r)));
-                    scalar color_weight_15 = exp(-fmax(0.f, (sum_15 / neigh_r)));
-                    */
+                    scalar weight_0, weight_1, weight_2, weight_3;
 
-                    // Compute final weight
-                    scalar weight_0 = fmin(color_weight_0, features_weights_r[xp * W + yp]);
-                    scalar weight_1 = fmin(color_weight_1, features_weights_r[xp * W + yp+1]);
-                    scalar weight_2 = fmin(color_weight_2, features_weights_r[xp * W + yp+2]);
-                    scalar weight_3 = fmin(color_weight_3, features_weights_r[xp * W + yp+3]);
-                    /*
-                    scalar weight_4 = fmin(color_weight_4, features_weights_r[xp * W + yp+4]);
-                    scalar weight_5 = fmin(color_weight_5, features_weights_r[xp * W + yp+5]);
-                    scalar weight_6 = fmin(color_weight_6, features_weights_r[xp * W + yp+6]);
-                    scalar weight_7 = fmin(color_weight_7, features_weights_r[xp * W + yp+7]);
-                    scalar weight_8 = fmin(color_weight_8, features_weights_r[xp * W + yp+8]);
-                    scalar weight_9 = fmin(color_weight_9, features_weights_r[xp * W + yp+9]);
-                    scalar weight_10 = fmin(color_weight_10, features_weights_r[xp * W + yp+10]);
-                    scalar weight_11 = fmin(color_weight_11, features_weights_r[xp * W + yp+11]);
-                    scalar weight_12 = fmin(color_weight_12, features_weights_r[xp * W + yp+12]);
-                    scalar weight_13 = fmin(color_weight_13, features_weights_r[xp * W + yp+13]);
-                    scalar weight_14 = fmin(color_weight_14, features_weights_r[xp * W + yp+14]);
-                    scalar weight_15 = fmin(color_weight_15, features_weights_r[xp * W + yp+15]);
-                    */
+                    scalar fweights_0_num = features_weights_r_num[xp * W + yp];
+                    scalar fweights_0_den = features_weights_r_den[xp * W + yp];
+                    scalar fweights_1_num = features_weights_r_num[xp * W + yp + 1];
+                    scalar fweights_1_den = features_weights_r_den[xp * W + yp + 1];
+                    scalar fweights_2_num = features_weights_r_num[xp * W + yp + 2];
+                    scalar fweights_2_den = features_weights_r_den[xp * W + yp + 2];
+                    scalar fweights_3_num = features_weights_r_num[xp * W + yp + 3];
+                    scalar fweights_3_den = features_weights_r_den[xp * W + yp + 3];
+
+                    if(sum_0 * fweights_0_den <= neigh_r * fweights_0_num)
+                        weight_0 = exp(-fweights_0_num / fweights_0_den);
+                    else
+                        weight_0 = exp(-sum_0 / neigh_r);
+                    if(sum_1 * fweights_1_den <= neigh_r * fweights_1_num)
+                        weight_1 = exp(-fweights_1_num / fweights_1_den);
+                    else
+                        weight_1 = exp(-sum_1 / neigh_r);
+                    if(sum_2 * fweights_2_den <= neigh_r * fweights_2_num)
+                        weight_2 = exp(-fweights_2_num / fweights_2_den);
+                    else
+                        weight_2 = exp(-sum_2 / neigh_r);
+                    if(sum_3 * fweights_3_den <= neigh_r * fweights_3_num)
+                        weight_3 = exp(-fweights_3_num / fweights_3_den);
+                    else
+                        weight_3 = exp(-sum_3 / neigh_r);
+
                     
                     weight_sum[3 * (xp * W + yp)] += weight_0;
                     weight_sum[3 * (xp * W + yp+1)] += weight_1;
@@ -913,44 +942,33 @@ void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* out
                         sum_15 += temp2_g[(xp+k)*W + yp+15];
                         */
                     }
-                    scalar color_weight_0 = exp(-fmax(0.f, (sum_0 / neigh_g)));
-                    scalar color_weight_1 = exp(-fmax(0.f, (sum_1 / neigh_g)));
-                    scalar color_weight_2 = exp(-fmax(0.f, (sum_2 / neigh_g)));
-                    scalar color_weight_3 = exp(-fmax(0.f, (sum_3 / neigh_g)));
-                    /*
-                    scalar color_weight_4 = exp(-fmax(0.f, (sum_4 / neigh_g)));
-                    scalar color_weight_5 = exp(-fmax(0.f, (sum_5 / neigh_g)));
-                    scalar color_weight_6 = exp(-fmax(0.f, (sum_6 / neigh_g)));
-                    scalar color_weight_7 = exp(-fmax(0.f, (sum_7 / neigh_g)));
-                    scalar color_weight_8 = exp(-fmax(0.f, (sum_8 / neigh_g)));
-                    scalar color_weight_9 = exp(-fmax(0.f, (sum_9 / neigh_g)));
-                    scalar color_weight_10 = exp(-fmax(0.f, (sum_10 / neigh_g)));
-                    scalar color_weight_11 = exp(-fmax(0.f, (sum_11 / neigh_g)));
-                    scalar color_weight_12 = exp(-fmax(0.f, (sum_12 / neigh_g)));
-                    scalar color_weight_13 = exp(-fmax(0.f, (sum_13 / neigh_g)));
-                    scalar color_weight_14 = exp(-fmax(0.f, (sum_14 / neigh_g)));
-                    scalar color_weight_15 = exp(-fmax(0.f, (sum_15 / neigh_g)));
-                    */
-                    
-                    // Compute final weight
-                    scalar weight_0 = fmin(color_weight_0, features_weights_r[xp * W + yp]);
-                    scalar weight_1 = fmin(color_weight_1, features_weights_r[xp * W + yp+1]);
-                    scalar weight_2 = fmin(color_weight_2, features_weights_r[xp * W + yp+2]);
-                    scalar weight_3 = fmin(color_weight_3, features_weights_r[xp * W + yp+3]);
-                    /*
-                    scalar weight_4 = fmin(color_weight_4, features_weights_r[xp * W + yp+4]);
-                    scalar weight_5 = fmin(color_weight_5, features_weights_r[xp * W + yp+5]);
-                    scalar weight_6 = fmin(color_weight_6, features_weights_r[xp * W + yp+6]);
-                    scalar weight_7 = fmin(color_weight_7, features_weights_r[xp * W + yp+7]);
-                    scalar weight_8 = fmin(color_weight_8, features_weights_r[xp * W + yp+8]);
-                    scalar weight_9 = fmin(color_weight_9, features_weights_r[xp * W + yp+9]);
-                    scalar weight_10 = fmin(color_weight_10, features_weights_r[xp * W + yp+10]);
-                    scalar weight_11 = fmin(color_weight_11, features_weights_r[xp * W + yp+11]);
-                    scalar weight_12 = fmin(color_weight_12, features_weights_r[xp * W + yp+12]);
-                    scalar weight_13 = fmin(color_weight_13, features_weights_r[xp * W + yp+13]);
-                    scalar weight_14 = fmin(color_weight_14, features_weights_r[xp * W + yp+14]);
-                    scalar weight_15 = fmin(color_weight_15, features_weights_r[xp * W + yp+15]);
-                    */
+                    scalar weight_0, weight_1, weight_2, weight_3;
+
+                    scalar fweights_0_num = features_weights_r_num[xp * W + yp];
+                    scalar fweights_0_den = features_weights_r_den[xp * W + yp];
+                    scalar fweights_1_num = features_weights_r_num[xp * W + yp + 1];
+                    scalar fweights_1_den = features_weights_r_den[xp * W + yp + 1];
+                    scalar fweights_2_num = features_weights_r_num[xp * W + yp + 2];
+                    scalar fweights_2_den = features_weights_r_den[xp * W + yp + 2];
+                    scalar fweights_3_num = features_weights_r_num[xp * W + yp + 3];
+                    scalar fweights_3_den = features_weights_r_den[xp * W + yp + 3];
+
+                    if(sum_0 * fweights_0_den <= neigh_g * fweights_0_num)
+                        weight_0 = exp(-fweights_0_num / fweights_0_den);
+                    else
+                        weight_0 = exp(-sum_0 / neigh_g);
+                    if(sum_1 * fweights_1_den <= neigh_g * fweights_1_num)
+                        weight_1 = exp(-fweights_1_num / fweights_1_den);
+                    else
+                        weight_1 = exp(-sum_1 / neigh_g);
+                    if(sum_2 * fweights_2_den <= neigh_g * fweights_2_num)
+                        weight_2 = exp(-fweights_2_num / fweights_2_den);
+                    else
+                        weight_2 = exp(-sum_2 / neigh_g);
+                    if(sum_3 * fweights_3_den <= neigh_g * fweights_3_num)
+                        weight_3 = exp(-fweights_3_num / fweights_3_den);
+                    else
+                        weight_3 = exp(-sum_3 / neigh_g);
 
                     weight_sum[1 + 3 * (xp * W + yp)] += weight_0;
                     weight_sum[1 + 3 * (xp * W + yp+1)] += weight_1;
@@ -1255,7 +1273,8 @@ void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* out
     free(temp);
     free(temp2_r);
     free(temp2_g);
-    free(features_weights_r);
+    free(features_weights_r_num);
+    free(features_weights_r_den);
     free(features_weights_b);
     free(gradients);
 
