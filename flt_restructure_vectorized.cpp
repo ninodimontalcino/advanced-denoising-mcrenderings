@@ -269,7 +269,7 @@ void feature_prefiltering_vec(scalar* output, scalar* output_var, scalar* featur
 
                     __m256 distance_vec = _mm256_setzero_ps();
                     __m256 sqdist_vec, feature_p_vec, feature_q_vec, feature_var_p_vec, feature_var_q_vec, var_cancel_vec, normalization_vec, dist_tmp;
-                    for (int i=0; i<3; i+=3){               
+                    for (int i=0; i<3; i++){               
                         feature_p_vec = _mm256_loadu_ps(features+i * WH + xp * W + yp);
                         feature_q_vec = _mm256_loadu_ps(features+i * WH + xq * W + yq);
                         sqdist_vec = _mm256_sub_ps(feature_p_vec, feature_q_vec);
