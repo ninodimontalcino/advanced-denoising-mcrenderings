@@ -146,8 +146,10 @@ int main(int argc, char **argv)
   scalar* features;
   scalar* features_var;
 
-  features = (scalar*) malloc(3 * WH * sizeof(scalar));
-  features_var = (scalar*) malloc(3 * WH * sizeof(scalar));
+  // features = (scalar*) malloc(3 * WH * sizeof(scalar));
+  // features_var = (scalar*) malloc(3 * WH * sizeof(scalar));
+  allocate_buffer_aligned(&features, W, H);
+  allocate_buffer_aligned(&features_var, W, H);
 
   // (a) Features
   copy(f_albedo, f_albedo + WH, features);
@@ -191,7 +193,8 @@ int main(int argc, char **argv)
 
   // Call correct function and check output
   scalar* out_img;
-  out_img = (scalar*) malloc(3 * WH * sizeof(scalar));
+  allocate_buffer_aligned(&out_img, W, H);
+  //out_img = (scalar*) malloc(3 * WH * sizeof(scalar));
 
   denoise_func f = userFuncs[0];
   f(out_img, c, c_var, features, features_var, r, W, H);
@@ -210,7 +213,8 @@ int main(int argc, char **argv)
   cout << "---------------------------------------------" << endl;
 
   scalar* out_img_f;
-  out_img_f = (scalar*) malloc(3 * WH * sizeof(scalar));
+  allocate_buffer_aligned(&out_img_f, W, H);
+  //out_img_f = (scalar*) malloc(3 * WH * sizeof(scalar));
 
   // Only run for optimized functions => don't repeat vanilla computation
   for (i = 1; i < numFuncs; i++) {

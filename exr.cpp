@@ -12,7 +12,8 @@ void load_exr(const char fileName[], scalar** buf, int &W, int &H)
         int WH = W * H;
 
         // Memory Allocation
-        (*buf) = (scalar*) malloc(3 * W * H * sizeof(scalar));
+        //(*buf) = (scalar*) malloc(3 * W * H * sizeof(scalar));
+        allocate_buffer_aligned(buf, W, H);
 
         // Fill buffer with corresponding values -> c[channel][x][y]
         for (int i = 0; i < W; i++) {
