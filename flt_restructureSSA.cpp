@@ -15,12 +15,13 @@
 #define TAU_G 0.001f
 #define TAU_B 0.0001f
 #define KC_SQUARED_R 4.0f
-#define KF_SQUARED_R 0.36f
+#define KF_SQUARED 0.36f
 #define KC_SQUARED_G 4.0f
-#define KF_SQUARED_G 0.36f
-#define KF_SQUARED_B 0.36f
 
-void compute_gradients_SSA(scalar *gradients, scalar *features, const int W, const int H, const int R) {
+#define TAU_KF_R TAU_R*KF_SQUARED
+#define TAU_KF_B TAU_B*KF_SQUARED
+
+inline __attribute__((always_inline)) void compute_gradients_SSA(scalar *gradients, scalar *features, scalar *features_var, const int W, const int H, const int R) {
     scalar diffL_A0, diffR_A0, diffU_A0, diffD_A0;
     scalar diffL_A1, diffR_A1, diffU_A1, diffD_A1;
     scalar diffL_A2, diffR_A2, diffU_A2, diffD_A2;
@@ -447,11 +448,19 @@ void compute_gradients_SSA(scalar *gradients, scalar *features, const int W, con
             gradients[3 * (x * W + y) + 1] = fmin(diffL_01*diffL_01, diffR_01*diffR_01) + fmin(diffU_01*diffU_01, diffD_01*diffD_01);
             gradients[3 * (x * W + y) + 2] = fmin(diffL_02*diffL_02, diffR_02*diffR_02) + fmin(diffU_02*diffU_02, diffD_02*diffD_02);
         } 
-
     }
+
+    for(int x =  R+F_R; x < W - R - F_R; ++x) {
+        for(int y =  R+F_R; y < H - R - F_R; ++y) {
+            gradients[3 * (x * W + y) + 0] = KF_SQUARED * fmax(features_var[3 * (x * W + y) + 0], gradients[3 * (x * W + y) + 0]);
+            gradients[3 * (x * W + y) + 1] = KF_SQUARED * fmax(features_var[3 * (x * W + y) + 1], gradients[3 * (x * W + y) + 1]);
+            gradients[3 * (x * W + y) + 2] = KF_SQUARED * fmax(features_var[3 * (x * W + y) + 2], gradients[3 * (x * W + y) + 2]);
+        }
+    }
+
 }
 
-void color_weights_SSA(scalar *temp, scalar *color, scalar *color_var, const int r_x, const int r_y, const int W, const int H, const int R) {
+inline __attribute__((always_inline)) void color_weights_SSA(scalar *temp, scalar *color, scalar *color_var, const int r_x, const int r_y, const int W, const int H, const int R) {
             for(int xp = R; xp < W - R; ++xp) {
                 for(int yp = R; yp < H - R; ++yp) {
 
@@ -487,7 +496,7 @@ void color_weights_SSA(scalar *temp, scalar *color, scalar *color_var, const int
             }
 }
 
-void precompute_features_SSA(scalar *features_weights_r_num, scalar *features_weights_r_den, scalar *features_weights_b, scalar *features, scalar *features_var, scalar *gradients, const int r_x, const int r_y, const int R, const int W, const int H) {
+inline __attribute__((always_inline)) void precompute_features_SSA(scalar *features_weights_r_num, scalar *features_weights_r_den, scalar *features_weights_b, scalar *features, scalar *features_var, scalar *gradients, const int r_x, const int r_y, const int R, const int W, const int H) {
             for(int xp = R + F_B; xp < W - R - F_B; ++xp) {
                 for(int yp = R + F_B; yp < H - R - F_B; yp+=4) {
                     
@@ -528,21 +537,16 @@ void precompute_features_SSA(scalar *features_weights_r_num, scalar *features_we
                         scalar var_cancel_1 = features_var[3 * (xp * W + yp+1) + j] + fmin(features_var[3 * (xp * W + yp+1) + j], features_var[3 * (xq * W + yq+1) + j]);
                         scalar var_cancel_2 = features_var[3 * (xp * W + yp+2) + j] + fmin(features_var[3 * (xp * W + yp+2) + j], features_var[3 * (xq * W + yq+2) + j]);
                         scalar var_cancel_3 = features_var[3 * (xp * W + yp+3) + j] + fmin(features_var[3 * (xp * W + yp+3) + j], features_var[3 * (xq * W + yq+3) + j]);
-                        
-                        scalar var_max_0 = fmax(features_var[3 * (xp * W + yp) + j], gradients[3 * (xp * W + yp) + j]);
-                        scalar var_max_1 = fmax(features_var[3 * (xp * W + yp+1) + j], gradients[3 * (xp * W + yp+1) + j]);
-                        scalar var_max_2 = fmax(features_var[3 * (xp * W + yp+2) + j], gradients[3 * (xp * W + yp+2) + j]);
-                        scalar var_max_3 = fmax(features_var[3 * (xp * W + yp+3) + j], gradients[3 * (xp * W + yp+3) + j]);
 
-                        scalar normalization_r_0 = KF_SQUARED_R*fmax(TAU_R, var_max_0);
-                        scalar normalization_r_1 = KF_SQUARED_R*fmax(TAU_R, var_max_1);
-                        scalar normalization_r_2 = KF_SQUARED_R*fmax(TAU_R, var_max_2);
-                        scalar normalization_r_3 = KF_SQUARED_R*fmax(TAU_R, var_max_3);
+                        scalar normalization_r_0 = fmax(TAU_KF_R, gradients[3 * (xp * W + yp+0) + j]);
+                        scalar normalization_r_1 = fmax(TAU_KF_R, gradients[3 * (xp * W + yp+1) + j]);
+                        scalar normalization_r_2 = fmax(TAU_KF_R, gradients[3 * (xp * W + yp+2) + j]);
+                        scalar normalization_r_3 = fmax(TAU_KF_R, gradients[3 * (xp * W + yp+3) + j]);
 
-                        scalar normalization_b_0 = KF_SQUARED_B*fmax(TAU_B, var_max_0);
-                        scalar normalization_b_1 = KF_SQUARED_B*fmax(TAU_B, var_max_1);
-                        scalar normalization_b_2 = KF_SQUARED_B*fmax(TAU_B, var_max_2);
-                        scalar normalization_b_3 = KF_SQUARED_B*fmax(TAU_B, var_max_3);
+                        scalar normalization_b_0 = fmax(TAU_KF_B, gradients[3 * (xp * W + yp+0) + j]);
+                        scalar normalization_b_1 = fmax(TAU_KF_B, gradients[3 * (xp * W + yp+1) + j]);
+                        scalar normalization_b_2 = fmax(TAU_KF_B, gradients[3 * (xp * W + yp+2) + j]);
+                        scalar normalization_b_3 = fmax(TAU_KF_B, gradients[3 * (xp * W + yp+3) + j]);
 
                         scalar dist_var_0 = sqdist_0 - var_cancel_0;
                         scalar dist_var_1 = sqdist_1 - var_cancel_1;
@@ -600,7 +604,7 @@ void precompute_features_SSA(scalar *features_weights_r_num, scalar *features_we
             }
 }
 
-void candidate_R_SSA(scalar *output_r, scalar *weight_sum, scalar *temp, scalar *temp2_r, scalar *features_weights_r_num, scalar *features_weights_r_den, scalar *color, const int r_x, const int r_y, const int neigh_r, const int R, const int W, const int H) {
+inline __attribute__((always_inline)) void candidate_R_SSA(scalar *output_r, scalar *weight_sum, scalar *temp, scalar *temp2_r, scalar *features_weights_r_num, scalar *features_weights_r_den, scalar *color, const int r_x, const int r_y, const int neigh_r, const int R, const int W, const int H) {
             // (1) Convolve along height
             for(int xp = R; xp < W - R; ++xp) {
                 for(int yp = R + F_R; yp < H - R - F_R; yp+=8) {
@@ -784,7 +788,7 @@ void candidate_R_SSA(scalar *output_r, scalar *weight_sum, scalar *temp, scalar 
             }
 }
 
-void candidate_G_SSA(scalar *output_g, scalar *weight_sum, scalar *temp, scalar *temp2_g, scalar *features_weights_r_num, scalar *features_weights_r_den, scalar *color, const int r_x, const int r_y, const int neigh_g, const int R, const int W, const int H) {
+inline __attribute__((always_inline)) void candidate_G_SSA(scalar *output_g, scalar *weight_sum, scalar *temp, scalar *temp2_g, scalar *features_weights_r_num, scalar *features_weights_r_den, scalar *color, const int r_x, const int r_y, const int neigh_g, const int R, const int W, const int H) {
             // (1) Convolve along height
             for(int xp = R; xp < W - R; ++xp) {
                 for(int yp = R + F_G; yp < H - R - F_G; yp+=8) {
@@ -967,7 +971,7 @@ void candidate_G_SSA(scalar *output_g, scalar *weight_sum, scalar *temp, scalar 
             }
 }
 
-void candidate_B_SSA(scalar *output_b, scalar *weight_sum, scalar *color, scalar *features_weights_b, const int r_x, const int r_y, const int R, const int H, const int W) {
+inline __attribute__((always_inline)) void candidate_B_SSA(scalar *output_b, scalar *weight_sum, scalar *color, scalar *features_weights_b, const int r_x, const int r_y, const int R, const int H, const int W) {
             for(int xp = R + F_B; xp < W - R - F_B; ++xp) {
                 for(int yp = R + F_B; yp < H - R - F_B; yp+=4) {
 
@@ -1037,7 +1041,7 @@ void candidate_B_SSA(scalar *output_b, scalar *weight_sum, scalar *color, scalar
             }
 }
 
-void normalize_R_SSA(scalar *output_r, scalar *weight_sum, const int R, const int W, const int H) {
+inline __attribute__((always_inline)) void normalize_R_SSA(scalar *output_r, scalar *weight_sum, const int R, const int W, const int H) {
     for(int xp = R + F_R; xp < W - R - F_R; ++xp) {
         for(int yp = R + F_R; yp < H - R - F_R; yp+=4) {
         
@@ -1072,7 +1076,7 @@ void normalize_R_SSA(scalar *output_r, scalar *weight_sum, const int R, const in
     }
 }
 
-void normalize_G_SSA(scalar *output_g, scalar *weight_sum, const int R, const int W, const int H) {
+inline __attribute__((always_inline)) void normalize_G_SSA(scalar *output_g, scalar *weight_sum, const int R, const int W, const int H) {
     for(int xp = R + F_G; xp < W - R - F_G; ++xp) {
         for(int yp = R + F_G; yp < H - R - F_G; yp+=4) {
         
@@ -1095,7 +1099,7 @@ void normalize_G_SSA(scalar *output_g, scalar *weight_sum, const int R, const in
     }
 }
 
-void normalize_B_SSA(scalar *output_b, scalar *weight_sum, const int R, const int W, const int H) {
+inline __attribute__((always_inline)) void normalize_B_SSA(scalar *output_b, scalar *weight_sum, const int R, const int W, const int H) {
     for(int xp = R + F_B; xp < W - R - F_B; ++xp) {
         for(int yp = R + F_B; yp < H - R - F_B; yp+=4) {
         
@@ -1116,7 +1120,7 @@ void normalize_B_SSA(scalar *output_b, scalar *weight_sum, const int R, const in
     }
 }
 
-void border_cases_SSA(scalar *output_r, scalar *output_g, scalar *output_b, scalar *color, const int W, const int H, const int R) {
+inline __attribute__((always_inline)) void border_cases_SSA(scalar *output_r, scalar *output_g, scalar *output_b, scalar *color, const int W, const int H, const int R) {
     // Candidate FIRST and THIRD (due to f_r = f_b)
     for (int xp = 0; xp < W; xp++){
         for(int yp = 0; yp < R + F_R; yp++){
@@ -1187,7 +1191,7 @@ void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* out
     // Compute gradients
     scalar *gradients;
     gradients = (scalar*) malloc(3 * W * H * sizeof(scalar));
-    compute_gradients_SSA(gradients, features, W, H, R);
+    compute_gradients_SSA(gradients, features, features_var, W, H, R);
     
     // Precompute size of neighbourhood
     scalar neigh_r = 3*(2*F_R+1)*(2*F_R+1);
