@@ -18,8 +18,8 @@
 #define KF_SQUARED 0.36f
 #define KC_SQUARED_G 4.0f
 
-#define TAU_KF_R TAU_R*KF_SQUARED
-#define TAU_KF_B TAU_B*KF_SQUARED
+#define TAU_KF_R 1.0f/(TAU_R*KF_SQUARED)
+#define TAU_KF_B 1.0f/(TAU_B*KF_SQUARED)
 
 inline __attribute__((always_inline)) void compute_gradients_SSA(scalar *gradients, scalar *features, scalar *features_var, const int W, const int H, const int R) {
     scalar diffL_A0, diffR_A0, diffU_A0, diffD_A0;
@@ -452,9 +452,9 @@ inline __attribute__((always_inline)) void compute_gradients_SSA(scalar *gradien
 
     for(int x =  R+F_R; x < W - R - F_R; ++x) {
         for(int y =  R+F_R; y < H - R - F_R; ++y) {
-            gradients[3 * (x * W + y) + 0] = KF_SQUARED * fmax(features_var[3 * (x * W + y) + 0], gradients[3 * (x * W + y) + 0]);
-            gradients[3 * (x * W + y) + 1] = KF_SQUARED * fmax(features_var[3 * (x * W + y) + 1], gradients[3 * (x * W + y) + 1]);
-            gradients[3 * (x * W + y) + 2] = KF_SQUARED * fmax(features_var[3 * (x * W + y) + 2], gradients[3 * (x * W + y) + 2]);
+            gradients[3 * (x * W + y) + 0] = 1.0f / (KF_SQUARED * fmax(features_var[3 * (x * W + y) + 0], gradients[3 * (x * W + y) + 0]));
+            gradients[3 * (x * W + y) + 1] = 1.0f / (KF_SQUARED * fmax(features_var[3 * (x * W + y) + 1], gradients[3 * (x * W + y) + 1]));
+            gradients[3 * (x * W + y) + 2] = 1.0f / (KF_SQUARED * fmax(features_var[3 * (x * W + y) + 2], gradients[3 * (x * W + y) + 2]));
         }
     }
 
@@ -530,30 +530,30 @@ inline __attribute__((always_inline)) void precompute_features_SSA(scalar *featu
                         scalar var_cancel_2 = features_var[3 * (xp * W + yp+2) + j] + fmin(features_var[3 * (xp * W + yp+2) + j], features_var[3 * (xq * W + yq+2) + j]);
                         scalar var_cancel_3 = features_var[3 * (xp * W + yp+3) + j] + fmin(features_var[3 * (xp * W + yp+3) + j], features_var[3 * (xq * W + yq+3) + j]);
 
-                        scalar normalization_r_0 = fmax(TAU_KF_R, gradients[3 * (xp * W + yp+0) + j]);
-                        scalar normalization_r_1 = fmax(TAU_KF_R, gradients[3 * (xp * W + yp+1) + j]);
-                        scalar normalization_r_2 = fmax(TAU_KF_R, gradients[3 * (xp * W + yp+2) + j]);
-                        scalar normalization_r_3 = fmax(TAU_KF_R, gradients[3 * (xp * W + yp+3) + j]);
+                        scalar normalization_r_0 = fmin(TAU_KF_R, gradients[3 * (xp * W + yp+0) + j]);
+                        scalar normalization_r_1 = fmin(TAU_KF_R, gradients[3 * (xp * W + yp+1) + j]);
+                        scalar normalization_r_2 = fmin(TAU_KF_R, gradients[3 * (xp * W + yp+2) + j]);
+                        scalar normalization_r_3 = fmin(TAU_KF_R, gradients[3 * (xp * W + yp+3) + j]);
 
-                        scalar normalization_b_0 = fmax(TAU_KF_B, gradients[3 * (xp * W + yp+0) + j]);
-                        scalar normalization_b_1 = fmax(TAU_KF_B, gradients[3 * (xp * W + yp+1) + j]);
-                        scalar normalization_b_2 = fmax(TAU_KF_B, gradients[3 * (xp * W + yp+2) + j]);
-                        scalar normalization_b_3 = fmax(TAU_KF_B, gradients[3 * (xp * W + yp+3) + j]);
+                        scalar normalization_b_0 = fmin(TAU_KF_B, gradients[3 * (xp * W + yp+0) + j]);
+                        scalar normalization_b_1 = fmin(TAU_KF_B, gradients[3 * (xp * W + yp+1) + j]);
+                        scalar normalization_b_2 = fmin(TAU_KF_B, gradients[3 * (xp * W + yp+2) + j]);
+                        scalar normalization_b_3 = fmin(TAU_KF_B, gradients[3 * (xp * W + yp+3) + j]);
 
                         scalar dist_var_0 = sqdist_0 - var_cancel_0;
                         scalar dist_var_1 = sqdist_1 - var_cancel_1;
                         scalar dist_var_2 = sqdist_2 - var_cancel_2;
                         scalar dist_var_3 = sqdist_3 - var_cancel_3;
 
-                        df_r_0 = fmax(df_r_0, dist_var_0 / normalization_r_0);
-                        df_r_1 = fmax(df_r_1, dist_var_1 / normalization_r_1);
-                        df_r_2 = fmax(df_r_2, dist_var_2 / normalization_r_2);
-                        df_r_3 = fmax(df_r_3, dist_var_3 / normalization_r_3);
+                        df_r_0 = fmax(df_r_0, dist_var_0 * normalization_r_0);
+                        df_r_1 = fmax(df_r_1, dist_var_1 * normalization_r_1);
+                        df_r_2 = fmax(df_r_2, dist_var_2 * normalization_r_2);
+                        df_r_3 = fmax(df_r_3, dist_var_3 * normalization_r_3);
 
-                        df_b_0 = fmax(df_b_0, dist_var_0 / normalization_b_0);
-                        df_b_1 = fmax(df_b_1, dist_var_1 / normalization_b_1);
-                        df_b_2 = fmax(df_b_2, dist_var_2 / normalization_b_2);
-                        df_b_3 = fmax(df_b_3, dist_var_3 / normalization_b_3);
+                        df_b_0 = fmax(df_b_0, dist_var_0 * normalization_b_0);
+                        df_b_1 = fmax(df_b_1, dist_var_1 * normalization_b_1);
+                        df_b_2 = fmax(df_b_2, dist_var_2 * normalization_b_2);
+                        df_b_3 = fmax(df_b_3, dist_var_3 * normalization_b_3);
                     }
 
                     features_weights_r[xp * W + yp] = df_r_0;
@@ -582,7 +582,7 @@ inline __attribute__((always_inline)) void precompute_features_SSA(scalar *featu
             }
 }
 
-inline __attribute__((always_inline)) void candidate_R_SSA(scalar *output_r, scalar *weight_sum, scalar *temp, scalar *temp2_r, scalar *features_weights_r, scalar *color, const int r_x, const int r_y, const int neigh_r, const int R, const int W, const int H) {
+inline __attribute__((always_inline)) void candidate_R_SSA(scalar *output_r, scalar *weight_sum, scalar *temp, scalar *temp2_r, scalar *features_weights_r, scalar *color, const int r_x, const int r_y, const scalar neigh_r_inv, const int R, const int W, const int H) {
             // (1) Convolve along height
             for(int xp = R; xp < W - R; ++xp) {
                 for(int yp = R + F_R; yp < H - R - F_R; yp+=8) {
@@ -696,10 +696,10 @@ inline __attribute__((always_inline)) void candidate_R_SSA(scalar *output_r, sca
 
                     scalar weight_0, weight_1, weight_2, weight_3;
 
-                    weight_0 = exp(-fmax(features_weights_r[xp * W + yp+0], sum_0 / neigh_r));
-                    weight_1 = exp(-fmax(features_weights_r[xp * W + yp+1], sum_1 / neigh_r));
-                    weight_2 = exp(-fmax(features_weights_r[xp * W + yp+2], sum_2 / neigh_r));
-                    weight_3 = exp(-fmax(features_weights_r[xp * W + yp+3], sum_3 / neigh_r));
+                    weight_0 = exp(-fmax(features_weights_r[xp * W + yp+0], sum_0 * neigh_r_inv));
+                    weight_1 = exp(-fmax(features_weights_r[xp * W + yp+1], sum_1 * neigh_r_inv));
+                    weight_2 = exp(-fmax(features_weights_r[xp * W + yp+2], sum_2 * neigh_r_inv));
+                    weight_3 = exp(-fmax(features_weights_r[xp * W + yp+3], sum_3 * neigh_r_inv));
 
                     
                     weight_sum[3 * (xp * W + yp)] += weight_0;
@@ -745,7 +745,7 @@ inline __attribute__((always_inline)) void candidate_R_SSA(scalar *output_r, sca
             }
 }
 
-inline __attribute__((always_inline)) void candidate_G_SSA(scalar *output_g, scalar *weight_sum, scalar *temp, scalar *temp2_g, scalar *features_weights_g, scalar *color, const int r_x, const int r_y, const int neigh_g, const int R, const int W, const int H) {
+inline __attribute__((always_inline)) void candidate_G_SSA(scalar *output_g, scalar *weight_sum, scalar *temp, scalar *temp2_g, scalar *features_weights_g, scalar *color, const int r_x, const int r_y, const scalar neigh_g_inv, const int R, const int W, const int H) {
             // (1) Convolve along height
             for(int xp = R; xp < W - R; ++xp) {
                 for(int yp = R + F_G; yp < H - R - F_G; yp+=8) {
@@ -859,10 +859,10 @@ inline __attribute__((always_inline)) void candidate_G_SSA(scalar *output_g, sca
                     }
                     scalar weight_0, weight_1, weight_2, weight_3;
 
-                    weight_0 = exp(-fmax(features_weights_g[xp * W + yp+0], sum_0 / neigh_g));
-                    weight_1 = exp(-fmax(features_weights_g[xp * W + yp+1], sum_1 / neigh_g));
-                    weight_2 = exp(-fmax(features_weights_g[xp * W + yp+2], sum_2 / neigh_g));
-                    weight_3 = exp(-fmax(features_weights_g[xp * W + yp+3], sum_3 / neigh_g));
+                    weight_0 = exp(-fmax(features_weights_g[xp * W + yp+0], sum_0 * neigh_g_inv));
+                    weight_1 = exp(-fmax(features_weights_g[xp * W + yp+1], sum_1 * neigh_g_inv));
+                    weight_2 = exp(-fmax(features_weights_g[xp * W + yp+2], sum_2 * neigh_g_inv));
+                    weight_3 = exp(-fmax(features_weights_g[xp * W + yp+3], sum_3 * neigh_g_inv));
 
                     weight_sum[1 + 3 * (xp * W + yp)] += weight_0;
                     weight_sum[1 + 3 * (xp * W + yp+1)] += weight_1;
@@ -1128,7 +1128,8 @@ void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* out
     // Precompute size of neighbourhood
     scalar neigh_r = 3*(2*F_R+1)*(2*F_R+1);
     scalar neigh_g = 3*(2*F_G+1)*(2*F_G+1);
-    scalar neigh_b = 3*(2*F_B+1)*(2*F_B+1);
+    scalar neigh_r_inv = 1.0f / neigh_r;
+    scalar neigh_g_inv = 1.0f / neigh_g;
 
     // Covering the neighbourhood
     for (int r_x = -R; r_x <= R; r_x++){
@@ -1148,12 +1149,12 @@ void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* out
             // ----------------------------------------------
             // Candidate R
             // ----------------------------------------------
-            candidate_R_SSA(output_r, weight_sum, temp, temp2_r, features_weights_r, color, r_x, r_y, neigh_r, R, W, H);
+            candidate_R_SSA(output_r, weight_sum, temp, temp2_r, features_weights_r, color, r_x, r_y, neigh_r_inv, R, W, H);
 
             // ----------------------------------------------
             // Candidate G
             // ----------------------------------------------
-            candidate_G_SSA(output_g, weight_sum, temp, temp2_g, features_weights_r, color, r_x, r_y, neigh_g, R, W, H);
+            candidate_G_SSA(output_g, weight_sum, temp, temp2_g, features_weights_r, color, r_x, r_y, neigh_g_inv, R, W, H);
 
         }
     }
