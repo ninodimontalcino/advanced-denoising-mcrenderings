@@ -107,7 +107,7 @@ double squared_diff(buffer buf1, buffer buf2, int W, int H){
 }
 
 
-void maxAbsError(double res[4], scalar* buf1, scalar* buf2, int W, int H){
+void maxAbsError(double res[4], scalar* buf1, scalar* buf2, int W, int H, int border){
 
     int WH = W * H;
 
@@ -117,10 +117,10 @@ void maxAbsError(double res[4], scalar* buf1, scalar* buf2, int W, int H){
     int locY = 0;
     
     for(int i=0;i<3;++i) {
-        for(int x = 0; x < W; ++x) {
-            for(int y = 0; y < H; ++y) {
+        for(int x = border; x < W - border; ++x) {
+            for(int y = border; y < H - border; ++y) {
                 double local_error = abs(buf1[i * WH + x * W + y] - buf2[i * WH + x * W + y]);
-                if (local_error > 1e-3 ){
+                if (local_error > 1e-3){
                     printf("Difference of %f at position: [%d][%d][%d] \n", local_error, i, x, y);
                 }
                 if (local_error > maxError){

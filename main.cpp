@@ -233,7 +233,7 @@ int main(int argc, char **argv)
     //Compare out_img_f with out_img_f
     //if (!compare_buffers(out_img, out_img_f, W, H)){
     double error[4];
-    maxAbsError(error, out_img, out_img_f, W, H);
+    maxAbsError(error, out_img, out_img_f, W, H, BORDER);
     if (abs(_rmse -_rmse2) > EPS){
       printf("Function %d produces a different result! \n", i);
       printf("Abs. Max. Buffer Difference: %f at position: [%f][%f][%f] \n", error[0], error[1], error[2], error[3]);
