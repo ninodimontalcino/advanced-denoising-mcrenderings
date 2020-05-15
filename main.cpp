@@ -34,7 +34,7 @@ using namespace std;
 
 //headers
 double get_perf_score(denoise_func f);
-double perf_test(denoise_func f, string desc, int flops, buffer c, buffer c_var, buffer features, buffer features_var, int r, int img_width, int img_height);
+double perf_test(denoise_func f, string desc, int flops, buffer c, buffer c_var, scalar** features, scalar** features_var, int r, int img_width, int img_height);
 
 /* Global vars, used to keep track of student functions */
 vector<denoise_func> userFuncs;
@@ -91,7 +91,7 @@ int main(int argc, char **argv)
   buffer c, c_var;
 
   // Feature Buffers and Variance
-  buffer f_albedo, f_albedo_var, f_depth, f_depth_var, f_normal, f_normal_var;
+  scalar **f_albedo, **f_albedo_var, **f_depth, **f_depth_var, **f_normal, **f_normal_var;
 
   // Other parameters
   int img_width, img_height;
@@ -122,21 +122,22 @@ int main(int argc, char **argv)
   load_exr(stringToCharArray(filename_varc), &c_var, img_width, img_height);
 
   // (2) Load individual features
-  load_exr(stringToCharArray(filename_albedo), &f_albedo, img_width, img_height);
-  load_exr(stringToCharArray(filename_albedo_variance), &f_albedo_var, img_width, img_height);
-  load_exr(stringToCharArray(filename_depth), &f_depth, img_width, img_height);
-  load_exr(stringToCharArray(filename_depth_variance), &f_depth_var, img_width, img_height);
-  load_exr(stringToCharArray(filename_normal), &f_normal, img_width, img_height);
-  load_exr(stringToCharArray(filename_normal_variance), &f_normal_var, img_width, img_height);
+  load_exr_new(stringToCharArray(filename_albedo), &f_albedo, img_width, img_height);
+  load_exr_new(stringToCharArray(filename_albedo_variance), &f_albedo_var, img_width, img_height);
+  load_exr_new(stringToCharArray(filename_depth), &f_depth, img_width, img_height);
+  load_exr_new(stringToCharArray(filename_depth_variance), &f_depth_var, img_width, img_height);
+  load_exr_new(stringToCharArray(filename_normal), &f_normal, img_width, img_height);
+  load_exr_new(stringToCharArray(filename_normal_variance), &f_normal_var, img_width, img_height);
 
   // (3) Load GT 
   load_exr(stringToCharArray(filename_GT), &gt, img_width, img_height);
 
   // (3) Feature Stacking
   // => Access Pattern: features[i][x][y] where i in (1:= albedo, 2:= depth, 3:= normal)
-  buffer features, features_var;
-  allocate_buffer(&features, img_width, img_height);
-  allocate_buffer(&features_var, img_width, img_height);
+  scalar** features;
+  scalar** features_var;
+  allocate_buffer_new(&features, img_width, img_height);
+  allocate_buffer_new(&features_var, img_width, img_height);
 
   // (a) Features
   features[0] = f_albedo[0];
@@ -149,6 +150,7 @@ int main(int argc, char **argv)
   features_var[2] = f_normal_var[0];
 
   // DEBUGGING: Output loaded buffer
+  /*
   if(debug_EXR_loading){
     for (int i = 0; i < img_height; i ++) {
       for (int j = 0; j < img_width; j ++) {
@@ -157,6 +159,7 @@ int main(int argc, char **argv)
       cout << "\n";
     }
   }
+  */
   
   // ------------------------------------
   // (..) ...
@@ -256,7 +259,7 @@ void add_function(denoise_func f, string name, int flops)
 * Checks the given function for validity. If valid, then computes and
 * reports and returns the number of cycles required per iteration
 */
-double perf_test(denoise_func f, string desc, int flops, buffer c, buffer svar_c, buffer features, buffer svar_f, int r, int img_width, int img_height)
+double perf_test(denoise_func f, string desc, int flops, buffer c, buffer svar_c, scalar** features, scalar** svar_f, int r, int img_width, int img_height)
 {
   double cycles = 0.;
   double perf = 0.0;

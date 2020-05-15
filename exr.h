@@ -39,6 +39,7 @@ using namespace IMATH_NAMESPACE;
 		- buf			buffer containing loaded EXR image
 
 */
+void load_exr_new(const char fileName[], scalar*** buf, int &img_width, int &img_height);
 void load_exr(const char fileName[], buffer* buf, int &img_width, int &img_eight);				
 
 /*! ------------------------------------

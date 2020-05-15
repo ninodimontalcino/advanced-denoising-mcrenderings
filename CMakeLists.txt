@@ -60,12 +60,13 @@ add_executable(main
               memory_mgmt.cpp 
               flt.cpp 
               flt_restructure.cpp 
+              flt_restructure_ILP.cpp 
               validation.cpp
 
               # Implementations (BASIC and OPTIMIZED)
               implementations/register.hpp
-              implementations/basic.cpp
-              implementations/basic_restructure.cpp
+              #implementations/basic.cpp
+              #implementations/basic_restructure.cpp
               implementations/basic_restructure2.cpp
               implementations/basic_restructure3.cpp
 
@@ -74,7 +75,7 @@ add_executable(main
 # --------------------------
 # (2) Testing Executable
 # --------------------------
-add_executable(denoise_test flt.hpp tests.hpp memory_mgmt.hpp flt.cpp tests.cpp memory_mgmt.cpp )
+#add_executable(denoise_test flt.hpp tests.hpp memory_mgmt.hpp flt.cpp tests.cpp memory_mgmt.cpp )
 
 
 # Link to dependency libraries (e.g. OPENEXR)

@@ -28,7 +28,7 @@ using namespace std;
 å
     \return void --> denoised image in buffer out_img
  */
- void basic_restructure_ILP_Test(buffer out_img, buffer c, buffer c_var, buffer f, buffer f_var, int R, int img_width, int img_height){
+ void basic_restructure3(buffer out_img, buffer c, buffer c_var, scalar**  f, scalar**  f_var, int R, int img_width, int img_height){
 
     if(DEBUG) {
         cout << "--------------------------------------------------" << endl;
@@ -44,16 +44,17 @@ using namespace std;
     // (2) Feature Prefiltering
     // ----------------------------------------------
     Flt_parameters p_pre = { .kc = 1., .kf = INFINITY, .tau = 0., .f = 3, .r = 5};
-    buffer f_filtered, f_var_filtered;
-    allocate_buffer_zero(&f_filtered, img_width, img_height);
-    allocate_buffer_zero(&f_var_filtered, img_width, img_height);
-    feature_prefiltering(f_filtered, f_var_filtered, f, f_var, p_pre, img_width, img_height);
+    scalar** f_filtered;
+    scalar** f_var_filtered;
+    allocate_buffer_zero_new(&f_filtered, img_width, img_height);
+    allocate_buffer_zero_new(&f_var_filtered, img_width, img_height);
+    feature_prefiltering_ILP(f_filtered, f_var_filtered, f, f_var, p_pre, img_width, img_height);
     
     // DEBUGGING PART
     if(DEBUG) {
-        write_channel_exr("temp/albedo_filtered.exr", &f_filtered[0], img_width, img_height);
-        write_channel_exr("temp/depth_filtered.exr",  &f_filtered[1], img_width, img_height);
-        write_channel_exr("temp/normal_filtered.exr", &f_filtered[2], img_width, img_height);
+        //write_channel_exr("temp/albedo_filtered.exr", &f_filtered[0], img_width, img_height);
+        //write_channel_exr("temp/depth_filtered.exr",  &f_filtered[1], img_width, img_height);
+        //write_channel_exr("temp/normal_filtered.exr", &f_filtered[2], img_width, img_height);
         cout << "\t - Feature Prefiltering done" << endl;
     }
 
@@ -70,7 +71,7 @@ using namespace std;
     allocate_buffer_zero(&r, img_width, img_height);
     allocate_buffer_zero(&g, img_width, img_height);
     allocate_buffer_zero(&b, img_width, img_height);
-    candidate_filtering_all2(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, img_width, img_height);
+    candidate_filtering_all_ILP(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, img_width, img_height);
 
     
     // DEBUGGING PART
@@ -191,8 +192,8 @@ using namespace std;
     // (8) Memory Deallocation
     // ----------------------------------------------
     // Free filtered filters
-    free_buffer(&f_filtered, img_width);
-    free_buffer(&f_var_filtered, img_width);
+    //free_buffer(&f_filtered, img_width);
+    //free_buffer(&f_var_filtered, img_width);
 
     // Free candidate filters and their derivates
     free_buffer(&r, img_width);

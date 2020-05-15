@@ -5,6 +5,20 @@
 #include "memory_mgmt.hpp"
 #include "flt.hpp"
 
+void allocate_buffer_new(scalar ***buf, int img_width, int img_height) {
+    *buf = (scalar**) malloc(3*sizeof(void*));
+    for(int i=0;i<3;++i) {
+        (*buf)[i] = (scalar*) malloc(img_width*img_height*sizeof(scalar));
+    }
+}
+
+void allocate_buffer_zero_new(scalar ***buf, int img_width, int img_height) {
+    *buf = (scalar**) malloc(3*sizeof(void*));
+    for(int i=0;i<3;++i) {
+        (*buf)[i] = (scalar*) calloc(img_width*img_height, sizeof(scalar));
+    }
+}
+
 void allocate_buffer(buffer *buf, int img_width, int img_height) {
     *buf = (buffer) malloc(3*sizeof(void*));
     for(int i=0;i<3;++i) {
