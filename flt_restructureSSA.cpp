@@ -496,30 +496,22 @@ inline __attribute__((always_inline)) void color_weights_SSA(scalar *temp, scala
             }
 }
 
-inline __attribute__((always_inline)) void precompute_features_SSA(scalar *features_weights_r_num, scalar *features_weights_r_den, scalar *features_weights_b, scalar *features, scalar *features_var, scalar *gradients, const int r_x, const int r_y, const int R, const int W, const int H) {
+inline __attribute__((always_inline)) void precompute_features_SSA(scalar *features_weights_r, scalar *output_b, scalar *weight_sum, scalar *color, scalar *features, scalar *features_var, scalar *gradients, const int r_x, const int r_y, const int R, const int W, const int H) {
             for(int xp = R + F_B; xp < W - R - F_B; ++xp) {
                 for(int yp = R + F_B; yp < H - R - F_B; yp+=4) {
                     
                     int xq = xp + r_x;
                     int yq = yp + r_y;
 
-                    scalar df_r_0_num = 0.f;
-                    scalar df_r_1_num = 0.f;
-                    scalar df_r_2_num = 0.f;
-                    scalar df_r_3_num = 0.f;
-                    scalar df_r_0_den = 1.f;
-                    scalar df_r_1_den = 1.f;
-                    scalar df_r_2_den = 1.f;
-                    scalar df_r_3_den = 1.f;
+                    scalar df_r_0 = 0.f;
+                    scalar df_r_1 = 0.f;
+                    scalar df_r_2 = 0.f;
+                    scalar df_r_3 = 0.f;
 
-                    scalar df_b_0_num = 0.f;
-                    scalar df_b_1_num = 0.f;
-                    scalar df_b_2_num = 0.f;
-                    scalar df_b_3_num = 0.f;
-                    scalar df_b_0_den = 1.f;
-                    scalar df_b_1_den = 1.f;
-                    scalar df_b_2_den = 1.f;
-                    scalar df_b_3_den = 1.f;
+                    scalar df_b_0 = 0.f;
+                    scalar df_b_1 = 0.f;
+                    scalar df_b_2 = 0.f;
+                    scalar df_b_3 = 0.f;
 
                     for(int j=0; j<NB_FEATURES;++j){
                         
@@ -553,58 +545,44 @@ inline __attribute__((always_inline)) void precompute_features_SSA(scalar *featu
                         scalar dist_var_2 = sqdist_2 - var_cancel_2;
                         scalar dist_var_3 = sqdist_3 - var_cancel_3;
 
-                        if(df_r_0_num * normalization_r_0 <= df_r_0_den * dist_var_0) {
-                            df_r_0_num = dist_var_0;
-                            df_r_0_den = normalization_r_0;
-                        }
-                        if(df_r_1_num * normalization_r_1 <= df_r_1_den * dist_var_1) {
-                            df_r_1_num = dist_var_1;
-                            df_r_1_den = normalization_r_1;
-                        }
-                        if(df_r_2_num * normalization_r_2 <= df_r_2_den * dist_var_2) {
-                            df_r_2_num = dist_var_2;
-                            df_r_2_den = normalization_r_2;
-                        }
-                        if(df_r_3_num * normalization_r_3 <= df_r_3_den * dist_var_3) {
-                            df_r_3_num = dist_var_3;
-                            df_r_3_den = normalization_r_3;
-                        }
+                        df_r_0 = fmax(df_r_0, dist_var_0 / normalization_r_0);
+                        df_r_1 = fmax(df_r_1, dist_var_1 / normalization_r_1);
+                        df_r_2 = fmax(df_r_2, dist_var_2 / normalization_r_2);
+                        df_r_3 = fmax(df_r_3, dist_var_3 / normalization_r_3);
 
-                        if(df_b_0_num * normalization_b_0 <= df_b_0_den * dist_var_0) {
-                            df_b_0_num = dist_var_0;
-                            df_b_0_den = normalization_b_0;
-                        }
-                        if(df_b_1_num * normalization_b_1 <= df_b_1_den * dist_var_1) {
-                            df_b_1_num = dist_var_1;
-                            df_b_1_den = normalization_b_1;
-                        }
-                        if(df_b_2_num * normalization_b_2 <= df_b_2_den * dist_var_2) {
-                            df_b_2_num = dist_var_2;
-                            df_b_2_den = normalization_b_2;
-                        }
-                        if(df_b_3_num * normalization_b_3 <= df_b_3_den * dist_var_3) {
-                            df_b_3_num = dist_var_3;
-                            df_b_3_den = normalization_b_3;
-                        }
+                        df_b_0 = fmax(df_b_0, dist_var_0 / normalization_b_0);
+                        df_b_1 = fmax(df_b_1, dist_var_1 / normalization_b_1);
+                        df_b_2 = fmax(df_b_2, dist_var_2 / normalization_b_2);
+                        df_b_3 = fmax(df_b_3, dist_var_3 / normalization_b_3);
                     }
 
-                    features_weights_r_num[xp * W + yp] = df_r_0_num;
-                    features_weights_r_den[xp * W + yp] = df_r_0_den;
-                    features_weights_r_num[xp * W + yp+1] = df_r_1_num;
-                    features_weights_r_den[xp * W + yp+1] = df_r_1_den;
-                    features_weights_r_num[xp * W + yp+2] = df_r_2_num;
-                    features_weights_r_den[xp * W + yp+2] = df_r_2_den;
-                    features_weights_r_num[xp * W + yp+3] = df_r_3_num;
-                    features_weights_r_den[xp * W + yp+3] = df_r_3_den;
-                    features_weights_b[xp * W + yp] = exp(-df_b_0_num / df_b_0_den);
-                    features_weights_b[xp * W + yp+1] = exp(-df_b_1_num / df_b_1_den);
-                    features_weights_b[xp * W + yp+2] = exp(-df_b_2_num / df_b_2_den);
-                    features_weights_b[xp * W + yp+3] = exp(-df_b_3_num / df_b_3_den);
+                    features_weights_r[xp * W + yp] = df_r_0;
+                    features_weights_r[xp * W + yp+1] = df_r_1;
+                    features_weights_r[xp * W + yp+2] = df_r_2;
+                    features_weights_r[xp * W + yp+3] = df_r_3;
+
+                    df_b_0 = exp(-df_b_0);
+                    df_b_1 = exp(-df_b_1);
+                    df_b_2 = exp(-df_b_2);
+                    df_b_3 = exp(-df_b_3);
+
+
+                    weight_sum[2 + 3 * (xp * W + yp)] += df_b_0;
+                    weight_sum[2 + 3 * (xp * W + yp+1)] += df_b_1;
+                    weight_sum[2 + 3 * (xp * W + yp+2)] += df_b_2;
+                    weight_sum[2 + 3 * (xp * W + yp+3)] += df_b_3;
+
+                    for(int i=0;i<3;++i) {
+                        output_b[3 * (xp * W + yp) + i] += df_b_0 * color[3 * (xq * W + yq) + i];
+                        output_b[3 * (xp * W + yp+1) + i] += df_b_1 * color[3 * (xq * W + yq+1) + i];
+                        output_b[3 * (xp * W + yp+2) + i] += df_b_2 * color[3 * (xq * W + yq+2) + i];
+                        output_b[3 * (xp * W + yp+3) + i] += df_b_3 * color[3 * (xq * W + yq+3) + i];
+                    }
                 } 
             }
 }
 
-inline __attribute__((always_inline)) void candidate_R_SSA(scalar *output_r, scalar *weight_sum, scalar *temp, scalar *temp2_r, scalar *features_weights_r_num, scalar *features_weights_r_den, scalar *color, const int r_x, const int r_y, const int neigh_r, const int R, const int W, const int H) {
+inline __attribute__((always_inline)) void candidate_R_SSA(scalar *output_r, scalar *weight_sum, scalar *temp, scalar *temp2_r, scalar *features_weights_r, scalar *color, const int r_x, const int r_y, const int neigh_r, const int R, const int W, const int H) {
             // (1) Convolve along height
             for(int xp = R; xp < W - R; ++xp) {
                 for(int yp = R + F_R; yp < H - R - F_R; yp+=8) {
@@ -718,31 +696,10 @@ inline __attribute__((always_inline)) void candidate_R_SSA(scalar *output_r, sca
 
                     scalar weight_0, weight_1, weight_2, weight_3;
 
-                    scalar fweights_0_num = features_weights_r_num[xp * W + yp];
-                    scalar fweights_0_den = features_weights_r_den[xp * W + yp];
-                    scalar fweights_1_num = features_weights_r_num[xp * W + yp + 1];
-                    scalar fweights_1_den = features_weights_r_den[xp * W + yp + 1];
-                    scalar fweights_2_num = features_weights_r_num[xp * W + yp + 2];
-                    scalar fweights_2_den = features_weights_r_den[xp * W + yp + 2];
-                    scalar fweights_3_num = features_weights_r_num[xp * W + yp + 3];
-                    scalar fweights_3_den = features_weights_r_den[xp * W + yp + 3];
-
-                    if(sum_0 * fweights_0_den <= neigh_r * fweights_0_num)
-                        weight_0 = exp(-fweights_0_num / fweights_0_den);
-                    else
-                        weight_0 = exp(-sum_0 / neigh_r);
-                    if(sum_1 * fweights_1_den <= neigh_r * fweights_1_num)
-                        weight_1 = exp(-fweights_1_num / fweights_1_den);
-                    else
-                        weight_1 = exp(-sum_1 / neigh_r);
-                    if(sum_2 * fweights_2_den <= neigh_r * fweights_2_num)
-                        weight_2 = exp(-fweights_2_num / fweights_2_den);
-                    else
-                        weight_2 = exp(-sum_2 / neigh_r);
-                    if(sum_3 * fweights_3_den <= neigh_r * fweights_3_num)
-                        weight_3 = exp(-fweights_3_num / fweights_3_den);
-                    else
-                        weight_3 = exp(-sum_3 / neigh_r);
+                    weight_0 = exp(-fmax(features_weights_r[xp * W + yp+0], sum_0 / neigh_r));
+                    weight_1 = exp(-fmax(features_weights_r[xp * W + yp+1], sum_1 / neigh_r));
+                    weight_2 = exp(-fmax(features_weights_r[xp * W + yp+2], sum_2 / neigh_r));
+                    weight_3 = exp(-fmax(features_weights_r[xp * W + yp+3], sum_3 / neigh_r));
 
                     
                     weight_sum[3 * (xp * W + yp)] += weight_0;
@@ -788,7 +745,7 @@ inline __attribute__((always_inline)) void candidate_R_SSA(scalar *output_r, sca
             }
 }
 
-inline __attribute__((always_inline)) void candidate_G_SSA(scalar *output_g, scalar *weight_sum, scalar *temp, scalar *temp2_g, scalar *features_weights_r_num, scalar *features_weights_r_den, scalar *color, const int r_x, const int r_y, const int neigh_g, const int R, const int W, const int H) {
+inline __attribute__((always_inline)) void candidate_G_SSA(scalar *output_g, scalar *weight_sum, scalar *temp, scalar *temp2_g, scalar *features_weights_g, scalar *color, const int r_x, const int r_y, const int neigh_g, const int R, const int W, const int H) {
             // (1) Convolve along height
             for(int xp = R; xp < W - R; ++xp) {
                 for(int yp = R + F_G; yp < H - R - F_G; yp+=8) {
@@ -902,31 +859,10 @@ inline __attribute__((always_inline)) void candidate_G_SSA(scalar *output_g, sca
                     }
                     scalar weight_0, weight_1, weight_2, weight_3;
 
-                    scalar fweights_0_num = features_weights_r_num[xp * W + yp];
-                    scalar fweights_0_den = features_weights_r_den[xp * W + yp];
-                    scalar fweights_1_num = features_weights_r_num[xp * W + yp + 1];
-                    scalar fweights_1_den = features_weights_r_den[xp * W + yp + 1];
-                    scalar fweights_2_num = features_weights_r_num[xp * W + yp + 2];
-                    scalar fweights_2_den = features_weights_r_den[xp * W + yp + 2];
-                    scalar fweights_3_num = features_weights_r_num[xp * W + yp + 3];
-                    scalar fweights_3_den = features_weights_r_den[xp * W + yp + 3];
-
-                    if(sum_0 * fweights_0_den <= neigh_g * fweights_0_num)
-                        weight_0 = exp(-fweights_0_num / fweights_0_den);
-                    else
-                        weight_0 = exp(-sum_0 / neigh_g);
-                    if(sum_1 * fweights_1_den <= neigh_g * fweights_1_num)
-                        weight_1 = exp(-fweights_1_num / fweights_1_den);
-                    else
-                        weight_1 = exp(-sum_1 / neigh_g);
-                    if(sum_2 * fweights_2_den <= neigh_g * fweights_2_num)
-                        weight_2 = exp(-fweights_2_num / fweights_2_den);
-                    else
-                        weight_2 = exp(-sum_2 / neigh_g);
-                    if(sum_3 * fweights_3_den <= neigh_g * fweights_3_num)
-                        weight_3 = exp(-fweights_3_num / fweights_3_den);
-                    else
-                        weight_3 = exp(-sum_3 / neigh_g);
+                    weight_0 = exp(-fmax(features_weights_g[xp * W + yp+0], sum_0 / neigh_g));
+                    weight_1 = exp(-fmax(features_weights_g[xp * W + yp+1], sum_1 / neigh_g));
+                    weight_2 = exp(-fmax(features_weights_g[xp * W + yp+2], sum_2 / neigh_g));
+                    weight_3 = exp(-fmax(features_weights_g[xp * W + yp+3], sum_3 / neigh_g));
 
                     weight_sum[1 + 3 * (xp * W + yp)] += weight_0;
                     weight_sum[1 + 3 * (xp * W + yp+1)] += weight_1;
@@ -1180,12 +1116,8 @@ void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* out
     allocate_channel(&temp2_g, W, H); 
 
     // Allocate feature weights buffer
-    scalar* features_weights_r_num;
-    scalar* features_weights_r_den;
-    scalar* features_weights_b;
-    allocate_channel(&features_weights_r_num, W, H);
-    allocate_channel(&features_weights_r_den, W, H);
-    allocate_channel(&features_weights_b, W, H);
+    scalar* features_weights_r;
+    allocate_channel(&features_weights_r, W, H);
 
 
     // Compute gradients
@@ -1207,7 +1139,7 @@ void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* out
 
 
             // Precompute feature weights
-            precompute_features_SSA(features_weights_r_num, features_weights_r_den, features_weights_b, features, features_var, gradients, r_x, r_y, R, W, H);
+            precompute_features_SSA(features_weights_r, output_b, weight_sum, color, features, features_var, gradients, r_x, r_y, R, W, H);
 
 
             // Next Steps: Box-Filtering for Patch Contribution 
@@ -1216,19 +1148,12 @@ void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* out
             // ----------------------------------------------
             // Candidate R
             // ----------------------------------------------
-            candidate_R_SSA(output_r, weight_sum, temp, temp2_r, features_weights_r_num, features_weights_r_den, color, r_x, r_y, neigh_r, R, W, H);
+            candidate_R_SSA(output_r, weight_sum, temp, temp2_r, features_weights_r, color, r_x, r_y, neigh_r, R, W, H);
 
             // ----------------------------------------------
             // Candidate G
             // ----------------------------------------------
-            candidate_G_SSA(output_g, weight_sum, temp, temp2_g, features_weights_r_num, features_weights_r_den, color, r_x, r_y, neigh_g, R, W, H);
-            
-
-            // ----------------------------------------------
-            // Candidate B 
-            // => no color weight computation due to kc = Inf
-            // ----------------------------------------------
-            candidate_B_SSA(output_b, weight_sum, color, features_weights_b, r_x, r_y,  R, H, W);
+            candidate_G_SSA(output_g, weight_sum, temp, temp2_g, features_weights_r, color, r_x, r_y, neigh_g, R, W, H);
 
         }
     }
@@ -1253,9 +1178,7 @@ void candidate_filtering_all_SSA(scalar* output_r, scalar* output_g, scalar* out
     free(temp);
     free(temp2_r);
     free(temp2_g);
-    free(features_weights_r_num);
-    free(features_weights_r_den);
-    free(features_weights_b);
+    free(features_weights_r);
     free(gradients);
 
 }
