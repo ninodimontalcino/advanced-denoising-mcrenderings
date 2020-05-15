@@ -11,14 +11,14 @@
 #define F_R 1
 #define F_G 3
 #define F_B 1
-#define TAU_R 0.001
-#define TAU_G 0.001
-#define TAU_B 0.0001
-#define KC_SQUARED_R 4.0
-#define KF_SQUARED_R 0.36
-#define KC_SQUARED_G 4.0
-#define KF_SQUARED_G 0.36
-#define KF_SQUARED_B 0.36
+#define TAU_R 0.001f
+#define TAU_G 0.001f
+#define TAU_B 0.0001f
+#define KC_SQUARED_R 4.0f
+#define KF_SQUARED_R 0.36f
+#define KC_SQUARED_G 4.0f
+#define KF_SQUARED_G 0.36f
+#define KF_SQUARED_B 0.36f
 
 void compute_gradients_SSA(scalar *gradients, scalar *features, const int W, const int H, const int R) {
     scalar diffL_A0, diffR_A0, diffU_A0, diffD_A0;
@@ -593,9 +593,9 @@ void precompute_features_SSA(scalar *features_weights_r_num, scalar *features_we
                     features_weights_r_num[xp * W + yp+3] = df_r_3_num;
                     features_weights_r_den[xp * W + yp+3] = df_r_3_den;
                     features_weights_b[xp * W + yp] = exp(-df_b_0_num / df_b_0_den);
-                    features_weights_b[xp * W + yp+1] = exp(-df_b_0_num / df_b_0_den);
-                    features_weights_b[xp * W + yp+2] = exp(-df_b_0_num / df_b_0_den);
-                    features_weights_b[xp * W + yp+3] = exp(-df_b_0_num / df_b_0_den);
+                    features_weights_b[xp * W + yp+1] = exp(-df_b_1_num / df_b_1_den);
+                    features_weights_b[xp * W + yp+2] = exp(-df_b_2_num / df_b_2_den);
+                    features_weights_b[xp * W + yp+3] = exp(-df_b_3_num / df_b_3_den);
                 } 
             }
 }
