@@ -140,6 +140,13 @@ int main(int argc, char **argv)
 
   // Precompute channel sizue
   int WH = W * H;
+  int BORDER;
+  if ((r + 3) % 8) BORDER = r + 3 + 8 - (r + 3) % 8;
+  else BORDER = r + 3;
+  cout << BORDER << "\n";
+  int WB = W + BORDER;
+  int HB = H + BORDER;
+  int WHB = WH * BORDER;
 
   // (3) Feature Stacking
   // => Access Pattern: features[i][x][y] where i in (1:= albedo, 2:= depth, 3:= normal)
@@ -197,7 +204,7 @@ int main(int argc, char **argv)
   f(out_img, c, c_var, features, features_var, r, W, H);
 
   // Compute RMSE 
-  double _rmse = rmse(out_img, gt, W, H);
+  double _rmse = rmse_woborder(out_img, gt, W, H, BORDER);
   if (RMSE){
     printf("RMSE: %f \n\n", _rmse);
   }
@@ -218,7 +225,7 @@ int main(int argc, char **argv)
     denoise_func f = userFuncs[i];
     f(out_img_f, c, c_var, features, features_var, r, W, H);
 
-    double _rmse2 = rmse(out_img_f, gt, W, H);
+    double _rmse2 = rmse_woborder(out_img_f, gt, W, H, BORDER);
     if (RMSE){
       printf("RMSE: %f \n", _rmse2);
     }
