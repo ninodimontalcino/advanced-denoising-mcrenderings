@@ -69,6 +69,11 @@ void filtering_basic_vec(scalar* output, scalar* input, scalar* c, scalar* c_var
     
     int WH = W*H;
     const __m256 EPSILON_vec = _mm256_set1_ps(EPSILON);
+    int ALR, ALRf;
+    if (p.r % 8) ALR = p.r + 8 - p.r % 8;
+    else ALR = p.r;
+    if ((p.r + p.f)% 8) ALRf = p.r + p.f + 8 - (p.r + p.f) % 8;
+    else ALRf = p.r + p.f;
 
 
     // Handling Inner Part   
@@ -96,8 +101,8 @@ void filtering_basic_vec(scalar* output, scalar* input, scalar* c, scalar* c_var
         for (int r_y = -p.r; r_y <= p.r; r_y++){
         
             // Compute Color Weight for all pixels with fixed r
-            for(int xp = p.r; xp < W - p.r; ++xp) {
-                for(int yp = p.r; yp < H - p.r; yp+=8) {
+            for(int xp = ALR; xp < W - ALR; ++xp) {
+                for(int yp = ALR; yp < H - ALR; yp+=8) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -133,8 +138,8 @@ void filtering_basic_vec(scalar* output, scalar* input, scalar* c, scalar* c_var
 
             // Apply Box-Filtering for Patch Contribution => Use Box-Filter Seperability
             // (1) Convolve along height
-            for(int xp = p.r; xp < W - p.r; ++xp) {
-                for(int yp = p.r + p.f; yp < H - p.r - p.f; yp+=8) {
+            for(int xp = ALR; xp < W - ALR; ++xp) {
+                for(int yp = ALR; yp < H - ALR; yp+=8) {
 
                     __m256 sum_vec = _mm256_setzero_ps();
                     __m256 tmp_vec;
@@ -147,8 +152,8 @@ void filtering_basic_vec(scalar* output, scalar* input, scalar* c, scalar* c_var
             }
 
             // (2) Convolve along width including weighted contribution
-            for(int xp = p.r + p.f; xp < W - p.r - p.f; ++xp) {
-                for(int yp = p.r + p.f; yp < H - p.r - p.f; yp+=1) {
+            for(int xp = ALRf; xp < W - ALRf; ++xp) {
+                for(int yp = ALRf; yp < H - ALRf; yp+=1) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -184,8 +189,8 @@ void filtering_basic_vec(scalar* output, scalar* input, scalar* c, scalar* c_var
     }
 
     // Final Weight Normalization
-    for(int xp = p.r + p.f; xp < W - p.r - p.f; ++xp) {
-        for(int yp = p.r + p.f ; yp < H - p.r - p.f; yp+=8) {     
+    for(int xp = ALRf; xp < W - ALRf; ++xp) {
+        for(int yp = ALRf ; yp < H - ALRf; yp+=8) {     
             __m256 weight_sum_vec, output_vec;
             weight_sum_vec = _mm256_loadu_ps(weight_sum+xp * W + yp);
             for (int i=0; i<3; i++){
@@ -224,6 +229,12 @@ void feature_prefiltering_vec(scalar* output, scalar* output_var, scalar* featur
 
     int WH = W*H;
     const __m256 EPSILON_vec = _mm256_set1_ps(EPSILON);
+
+    int ALR, ALRf;
+    if (p.r % 8) ALR = p.r + 8 - p.r % 8;
+    else ALR = p.r;
+    if ((p.r + p.f)% 8) ALRf = p.r + p.f + 8 - (p.r + p.f) % 8;
+    else ALRf = p.r + p.f;
     
     // Handling Inner Part   
     // -------------------
@@ -249,8 +260,8 @@ void feature_prefiltering_vec(scalar* output, scalar* output_var, scalar* featur
         for (int r_y = -p.r; r_y <= p.r; r_y++){
         
             // Compute Color Weight for all pixels with fixed r
-            for(int xp = p.r; xp < W - p.r; ++xp) {
-                for(int yp = p.r; yp < H - p.r; yp+=8) {
+            for(int xp = ALR; xp < W - ALR; ++xp) {
+                for(int yp = ALR; yp < H - ALR; yp+=8) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -296,8 +307,8 @@ void feature_prefiltering_vec(scalar* output, scalar* output_var, scalar* featur
 
             // Apply Box-Filtering for Patch Contribution => Use Box-Filter Seperability
             // (1) Convolve along height
-            for(int xp = p.r; xp < W - p.r; ++xp) {
-                for(int yp = p.r + p.f; yp < H - p.r - p.f; ++yp) {
+            for(int xp = ALR; xp < W - ALR; ++xp) {
+                for(int yp = ALRf; yp < H - ALRf; ++yp) {
                     
                     __m256 sum_vec = _mm256_setzero_ps();
                     __m256 tmp_vec;
@@ -310,8 +321,8 @@ void feature_prefiltering_vec(scalar* output, scalar* output_var, scalar* featur
             }
 
             // (2) Convolve along width including weighted contribution
-            for(int xp = p.r + p.f; xp < W - p.r - p.f; ++xp) {
-                for(int yp = p.r + p.f; yp < H - p.r - p.f; yp+=8) {
+            for(int xp = ALRf; xp < W - ALRf; ++xp) {
+                for(int yp = ALRf; yp < H - ALRf; yp+=8) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -355,8 +366,8 @@ void feature_prefiltering_vec(scalar* output, scalar* output_var, scalar* featur
     }
 
     // Final Weight Normalization
-    for(int xp = p.r + p.f; xp < W - p.r - p.f; ++xp) {
-        for(int yp = p.r + p.f; yp < H - p.r - p.f; ++yp) {
+    for(int xp = ALRf; xp < W - ALRf; ++xp) {
+        for(int yp = ALRf; yp < H - ALRf; ++yp) {
         
             scalar w = weight_sum[xp * W + yp];
             for (int i=0; i<3; i++){
@@ -429,6 +440,12 @@ void candidate_filtering_all_vec(scalar* output_r, scalar* output_g, scalar* out
     int f_min = fmin(f_r, fmin(f_g, f_b));
     int R = p[0].r;
 
+    int ALR, ALRf;
+    if (R % 8) ALR = R + 8 - R % 8;
+    else ALR = R;
+    if ((R + f_min)% 8) ALRf = R + f_min + 8 - (R + f_min) % 8;
+    else ALRf = R + f_min;
+
     // Handling Inner Part   
     // -------------------
 
@@ -456,8 +473,8 @@ void candidate_filtering_all_vec(scalar* output_r, scalar* output_g, scalar* out
 
     __m256 features_vec, diffL_sqr_vec, diffR_sqr_vec, diffU_sqr_vec, diffD_sqr_vec, tmp_1, tmp_2, grad_vec;
     for(int i=0; i<NB_FEATURES;++i) {
-        for(int x =  R+f_min; x < W - R - f_min; ++x) {
-            for(int y =  R+f_min; y < H-  R - f_min; ++y) {
+        for(int x =  ALRf; x < W - ALRf; ++x) {
+            for(int y =  ALRf; y < H-  ALRf; ++y) {
 
                 // Loading
                 features_vec  = _mm256_loadu_ps(features+i * WH + x * W + y);

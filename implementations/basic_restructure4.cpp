@@ -36,6 +36,12 @@ using namespace std;
     }
      
     int WH = W*H;
+    int BORDER;
+    if ((R + 3) % 8) BORDER = R + 3 + 8 - (R + 3) % 8;
+    else BORDER = R + 3;
+    int WB = W + BORDER;
+    int HB = H + BORDER;
+    int WHB = WH * BORDER;
 
     // ----------------------------------------------
     // (2) Feature Prefiltering

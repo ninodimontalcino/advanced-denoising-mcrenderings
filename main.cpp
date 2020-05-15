@@ -135,14 +135,16 @@ int main(int argc, char **argv)
   load_exr(stringToCharArray(filename_normal), &f_normal, W, H);
   load_exr(stringToCharArray(filename_normal_variance), &f_normal_var, W, H);
 
-  // (3) Load GT 
+  // (3) Load GT , BORDER
   load_exr(stringToCharArray(filename_GT), &gt, W, H);
 
   // Precompute channel sizue
   int WH = W * H;
-  int BORDER;
-  if ((r + 3) % 8) BORDER = r + 3 + 8 - (r + 3) % 8;
-  else BORDER = r + 3;
+  int BORDER, R;
+  if (r % 8) R = r + 8 - r % 8;
+  else R = r;  
+  if ((R + 3) % 8) BORDER = R + 3 + 8 - (R + 3) % 8;
+  else BORDER = R + 3;
   cout << BORDER << "\n";
   int WB = W + BORDER;
   int HB = H + BORDER;
