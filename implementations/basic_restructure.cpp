@@ -28,7 +28,7 @@ using namespace std;
 å
     \return void --> denoised image in buffer out_img
  */
- void basic_restructure(buffer out_img, buffer c, buffer c_var, scalar** f, scalar** f_var, int R, int img_width, int img_height){
+ void basic_restructure(buffer out_img, buffer c, buffer c_var, buffer f, buffer f_var, int R, int img_width, int img_height){
 
     if(DEBUG) {
         cout << "--------------------------------------------------" << endl;

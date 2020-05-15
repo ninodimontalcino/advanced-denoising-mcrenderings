@@ -211,7 +211,7 @@ void filtering_basic_ILP(buffer output, buffer input, buffer c, buffer c_var, Fl
 }
 
 
-void feature_prefiltering_ILP(scalar** output, scalar** output_var, scalar** features, scalar** features_var, Flt_parameters p, int W, int H){
+void feature_prefiltering_ILP(buffer output, buffer output_var, buffer features, buffer features_var, Flt_parameters p, int W, int H){
 
     // Handling Inner Part   
     // -------------------
@@ -244,10 +244,10 @@ void feature_prefiltering_ILP(scalar** output, scalar** output_var, scalar** fea
                     scalar distance = 0.f;
 
                     for (int i=0; i<3; i++){                        
-                        scalar sqdist = features[i][xp * W + yp] - features[i][xq * W + yq];
+                        scalar sqdist = features[i][xp][yp] - features[i][xq][yq];
                         sqdist *= sqdist;
-                        scalar var_cancel = features_var[i][xp * W + yp] + fmin(features_var[i][xp * W + yp], features_var[i][xq * W + yq]);
-                        scalar normalization = EPSILON + k_c_squared*(features_var[i][xp * W + yp] + features_var[i][xq * W + yq]);
+                        scalar var_cancel = features_var[i][xp][yp] + fmin(features_var[i][xp][yp], features_var[i][xq][yq]);
+                        scalar normalization = EPSILON + k_c_squared*(features_var[i][xp][yp] + features_var[i][xq][yq]);
                         distance += (sqdist - var_cancel) / normalization;
                     }
 
@@ -322,14 +322,14 @@ void feature_prefiltering_ILP(scalar** output, scalar** output_var, scalar** fea
                     weight_sum[xp * W + yp+3] += weight_3;
                     
                     for (int i=0; i<3; i++){
-                        output[i][xp * W + yp] += weight_0 * features[i][xq * W + yq];
-                        output[i][xp * W + yp+1] += weight_1 * features[i][xq * W + yq+1];
-                        output[i][xp * W + yp+2] += weight_2 * features[i][xq * W + yq+2];
-                        output[i][xp * W + yp+3] += weight_3 * features[i][xq * W + yq+3];
-                        output_var[i][xp * W + yp] += weight_0 * features_var[i][xq * W + yq];
-                        output_var[i][xp * W + yp+1] += weight_1 * features_var[i][xq * W + yq+1];
-                        output_var[i][xp * W + yp+2] += weight_2 * features_var[i][xq * W + yq+2];
-                        output_var[i][xp * W + yp+3] += weight_3 * features_var[i][xq * W + yq+3];
+                        output[i][xp][yp] += weight_0 * features[i][xq][yq];
+                        output[i][xp][yp+1] += weight_1 * features[i][xq][yq+1];
+                        output[i][xp][yp+2] += weight_2 * features[i][xq][yq+2];
+                        output[i][xp][yp+3] += weight_3 * features[i][xq][yq+3];
+                        output_var[i][xp][yp] += weight_0 * features_var[i][xq][yq];
+                        output_var[i][xp][yp+1] += weight_1 * features_var[i][xq][yq+1];
+                        output_var[i][xp][yp+2] += weight_2 * features_var[i][xq][yq+2];
+                        output_var[i][xp][yp+3] += weight_3 * features_var[i][xq][yq+3];
                     }
                 }
             }
@@ -348,14 +348,14 @@ void feature_prefiltering_ILP(scalar** output, scalar** output_var, scalar** fea
             scalar w_3 = weight_sum[xp * W + yp+3];
 
             for (int i=0; i<3; i++){
-                output[i][xp * W + yp] /= w_0;
-                output_var[i][xp * W + yp] /= w_0;
-                output[i][xp * W + yp+1] /= w_1;
-                output_var[i][xp * W + yp+1] /= w_1;
-                output[i][xp * W + yp+2] /= w_2;
-                output_var[i][xp * W + yp+2] /= w_2;
-                output[i][xp * W + yp+3] /= w_3;
-                output_var[i][xp * W + yp+3] /= w_3;
+                output[i][xp][yp] /= w_0;
+                output_var[i][xp][yp] /= w_0;
+                output[i][xp][yp+1] /= w_1;
+                output_var[i][xp][yp+1] /= w_1;
+                output[i][xp][yp+2] /= w_2;
+                output_var[i][xp][yp+2] /= w_2;
+                output[i][xp][yp+3] /= w_3;
+                output_var[i][xp][yp+3] /= w_3;
             }
         }
     }
@@ -365,18 +365,18 @@ void feature_prefiltering_ILP(scalar** output, scalar** output_var, scalar** fea
     for (int i = 0; i < 3; i++){
         for (int xp = 0; xp < W; xp++){
             for(int yp = 0; yp < p.r+p.f; yp++){
-                output[i][xp * W + yp] = features[i][xp * W + yp];
-                output[i][xp * W + H - yp - 1] = features[i][xp * W + H - yp - 1];
-                output_var[i][xp * W + yp] = features_var[i][xp * W + yp];
-                output_var[i][xp * W + H - yp - 1] = features_var[i][xp * W + H - yp - 1];
+                output[i][xp][yp] = features[i][xp][yp];
+                output[i][xp][H - yp - 1] = features[i][xp][H - yp - 1];
+                output_var[i][xp][yp] = features_var[i][xp][yp];
+                output_var[i][xp][H - yp - 1] = features_var[i][xp][H - yp - 1];
             }
         }
         for(int xp = 0; xp < p.r+p.f; xp++){
              for (int yp = p.r+p.f ; yp < H - p.r - p.f; yp++){
-                output[i][xp * W + yp] = features[i][xp * W + yp];
-                output[i][(W - xp - 1)*W+yp] = features[i][(W - xp - 1) * W + yp];
-                output_var[i][xp * W + yp] = features_var[i][xp * W + yp];
-                output_var[i][(W - xp - 1)*W+yp] = features_var[i][(W - xp - 1) * W + yp];
+                output[i][xp][yp] = features[i][xp][yp];
+                output[i][W - xp - 1][yp] = features[i][W - xp - 1][yp];
+                output_var[i][xp][yp] = features_var[i][xp][yp];
+                output_var[i][W - xp - 1][yp] = features_var[i][W - xp - 1][yp];
             }
         }
 
@@ -389,7 +389,7 @@ void feature_prefiltering_ILP(scalar** output, scalar** output_var, scalar** fea
 
 }
 
-void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output_b, buffer color, buffer color_var, scalar** features, scalar** features_var, Flt_parameters* p, int W, int H){
+void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output_b, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters* p, int W, int H){
 
     int WH = W*H;
 
@@ -400,10 +400,6 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
     scalar tau_r = p[0].tau;
     scalar tau_g = p[1].tau;
     scalar tau_b = p[2].tau;
-    scalar tau[3];
-    tau[0] = tau_r;
-    tau[1] = tau_g;
-    tau[2] = tau_b;
     scalar k_c_squared_r = p[0].kc * p[0].kc;
     scalar k_f_squared_r = p[0].kf * p[0].kf;
     scalar k_c_squared_g = p[1].kc * p[1].kc;
@@ -469,32 +465,6 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
         } 
     }
     */
-
-    
-    /*
-    scalar* norm_r;
-    scalar* norm_b;
-    norm_r = (scalar*) malloc(3 * W * H * sizeof(scalar));
-    norm_b = (scalar*) malloc(3 * W * H * sizeof(scalar));
-
-    for(int j=0; j<NB_FEATURES; ++j) {
-        for(int x =  R+f_min; x < W - R - f_min; ++x) {
-            for(int y =  R+f_min; y < H -  R - f_min; y++) {
-
-                scalar diffL = features[j][x * W + y] - features[j][(x-1) * W + y];
-                scalar diffR = features[j][x * W + y] - features[j][(x+1) * W + y];
-                scalar diffU = features[j][x * W + y] - features[j][x * W + y-1];
-                scalar diffD = features[j][x * W + y] - features[j][x * W + y+1];
-
-                scalar max_r = fmax(features_var[j][x * W + y], tau_r);
-                scalar max_b = fmax(features_var[j][x * W + y], tau_b);
-                scalar gradient = fmin(diffL*diffL, diffR*diffR) + fmin(diffU*diffU, diffD*diffD);
-                norm_r[j * WH + x * W + y] = k_f_squared_r*fmax(max_r, gradient);
-                norm_b[j * WH + x * W + y] = k_f_squared_b*fmax(max_b, gradient);
-            }
-        } 
-    }
-    */
     
 
     // Compute gradients
@@ -504,10 +474,10 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
     for(int x =  R+f_min; x < W - R - f_min; ++x) {
         for(int y =  R+f_min; y < H -  R - f_min; ++y) {
             for(int i=0; i<NB_FEATURES;++i) {
-                scalar diffL = features[i][x * W + y] - features[i][(x-1) * W + y];
-                scalar diffR = features[i][x * W + y] - features[i][(x+1) * W + y];
-                scalar diffU = features[i][x * W + y] - features[i][x * W + y-1];
-                scalar diffD = features[i][x * W + y] - features[i][x * W + y+1];
+                scalar diffL = features[i][x][y] - features[i][x-1][y];
+                scalar diffR = features[i][x][y] - features[i][x+1][y];
+                scalar diffU = features[i][x][y] - features[i][x][y-1];
+                scalar diffD = features[i][x][y] - features[i][x][y+1];
 
                 gradients[3 * (x * W + y) + i] = fmin(diffL*diffL, diffR*diffR) + fmin(diffU*diffU, diffD*diffD);
             }
@@ -522,6 +492,10 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
     for (int r_x = -R; r_x <= R; r_x++){
         for (int r_y = -R; r_y <= R; r_y++){
         
+            // #######################################################################################
+            // WEIGHT COMPUTATION
+            // #######################################################################################
+
             // Compute Color Weight for all pixels with fixed r
             memset(temp, 0, W*H*sizeof(scalar));
             for (int i=0; i<3; i++){
@@ -554,14 +528,15 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
                     scalar df_b = 0.f;
 
                     for(int j=0; j<NB_FEATURES;++j){
-                        scalar sqdist = features[j][xp * W + yp] - features[j][xq * W + yq];
+                        scalar sqdist = features[j][xp][yp] - features[j][xq][yq];
                         sqdist *= sqdist;
-                        scalar var_cancel = features_var[j][xp * W + yp] + fmin(features_var[j][xp * W + yp], features_var[j][xq * W + yq]);
+                        scalar var_cancel = features_var[j][xp][yp] + fmin(features_var[j][xp][yp], features_var[j][xq][yq]);
                         scalar dist_var = sqdist - var_cancel;
 
                         // ============ !!!!!!! =================================================================
                         // ToDo: Precompute normalization constants => always the same independet of R
-                         scalar var_max = fmax(features_var[j][xp * W + yp], gradients[3 * (xp * W + yp) + j]);
+                        // @Comment from Nino: Not successfull so far => same runtime but less cycles => yet less performance
+                         scalar var_max = fmax(features_var[j][xp][yp], gradients[3 * (xp * W + yp) + j]);
                          scalar normalization_r = k_f_squared_r*fmax(tau_r, var_max);
                          scalar normalization_b = k_f_squared_b*fmax(tau_b, var_max);
                         // ============ !!!!!!! =================================================================
@@ -577,8 +552,9 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
                 } 
             }
 
-            // Next Steps: Box-Filtering for Patch Contribution 
-            // => Use Box-Filter Seperability => linear scans of data
+            // #######################################################################################
+            // BOX FILTERING => seperability of box filter kernel => two linear operations
+            // #######################################################################################
             
             // ----------------------------------------------
             // Candidate R
@@ -754,8 +730,6 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
                     int xq = xp + r_x;
                     int yq = yp + r_y;
 
-                    // Compute final weight
-                    // Remark => Check if exp are faster here than in the feature_weigths computation routine
                     scalar weight_0 = exp(features_weights_b[xp * W + yp]);
                     scalar weight_1 = exp(features_weights_b[xp * W + yp+1]);
                     scalar weight_2 = exp(features_weights_b[xp * W + yp+2]);

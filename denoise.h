@@ -6,7 +6,7 @@
 #define DEBUG 0
 
 // Signature of the denoise algorithm
-typedef void(*denoise_func)(buffer , buffer , buffer, scalar** , scalar**, int, int, int);
+typedef void(*denoise_func)(buffer , buffer , buffer, buffer , buffer, int, int, int);
 void add_function(denoise_func f, std::string name, int flop);
 
 #endif //DENOISE_H

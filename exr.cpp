@@ -2,28 +2,6 @@
 #include "memory_mgmt.hpp"
 
 
-void load_exr_new(const char fileName[], scalar*** buf, int &img_width, int &img_height) 
-{
-        
-        // Read RGB Channels
-        Array2D<float> pixelsR, pixelsG, pixelsB;
-        readGZ1(fileName, pixelsR, pixelsG, pixelsB, img_width, img_height);
-
-        // Memory Allocation
-        *buf = (scalar**) malloc(3*sizeof(void*));
-        for(int i=0;i<3;++i) {
-            (*buf)[i] = (scalar*) malloc(img_width*img_height*sizeof(scalar));
-        }
-
-        // Fill buffer with corresponding values -> c[channel][x][y]
-        for (int i = 0; i < img_width; i++) {
-            for (int j=0; j<img_height; j++) {
-                (*buf)[0][i * img_width + j] = pixelsR[j][i];
-                (*buf)[1][i * img_width + j] = pixelsG[j][i];
-                (*buf)[2][i * img_width + j] = pixelsB[j][i];
-            }
-        }
-}
 
 void load_exr(const char fileName[], buffer* buf, int &img_width, int &img_height) 
 {

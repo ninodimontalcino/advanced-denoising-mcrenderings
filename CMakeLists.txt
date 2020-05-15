@@ -65,8 +65,8 @@ add_executable(main
 
               # Implementations (BASIC and OPTIMIZED)
               implementations/register.hpp
-              #implementations/basic.cpp
-              #implementations/basic_restructure.cpp
+              implementations/basic.cpp
+              implementations/basic_restructure.cpp
               implementations/basic_restructure2.cpp
               implementations/basic_restructure3.cpp
 
