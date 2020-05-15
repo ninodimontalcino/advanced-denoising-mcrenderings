@@ -35,6 +35,38 @@ scalar rmse(scalar* denoised, scalar* gt, int W, int H){
 
 }
 
+scalar rmse_woborder(scalar* denoised, scalar* gt, int W, int H, int border){
+
+    int WH = W * H;
+    scalar rmse = 0;
+    scalar diff;
+    scalar n = (W - 2 * border) * (H - 2 * border) * 3.f;
+
+    // Summing up squared error term
+    for (int i = 0; i < 3; i++){
+        for (int x = border; x < W - border; x++){
+            for (int y = border; y < H - border; y++){
+                diff = gt[i * WH + x * W +y] - denoised[i * WH + x * W +y];
+                rmse += diff * diff;
+                if (denoised[i * WH + x * W +y] != denoised[i * WH + x * W +y]) std::cout << i << " " << x << " " << y << "\n";
+                if (isnan(gt[i * WH + x * W +y])) std::cout << i << " " << x << " " << y << "\n";
+                if (isnan(-denoised[i * WH + x * W +y])) std::cout << i << " " << x << " " << y << "\n";
+                if (isnan(rmse)) std::cout <<  i << " " << x << " " << y << "\n";
+                //std::cout << denoised[i * WH + x * W +y] << " " << i << " " << x << " " << y << "\n";
+            }
+        }
+    }
+
+    // Compute mean => MSE
+    rmse = rmse / n;
+
+    // Compute square-root => RMSE
+    rmse = sqrtf(rmse);
+
+    return rmse;
+
+}
+
 
 bool compare_scalar(scalar x, scalar y) {
     return fabs(x - y) < FLOAT_TOLERANCE;
