@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 #include "flt.hpp"
 #include "flt_restructure.hpp"
 #include "memory_mgmt.hpp"
@@ -449,24 +450,24 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
 
     for(int j=0; j<NB_FEATURES; ++j) {
         for(int x =  R+f_min; x < W - R - f_min; ++x) {
-            for(int y =  R+f_min; y < H -  R - f_min; y) {
+            for(int y =  R+f_min; y < H -  R - f_min; ++y) {
 
                 scalar diffL = features[j][x * W + y] - features[j][(x-1) * W + y];
                 scalar diffR = features[j][x * W + y] - features[j][(x+1) * W + y];
                 scalar diffU = features[j][x * W + y] - features[j][x * W + y-1];
                 scalar diffD = features[j][x * W + y] - features[j][x * W + y+1];
 
-                scalar max_r = fmax(features_var[j][x * W + y], tau_r);
-                scalar max_b = fmax(features_var[j][x * W + y], tau_b);
+                scalar max_r = fmax(features_var[j][x][y], tau_r);
+                scalar max_b = fmax(features_var[j][x][y], tau_b);
                 scalar gradient = fmin(diffL*diffL, diffR*diffR) + fmin(diffU*diffU, diffD*diffD);
-                norm_r[j * WH + x * W + y] = k_f_squared_r*fmax(max_r, gradient);
-                norm_b[j * WH + x * W + y] = k_f_squared_b*fmax(max_b, gradient);
+                norm_r[3 * (x * W + y) + j] = k_f_squared_r*fmax(max_r, gradient);
+                norm_b[3 * (x * W + y) + j] = k_f_squared_b*fmax(max_b, gradient);
             }
         } 
     }
     */
-    
 
+    
     // Compute gradients
     scalar *gradients;
     gradients = (scalar*) malloc(3 * W * H * sizeof(scalar));
@@ -510,7 +511,7 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
                     scalar var_cancel = color_var[i][xp][yp] + fmin(color_var[i][xp][yp], color_var[i][xq][yq]);
                     scalar var_term = color_var[i][xp][yp] + color_var[i][xq][yq];
                     scalar normalization_r = EPSILON + k_c_squared_r*(var_term);
-                    scalar dist_var = sqdist - var_cancel;
+                    scalar dist_var = var_cancel - sqdist;
                     temp[xp * W + yp] += (dist_var / normalization_r);
 
                     }
@@ -536,9 +537,9 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
                         // ============ !!!!!!! =================================================================
                         // ToDo: Precompute normalization constants => always the same independet of R
                         // @Comment from Nino: Not successfull so far => same runtime but less cycles => yet less performance
-                         scalar var_max = fmax(features_var[j][xp][yp], gradients[3 * (xp * W + yp) + j]);
-                         scalar normalization_r = k_f_squared_r*fmax(tau_r, var_max);
-                         scalar normalization_b = k_f_squared_b*fmax(tau_b, var_max);
+                        scalar var_max = fmax(features_var[j][xp][yp], gradients[3 * (xp * W + yp) + j]);
+                        scalar normalization_r = k_f_squared_r*fmax(tau_r, var_max);
+                        scalar normalization_b = k_f_squared_b*fmax(tau_b, var_max);
                         // ============ !!!!!!! =================================================================
 
                         //df_r = fmax(df_r, dist_var/norm_r[j * WH + xp * W + yp]);
@@ -611,10 +612,10 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
                         sum_2 += temp2_r[(xp+k) * W + yp+2];
                         sum_3 += temp2_r[(xp+k) * W + yp+3];
                     }
-                    scalar color_weight_0 = -fmax(0.f, (sum_0 * neigh_r_inv));
-                    scalar color_weight_1 = -fmax(0.f, (sum_1 * neigh_r_inv));
-                    scalar color_weight_2 = -fmax(0.f, (sum_2 * neigh_r_inv));
-                    scalar color_weight_3 = -fmax(0.f, (sum_3 * neigh_r_inv));
+                    scalar color_weight_0 = (sum_0 * neigh_r_inv);
+                    scalar color_weight_1 = (sum_1 * neigh_r_inv);
+                    scalar color_weight_2 = (sum_2 * neigh_r_inv);
+                    scalar color_weight_3 = (sum_3 * neigh_r_inv);
 
                     // Compute final weight
                     scalar weight_0 = exp(fmin(color_weight_0, features_weights_r[xp * W + yp]));
@@ -693,10 +694,10 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
                         sum_3 += temp2_g[(xp+k) * W + yp+3];
                     }
 
-                    scalar color_weight_0 = -fmax(0.f, (sum_0 * neigh_g_inv));
-                    scalar color_weight_1 = -fmax(0.f, (sum_1 * neigh_g_inv));
-                    scalar color_weight_2 = -fmax(0.f, (sum_2 * neigh_g_inv));
-                    scalar color_weight_3 = -fmax(0.f, (sum_3 * neigh_g_inv));
+                    scalar color_weight_0 = (sum_0 * neigh_g_inv);
+                    scalar color_weight_1 = (sum_1 * neigh_g_inv);
+                    scalar color_weight_2 = (sum_2 * neigh_g_inv);
+                    scalar color_weight_3 = (sum_3 * neigh_g_inv);
                     
                     // Compute final weight
                     scalar weight_0 = exp(fmin(color_weight_0, features_weights_r[xp * W + yp]));

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 #include "flt.hpp"
 #include "flt_restructure.hpp"
 #include "memory_mgmt.hpp"
@@ -540,7 +541,7 @@ void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, 
                     scalar var_cancel = color_var[i][xp][yp] + fmin(color_var[i][xp][yp], color_var[i][xq][yq]);
                     scalar var_term = color_var[i][xp][yp] + color_var[i][xq][yq];
                     scalar normalization_r = EPSILON + k_c_squared_r*(var_term);
-                    scalar dist_var = sqdist - var_cancel;
+                    scalar dist_var = var_cancel - sqdist;
                     temp[xp * W + yp] += (dist_var / normalization_r);
 
                     }
@@ -604,7 +605,7 @@ void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, 
                     for (int k=-f_r; k<=f_r; k++){
                         sum += temp2_r[(xp+k) * W + yp];
                     }
-                    scalar color_weight = -fmax(0.f, (sum * neigh_r_inv));
+                    scalar color_weight = (sum * neigh_r_inv);
 
                     // Compute final weight
                     scalar weight = exp(fmin(color_weight, features_weights_r[xp * W + yp]));
@@ -642,7 +643,7 @@ void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, 
                     for (int k=-f_g; k<=f_g; k++){
                         sum += temp2_g[(xp+k) * W + yp];
                     }
-                    scalar color_weight = -fmax(0.f, (sum * neigh_g_inv));
+                    scalar color_weight = (sum * neigh_g_inv);
                     
                     // Compute final weight
                     scalar weight = exp(fmin(color_weight, features_weights_r[xp * W + yp]));
