@@ -5,3 +5,5 @@ src/ext/
 .vscode/
 .DS_Store
 ASL Denoiser/
+venv/
+*-checkpoint.ipynb
