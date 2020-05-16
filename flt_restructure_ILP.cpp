@@ -452,21 +452,20 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
         for(int x =  R+f_min; x < W - R - f_min; ++x) {
             for(int y =  R+f_min; y < H -  R - f_min; ++y) {
 
-                scalar diffL = features[j][x * W + y] - features[j][(x-1) * W + y];
-                scalar diffR = features[j][x * W + y] - features[j][(x+1) * W + y];
-                scalar diffU = features[j][x * W + y] - features[j][x * W + y-1];
-                scalar diffD = features[j][x * W + y] - features[j][x * W + y+1];
+                scalar diffL = features[j][x][y] - features[j][x-1][y];
+                scalar diffR = features[j][x][y] - features[j][x+1][y];
+                scalar diffU = features[j][x][y] - features[j][x][y-1];
+                scalar diffD = features[j][x][y] - features[j][x][y+1];
 
                 scalar max_r = fmax(features_var[j][x][y], tau_r);
                 scalar max_b = fmax(features_var[j][x][y], tau_b);
                 scalar gradient = fmin(diffL*diffL, diffR*diffR) + fmin(diffU*diffU, diffD*diffD);
-                norm_r[3 * (x * W + y) + j] = k_f_squared_r*fmax(max_r, gradient);
-                norm_b[3 * (x * W + y) + j] = k_f_squared_b*fmax(max_b, gradient);
+                norm_r[j * WH + x * W + y] = k_f_squared_r*fmax(max_r, gradient);
+                norm_b[j * WH + x * W + y] = k_f_squared_b*fmax(max_b, gradient);
             }
         } 
     }
     */
-
     
     // Compute gradients
     scalar *gradients;
@@ -532,7 +531,7 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
                         scalar sqdist = features[j][xp][yp] - features[j][xq][yq];
                         sqdist *= sqdist;
                         scalar var_cancel = features_var[j][xp][yp] + fmin(features_var[j][xp][yp], features_var[j][xq][yq]);
-                        scalar dist_var = sqdist - var_cancel;
+                        scalar dist_var = var_cancel - sqdist;
 
                         // ============ !!!!!!! =================================================================
                         // ToDo: Precompute normalization constants => always the same independet of R
@@ -542,14 +541,14 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
                         scalar normalization_b = k_f_squared_b*fmax(tau_b, var_max);
                         // ============ !!!!!!! =================================================================
 
-                        //df_r = fmax(df_r, dist_var/norm_r[j * WH + xp * W + yp]);
-                        //df_b = fmax(df_b, dist_var/norm_b[j * WH + xp * W + yp]);
-                        df_r = fmax(df_r, (dist_var)/normalization_r);
-                        df_b = fmax(df_b, (dist_var)/normalization_b);
+                        //df_r = fmin(df_r, dist_var/norm_r[j * WH + xp * W + yp]);
+                        //df_b = fmin(df_b, dist_var/norm_b[j * WH + xp * W + yp]);
+                        df_r = fmin(df_r, (dist_var)/normalization_r);
+                        df_b = fmin(df_b, (dist_var)/normalization_b);
                     }
 
-                    features_weights_r[xp * W + yp] = -df_r;
-                    features_weights_b[xp * W + yp] = -df_b;
+                    features_weights_r[xp * W + yp] = df_r;
+                    features_weights_b[xp * W + yp] = df_b;
                 } 
             }
 
