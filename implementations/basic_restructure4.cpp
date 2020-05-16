@@ -43,10 +43,8 @@ using namespace std;
     Flt_parameters p_pre = { .kc = 1., .kf = INFINITY, .tau = 0., .f = 3, .r = 5};
     scalar* f_filtered;
     scalar* f_var_filtered;
-    allocate_buffer_aligned(&f_filtered, W, H);
-    allocate_buffer_aligned(&f_var_filtered, W, H);
-    // f_filtered = (scalar*) calloc(3 * WH, sizeof(scalar));
-    // f_var_filtered = (scalar*) calloc(3 * WH, sizeof(scalar));
+    f_filtered = (scalar*) calloc(3 * WH, sizeof(scalar));
+    f_var_filtered = (scalar*) calloc(3 * WH, sizeof(scalar));
 
     feature_prefiltering_vec(f_filtered, f_var_filtered, f, f_var, p_pre, W, H);
     
@@ -70,12 +68,9 @@ using namespace std;
     scalar* r;
     scalar* g;
     scalar* b;
-    allocate_buffer_aligned(&r, W, H);
-    allocate_buffer_aligned(&g, W, H);
-    allocate_buffer_aligned(&b, W, H);
-    // r = (scalar*) calloc(3 * WH, sizeof(scalar)); 
-    // g = (scalar*) calloc(3 * WH, sizeof(scalar)); 
-    // b = (scalar*) calloc(3 * WH, sizeof(scalar));       
+    r = (scalar*) calloc(3 * WH, sizeof(scalar)); 
+    g = (scalar*) calloc(3 * WH, sizeof(scalar)); 
+    b = (scalar*) calloc(3 * WH, sizeof(scalar));       
     candidate_filtering_all_vec(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, W, H);
 
     
@@ -93,8 +88,7 @@ using namespace std;
 
     // (a) Compute SURE error estimates
     scalar* sure;
-    allocate_buffer_aligned(&sure, W, H);
-    //sure = (scalar*) calloc(3 * W * H, sizeof(scalar)); 
+    sure = (scalar*) calloc(3 * W * H, sizeof(scalar)); 
     sure_all_vec(sure, c, c_var, r, g, b, W, H);
     
     // DEBUGGING PART
@@ -108,8 +102,7 @@ using namespace std;
     // (b) Filter error estimates
     Flt_parameters p_sure = { .kc = 1.0, .kf = INFINITY, .tau = 0.001, .f = 1, .r = 1};
     scalar* e;
-    allocate_buffer_aligned(&e, W, H);
-    //e = (scalar*) calloc(3 * W * H,  sizeof(scalar)); 
+    e = (scalar*) calloc(3 * W * H,  sizeof(scalar)); 
     filtering_basic_vec(e, sure, c, c_var, p_sure, W, H);
     
     // DEBUG PART
@@ -124,8 +117,7 @@ using namespace std;
     // (5) Compute Binary Selection Maps
     // ----------------------------------------------
     scalar* sel;
-    allocate_buffer_aligned(&sel, W, H);
-    //sel = (scalar*) calloc(3 * W * H, sizeof(scalar));  
+    sel = (scalar*) calloc(3 * W * H, sizeof(scalar));  
     
     // Compute selection maps
     for (int x = 0; x < W; x++){
@@ -149,8 +141,7 @@ using namespace std;
     // ----------------------------------------------
     Flt_parameters p_sel = { .kc = 1.0, .kf = INFINITY, .tau = 0.001, .f = 1, .r = 5};
     scalar* sel_filtered;
-    allocate_buffer_aligned(&sel_filtered, W, H);
-    //sel_filtered = (scalar*) calloc(3 * W * H, sizeof(scalar)); 
+    sel_filtered = (scalar*) calloc(3 * W * H, sizeof(scalar)); 
     filtering_basic_vec(sel_filtered, sel, c, c_var, p_sel, W, H);
 
     // DEBUG PART

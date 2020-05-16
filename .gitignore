@@ -6,4 +6,3 @@ src/ext/
 .DS_Store
 ASL Denoiser/
 venv/
-*-checkpoint.ipynb

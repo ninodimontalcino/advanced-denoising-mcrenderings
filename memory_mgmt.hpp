@@ -15,13 +15,9 @@
 
 void allocate_buffer(scalar **buf, int W, int H);
 void allocate_buffer_zero(scalar **buf, int W, int H);
-void allocate_buffer_aligned(scalar **buf, int W, int H);
-void allocate_buffer_aligned_zero(scalar **buf, int W, int H);
 
 void allocate_channel(scalar **channel, int W, int H);
 void allocate_channel_zero(scalar **channel, int W, int H);
-void allocate_channel_aligned(scalar **channel, int W, int H);
-void allocate_channel_aligned_zero(scalar **channel, int W, int H);
 
 void free_buffer(scalar **buf);
 void free_channel(scalar **channel);

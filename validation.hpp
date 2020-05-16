@@ -22,8 +22,6 @@
 */
 scalar rmse(buffer denoised, buffer gt, int img_width, int img_height);
 scalar rmse(scalar* denoised, scalar* gt, int img_width, int img_height);
-scalar rmse_woborder(scalar* denoised, scalar* gt, int img_width, int img_height, int border);
-
 
 
 bool compare_scalar(scalar x, scalar y);

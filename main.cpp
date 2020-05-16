@@ -140,20 +140,14 @@ int main(int argc, char **argv)
 
   // Precompute channel sizue
   int WH = W * H;
-  int BORDER;
-  if ((r + 3) % 8) BORDER = r + 3 + 8 - (r + 3) % 8;
-  else BORDER = r + 3;
-  cout << BORDER << "\n";
 
   // (3) Feature Stacking
   // => Access Pattern: features[i][x][y] where i in (1:= albedo, 2:= depth, 3:= normal)
   scalar* features;
   scalar* features_var;
 
-  // features = (scalar*) malloc(3 * WH * sizeof(scalar));
-  // features_var = (scalar*) malloc(3 * WH * sizeof(scalar));
-  allocate_buffer_aligned(&features, W, H);
-  allocate_buffer_aligned(&features_var, W, H);
+  features = (scalar*) malloc(3 * WH * sizeof(scalar));
+  features_var = (scalar*) malloc(3 * WH * sizeof(scalar));
 
   // (a) Features
   copy(f_albedo, f_albedo + WH, features);
@@ -197,14 +191,13 @@ int main(int argc, char **argv)
 
   // Call correct function and check output
   scalar* out_img;
-  allocate_buffer_aligned(&out_img, W, H);
-  //out_img = (scalar*) malloc(3 * WH * sizeof(scalar));
+  out_img = (scalar*) malloc(3 * WH * sizeof(scalar));
 
   denoise_func f = userFuncs[0];
   f(out_img, c, c_var, features, features_var, r, W, H);
 
   // Compute RMSE 
-  double _rmse = rmse_woborder(out_img, gt, W, H, BORDER);
+  double _rmse = rmse(out_img, gt, W, H);
   if (RMSE){
     printf("RMSE: %f \n\n", _rmse);
   }
@@ -217,8 +210,7 @@ int main(int argc, char **argv)
   cout << "---------------------------------------------" << endl;
 
   scalar* out_img_f;
-  allocate_buffer_aligned(&out_img_f, W, H);
-  //out_img_f = (scalar*) malloc(3 * WH * sizeof(scalar));
+  out_img_f = (scalar*) malloc(3 * WH * sizeof(scalar));
 
   // Only run for optimized functions => don't repeat vanilla computation
   for (i = 1; i < numFuncs; i++) {
@@ -226,7 +218,7 @@ int main(int argc, char **argv)
     denoise_func f = userFuncs[i];
     f(out_img_f, c, c_var, features, features_var, r, W, H);
 
-    double _rmse2 = rmse_woborder(out_img_f, gt, W, H, BORDER);
+    double _rmse2 = rmse(out_img_f, gt, W, H);
     if (RMSE){
       printf("RMSE: %f \n", _rmse2);
     }
