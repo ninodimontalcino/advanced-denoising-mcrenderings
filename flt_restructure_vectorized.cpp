@@ -68,7 +68,12 @@ void sure_all_vec(scalar* sure, scalar* c, scalar* c_var, scalar* cand_r, scalar
 void filtering_basic_vec(scalar* output, scalar* input, scalar* c, scalar* c_var, Flt_parameters p, int W, int H){
     
     int WH = W*H;
-    int ALIGN = 8;
+    int ALR, ALRfmin;
+    if ((p.r + p.f) % 8) ALRfmin = p.r + p.f + 8 - (p.r + p.f) % 8;
+    else ALRfmin = p.r + p.f;
+    if (p.r % 8) ALR = p.r + 8 - p.r % 8;
+    else ALR = p.r;
+
     const __m256 EPSILON_vec = _mm256_set1_ps(EPSILON);
 
 
@@ -97,8 +102,8 @@ void filtering_basic_vec(scalar* output, scalar* input, scalar* c, scalar* c_var
         for (int r_y = -p.r; r_y <= p.r; r_y++){
         
             // Compute Color Weight for all pixels with fixed r
-            for(int xp = ALIGN; xp < W - ALIGN; ++xp) {
-                for(int yp = ALIGN; yp < H - ALIGN; yp+=8) {
+            for(int xp = ALR; xp < W - ALR; ++xp) {
+                for(int yp = ALR; yp < H - ALR; yp+=8) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -134,8 +139,8 @@ void filtering_basic_vec(scalar* output, scalar* input, scalar* c, scalar* c_var
 
             // Apply Box-Filtering for Patch Contribution => Use Box-Filter Seperability
             // (1) Convolve along height
-            for(int xp = ALIGN; xp < W - ALIGN; ++xp) {
-                for(int yp = ALIGN; yp < H - ALIGN; yp+=8) {
+            for(int xp = ALR; xp < W - ALR; ++xp) {
+                for(int yp = ALR; yp < H - ALR; yp+=8) {
 
                     __m256 sum_vec = _mm256_setzero_ps();
                     __m256 tmp_vec;
@@ -148,8 +153,8 @@ void filtering_basic_vec(scalar* output, scalar* input, scalar* c, scalar* c_var
             }
 
             // (2) Convolve along width including weighted contribution
-            for(int xp = ALIGN; xp < W - ALIGN; ++xp) {
-                for(int yp = ALIGN; yp < H - ALIGN; yp+=8) {
+            for(int xp = ALR; xp < W - ALR; ++xp) {
+                for(int yp = ALR; yp < H - ALR; yp+=8) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -185,8 +190,8 @@ void filtering_basic_vec(scalar* output, scalar* input, scalar* c, scalar* c_var
     }
 
     // Final Weight Normalization
-    for(int xp = ALIGN; xp < W - ALIGN; ++xp) {
-        for(int yp = ALIGN ; yp < H - ALIGN; yp+=8) {     
+    for(int xp = ALRfmin; xp < W - ALRfmin; ++xp) {
+        for(int yp = ALRfmin ; yp < H - ALRfmin; yp+=8) {     
             __m256 weight_sum_vec, output_vec;
             weight_sum_vec = _mm256_load_ps(weight_sum+xp * W + yp);
             for (int i=0; i<3; i++){
@@ -204,14 +209,14 @@ void filtering_basic_vec(scalar* output, scalar* input, scalar* c, scalar* c_var
 
             __m256 input_vec1, input_vec2;
             input_vec1 = _mm256_load_ps(input +i * WH + xp * W );
-            input_vec2 = _mm256_load_ps(input +i * WH + xp * W + H - ALIGN);
+            input_vec2 = _mm256_load_ps(input +i * WH + xp * W + H - ALR);
             _mm256_store_ps(output+i * WH + xp * W , input_vec1);
-            _mm256_store_ps(output+i * WH + xp * W + H - ALIGN, input_vec2);
+            _mm256_store_ps(output+i * WH + xp * W + H - ALR, input_vec2);
                 
             
         }
-        for(int xp = 0; xp < ALIGN; xp++){
-             for (int yp = ALIGN ; yp < H - ALIGN; yp+=8){
+        for(int xp = 0; xp < ALR; xp++){
+             for (int yp = ALR ; yp < H - ALR; yp+=8){
                 // output[i * WH + xp * W + yp] = input[i * WH + xp * W + yp];
                 // output[i * WH + (W - xp - 1) * W + yp] = input[i * WH + (W - xp - 1) * W + yp];
                 __m256 input_vec1, input_vec2;
@@ -233,7 +238,12 @@ void filtering_basic_vec(scalar* output, scalar* input, scalar* c, scalar* c_var
 
 void feature_prefiltering_vec(scalar* output, scalar* output_var, scalar* features, scalar* features_var, Flt_parameters p, int W, int H){
 
-    int ALIGN = 8;
+    int ALR, ALRfmin;
+    if ((p.r + p.f) % 8) ALRfmin = p.r + p.f + 8 - (p.r + p.f) % 8;
+    else ALRfmin = p.r + p.f;
+    if (p.r % 8) ALR = p.r + 8 - p.r % 8;
+    else ALR = p.r;
+
     int WH = W*H;
     const __m256 EPSILON_vec = _mm256_set1_ps(EPSILON);
     
@@ -261,8 +271,8 @@ void feature_prefiltering_vec(scalar* output, scalar* output_var, scalar* featur
         for (int r_y = -p.r; r_y <= p.r; r_y++){
         
             // Compute Color Weight for all pixels with fixed r
-            for(int xp = ALIGN; xp < W - ALIGN; ++xp) {
-                for(int yp = ALIGN; yp < H - ALIGN; yp+=8) {
+            for(int xp = ALR; xp < W - ALR; ++xp) {
+                for(int yp = ALR; yp < H - ALR; yp+=8) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -297,8 +307,8 @@ void feature_prefiltering_vec(scalar* output, scalar* output_var, scalar* featur
 
             // Apply Box-Filtering for Patch Contribution => Use Box-Filter Seperability
             // (1) Convolve along height
-            for(int xp = p.r; xp < W - p.r; ++xp) {
-                for(int yp = p.r + p.f; yp < H - p.r - p.f; yp+=8) {
+            for(int xp = ALR; xp < W - ALR; ++xp) {
+                for(int yp = ALRfmin; yp < H - ALRfmin; yp+=8) {
                     
                     __m256 sum_vec = _mm256_setzero_ps();
                     __m256 tmp_vec;
@@ -311,8 +321,8 @@ void feature_prefiltering_vec(scalar* output, scalar* output_var, scalar* featur
             }
 
             // (2) Convolve along width including weighted contribution
-            for(int xp = p.r + p.f; xp < W - p.r - p.f; ++xp) {
-                for(int yp = p.r + p.f; yp < H - p.r - p.f; yp+=8) {
+            for(int xp = ALRfmin; xp < W - ALRfmin; ++xp) {
+                for(int yp = ALRfmin; yp < H - ALRfmin; yp+=8) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -356,8 +366,8 @@ void feature_prefiltering_vec(scalar* output, scalar* output_var, scalar* featur
     }
 
     // Final Weight Normalization
-    for(int xp = ALIGN; xp < W - ALIGN; ++xp) {
-        for(int yp = ALIGN; yp < H - ALIGN; ++yp) {
+    for(int xp = ALRfmin; xp < W - ALRfmin; ++xp) {
+        for(int yp = ALRfmin; yp < H - ALRfmin; ++yp) {
         
             scalar w = weight_sum[xp * W + yp];
             for (int i=0; i<3; i++){
@@ -385,15 +395,15 @@ void feature_prefiltering_vec(scalar* output, scalar* output_var, scalar* featur
     // ---------------------
     for (int i = 0; i < 3; i++){
         for (int xp = 0; xp < W; xp++){
-            for(int yp = 0; yp < ALIGN; yp++){
+            for(int yp = 0; yp < ALR; yp++){
                 output[i * WH + xp * W + yp] = features[i * WH + xp * W + yp];
                 output[i * WH + xp * W + H - yp - 1] = features[i * WH + xp * W + H - yp - 1];
                 output_var[i * WH + xp * W + yp] = features_var[i * WH + xp * W + yp];
                 output_var[i * WH + xp * W + H - yp - 1] = features_var[i * WH + xp * W + H - yp - 1];
             }
         }
-        for(int xp = 0; xp < ALIGN; xp++){
-             for (int yp = ALIGN ; yp < H - ALIGN; yp++){
+        for(int xp = 0; xp < ALR; xp++){
+             for (int yp = ALR ; yp < H - ALR; yp++){
                 output[i * WH + xp * W + yp] = features[i * WH + xp * W + yp];
                 output[i * WH + (W - xp - 1) * W + yp] = features[i * WH + (W - xp - 1) * W + yp];
                 output_var[i * WH + xp * W + yp] = features_var[i * WH + xp * W + yp];
@@ -686,8 +696,8 @@ void candidate_filtering_all_vec(scalar* output_r, scalar* output_g, scalar* out
             // Candidate G
             // ----------------------------------------------
             // (1) Convolve along height
-            for(int xp = R; xp < W - R; ++xp) {
-                for(int yp = R + f_g; yp < H - R - f_g; yp+=8) {
+            for(int xp = ALR; xp < W - ALR; ++xp) {
+                for(int yp = ALRg; yp < H - ALRg; yp+=8) {
                     
                     __m256 sum_g_vec = _mm256_setzero_ps();
                     __m256 tmp_vec;
@@ -695,13 +705,13 @@ void candidate_filtering_all_vec(scalar* output_r, scalar* output_g, scalar* out
                         tmp_vec = _mm256_load_ps(temp+xp * W + yp + k);
                         sum_g_vec = _mm256_add_ps(sum_g_vec, tmp_vec);
                     }
-                    _mm256_storeu_ps(temp2_g+xp * W + yp, sum_g_vec);
+                    _mm256_store_ps(temp2_g+xp * W + yp, sum_g_vec);
                 }
             }
 
             // (2) Convolve along width including weighted contribution
-            for(int xp = R + f_g; xp < W - R - f_g; ++xp) {
-                for(int yp = R + f_g; yp < H - R - f_g; yp+=8) {
+            for(int xp = ALRg; xp < W - ALRg; ++xp) {
+                for(int yp = ALRg; yp < H - ALRg; yp+=8) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -725,11 +735,11 @@ void candidate_filtering_all_vec(scalar* output_r, scalar* output_g, scalar* out
 
                     weight_sum_vec = _mm256_load_ps(weight_sum+1 * WH + xp * W + yp);
                     weight_sum_vec = _mm256_add_ps(weight_sum_vec, weight_vec);
-                    _mm256_storeu_ps(weight_sum+1 * WH + xp * W + yp, weight_sum_vec);
+                    _mm256_store_ps(weight_sum+1 * WH + xp * W + yp, weight_sum_vec);
                     
                     __m256 output_g_vec, color_vec;
                     for (int i=0; i<3; i++){
-                        output_g_vec = _mm256_loadu_ps(output_g+i * WH + xp * W + yp);
+                        output_g_vec = _mm256_load_ps(output_g+i * WH + xp * W + yp);
                         color_vec = _mm256_loadu_ps(color+i * WH + xq * W + yq);
                         color_vec = _mm256_mul_ps(color_vec, weight_vec);
 
@@ -787,15 +797,15 @@ void candidate_filtering_all_vec(scalar* output_r, scalar* output_g, scalar* out
     }
 
     // Final Weight Normalization G
-   for(int xp = R + f_g; xp < W - R - f_g; ++xp) {
-        for(int yp = R + f_g; yp < H - R - f_g; yp+=8) {
+   for(int xp = ALRg; xp < W - ALRg; ++xp) {
+        for(int yp = ALRg; yp < H - ALRg; yp+=8) {
         
-            __m256 weight_sum_vec = _mm256_loadu_ps(weight_sum+(1*WH + xp * W + yp));
+            __m256 weight_sum_vec = _mm256_load_ps(weight_sum+(1*WH + xp * W + yp));
             __m256 output_vec;
             for (int i=0; i<3; i++){
                 output_vec = _mm256_loadu_ps(output_g+i * WH + xp * W + yp);
                 output_vec = _mm256_div_ps(output_vec, weight_sum_vec);
-                _mm256_storeu_ps(output_g+i * WH + xp * W + yp, output_vec);
+                _mm256_store_ps(output_g+i * WH + xp * W + yp, output_vec);
             }
         }
     }
