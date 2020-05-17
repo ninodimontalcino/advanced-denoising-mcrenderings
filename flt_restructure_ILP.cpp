@@ -16,10 +16,6 @@ void sure_all_ILP(buffer sure, buffer c, buffer c_var, buffer cand_r, buffer can
         for (int x = 0; x < W; x++){
             for (int y = 0; y < H; y++){
 
-
-                // Sum over color channels
-                
-
                 // Calculate terms
                 d_r = cand_r[i][x][y] - c[i][x][y];
                 d_r *= d_r;
@@ -506,10 +502,13 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
                     }
                 }
             }
+
+           
+            // Precompute feature weights
+            // @Comment from Nino: Old loop order is faster, but this one is easier for vectorization => Still room for improvements
             memset(features_weights_r, 0, W*H*sizeof(scalar));
             memset(features_weights_b, 0, W*H*sizeof(scalar));
             for(int j=0; j<NB_FEATURES;++j){
-                // Precompute feature weights
                 for(int xp = R + f_min; xp < W - R - f_min; ++xp) {
                     for(int yp = R + f_min; yp < H - R - f_min; ++yp) {
                         
@@ -538,7 +537,6 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
                         df_r = fmin(df_r, (dist_var)/normalization_r);
                         df_b = fmin(df_b, (dist_var)/normalization_b);
                         
-
                         features_weights_r[xp * W + yp] = df_r;
                         features_weights_b[xp * W + yp] = df_b;
                     } 
