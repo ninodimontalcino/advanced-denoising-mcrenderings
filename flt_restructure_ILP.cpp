@@ -73,23 +73,20 @@ void filtering_basic_ILP(buffer output, buffer input, buffer c, buffer c_var, Fl
         for (int r_y = -p.r; r_y <= p.r; r_y++){
         
             // Compute Color Weight for all pixels with fixed r
-            for(int xp = p.r; xp < W - p.r; ++xp) {
-                for(int yp = p.r; yp < H - p.r; ++yp) {
+            memset(temp, 0, W*H*sizeof(scalar));
+            for (int i=0; i<3; i++){  
+                for(int xp = p.r; xp < W - p.r; ++xp) {
+                    for(int yp = p.r; yp < H - p.r; ++yp) {
 
-                    int xq = xp + r_x;
-                    int yq = yp + r_y;
-
-                    scalar distance = 0;
-                    for (int i=0; i<3; i++){                        
+                        int xq = xp + r_x;
+                        int yq = yp + r_y;
+                     
                         scalar sqdist = c[i][xp][yp] - c[i][xq][yq];
                         sqdist *= sqdist;
                         scalar var_cancel = c_var[i][xp][yp] + fmin(c_var[i][xp][yp], c_var[i][xq][yq]);
                         scalar normalization = EPSILON + k_c_squared*(c_var[i][xp][yp] + c_var[i][xq][yq]);
-                        distance += (sqdist - var_cancel) / normalization;
+                        temp[xp * W + yp] += (sqdist - var_cancel) / normalization;
                     }
-
-                    temp[xp * W + yp] = distance;
-
                 }
             }
 
@@ -236,24 +233,20 @@ void feature_prefiltering_ILP(buffer output, buffer output_var, buffer features,
         for (int r_y = -p.r; r_y <= p.r; r_y++){
         
             // Compute Color Weight for all pixels with fixed r
-            for(int xp = p.r; xp < W - p.r; ++xp) {
-                for(int yp = p.r; yp < H - p.r; ++yp) {
+            memset(temp, 0, W*H*sizeof(scalar));
+            for (int i=0; i<3; i++){
+                for(int xp = p.r; xp < W - p.r; ++xp) {
+                    for(int yp = p.r; yp < H - p.r; ++yp) {
 
-                    int xq = xp + r_x;
-                    int yq = yp + r_y;
-
-                    scalar distance = 0.f;
-
-                    for (int i=0; i<3; i++){                        
+                        int xq = xp + r_x;
+                        int yq = yp + r_y;
+                        
                         scalar sqdist = features[i][xp][yp] - features[i][xq][yq];
                         sqdist *= sqdist;
                         scalar var_cancel = features_var[i][xp][yp] + fmin(features_var[i][xp][yp], features_var[i][xq][yq]);
                         scalar normalization = EPSILON + k_c_squared*(features_var[i][xp][yp] + features_var[i][xq][yq]);
-                        distance += (sqdist - var_cancel) / normalization;
+                        temp[xp * W + yp] += (sqdist - var_cancel) / normalization;
                     }
-
-                    temp[xp * W + yp] = distance;
-
                 }
             }
             
@@ -462,6 +455,7 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
                 scalar gradient = fmin(diffL*diffL, diffR*diffR) + fmin(diffU*diffU, diffD*diffD);
                 norm_r[j * WH + x * W + y] = k_f_squared_r*fmax(max_r, gradient);
                 norm_b[j * WH + x * W + y] = k_f_squared_b*fmax(max_b, gradient);
+                
             }
         } 
     }
@@ -470,7 +464,6 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
     // Compute gradients
     scalar *gradients;
     gradients = (scalar*) malloc(3 * W * H * sizeof(scalar));
-
     for(int x =  R+f_min; x < W - R - f_min; ++x) {
         for(int y =  R+f_min; y < H -  R - f_min; ++y) {
             for(int i=0; i<NB_FEATURES;++i) {
@@ -529,13 +522,13 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
 
                     for(int j=0; j<NB_FEATURES;++j){
                         scalar sqdist = features[j][xp][yp] - features[j][xq][yq];
-                        sqdist *= sqdist;
                         scalar var_cancel = features_var[j][xp][yp] + fmin(features_var[j][xp][yp], features_var[j][xq][yq]);
+                        sqdist *= sqdist;
                         scalar dist_var = var_cancel - sqdist;
 
                         // ============ !!!!!!! =================================================================
                         // ToDo: Precompute normalization constants => always the same independet of R
-                        // @Comment from Nino: Not successfull so far => same runtime but less cycles => yet less performance
+                        // @Comment from Nino: Not successfull so far => same runtime but less flops => yet less performance
                         scalar var_max = fmax(features_var[j][xp][yp], gradients[3 * (xp * W + yp) + j]);
                         scalar normalization_r = k_f_squared_r*fmax(tau_r, var_max);
                         scalar normalization_b = k_f_squared_b*fmax(tau_b, var_max);
@@ -725,7 +718,7 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
             // ----------------------------------------------
 
             for(int xp = R + f_b; xp < W - R - f_b; ++xp) {
-                for(int yp = R + f_b; yp < H - R - f_b; yp+=8) {
+                for(int yp = R + f_b; yp < H - R - f_b; yp+=4) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -734,19 +727,11 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
                     scalar weight_1 = exp(features_weights_b[xp * W + yp+1]);
                     scalar weight_2 = exp(features_weights_b[xp * W + yp+2]);
                     scalar weight_3 = exp(features_weights_b[xp * W + yp+3]);
-                    scalar weight_4 = exp(features_weights_b[xp * W + yp+4]);
-                    scalar weight_5 = exp(features_weights_b[xp * W + yp+5]);
-                    scalar weight_6 = exp(features_weights_b[xp * W + yp+6]);
-                    scalar weight_7 = exp(features_weights_b[xp * W + yp+7]);
 
                     weight_sum_b[xp * W + yp] += weight_0;
                     weight_sum_b[xp * W + yp+1] += weight_1;
                     weight_sum_b[xp * W + yp+2] += weight_2;
                     weight_sum_b[xp * W + yp+3] += weight_3;
-                    weight_sum_b[xp * W + yp+4] += weight_4;
-                    weight_sum_b[xp * W + yp+5] += weight_5;
-                    weight_sum_b[xp * W + yp+6] += weight_6;
-                    weight_sum_b[xp * W + yp+7] += weight_7;
 
                     
                     for (int i=0; i<3; i++){
@@ -754,10 +739,6 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
                         output_b[i][xp][yp+1] += weight_1 * color[i][xq][yq+1];
                         output_b[i][xp][yp+2] += weight_2 * color[i][xq][yq+2];
                         output_b[i][xp][yp+3] += weight_3 * color[i][xq][yq+3];
-                        output_b[i][xp][yp+4] += weight_4 * color[i][xq][yq+4];
-                        output_b[i][xp][yp+5] += weight_5 * color[i][xq][yq+5];
-                        output_b[i][xp][yp+6] += weight_6 * color[i][xq][yq+6];
-                        output_b[i][xp][yp+7] += weight_7 * color[i][xq][yq+7];
                     }
                 }
             }
@@ -864,7 +845,7 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
     free(weight_sum_b);
     free(temp);
     free(temp2_r);
-    free(&temp2_g);
+    free(temp2_g);
     free(features_weights_r);
     free(features_weights_b);
     //free(norm_r);
