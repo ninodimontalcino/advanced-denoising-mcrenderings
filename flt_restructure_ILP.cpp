@@ -12,15 +12,13 @@ void sure_all_ILP(buffer sure, buffer c, buffer c_var, buffer cand_r, buffer can
     
     scalar d_r, d_g, d_b, v;
     
-    for (int x = 0; x < W; x++){
-        for (int y = 0; y < H; y++){
+    for (int i = 0; i < 3; i++){ 
+        for (int x = 0; x < W; x++){
+            for (int y = 0; y < H; y++){
 
-            scalar sure_r = 0.f;
-            scalar sure_g = 0.f;
-            scalar sure_b = 0.f;
 
-            // Sum over color channels
-            for (int i = 0; i < 3; i++){    
+                // Sum over color channels
+                
 
                 // Calculate terms
                 d_r = cand_r[i][x][y] - c[i][x][y];
@@ -32,16 +30,12 @@ void sure_all_ILP(buffer sure, buffer c, buffer c_var, buffer cand_r, buffer can
                 v = c_var[i][x][y];
                 v *= v;
 
-                // Summing up
-                sure_r += d_r - v; 
-                sure_g += d_g - v; 
-                sure_b += d_b - v; 
-
+                
+                // Store sure error estimate
+                sure[0][x][y] += d_r - v;
+                sure[1][x][y] += d_g - v;
+                sure[2][x][y] += d_b - v;
             }
-            // Store sure error estimate
-            sure[0][x][y] = sure_r;
-            sure[1][x][y] = sure_g;
-            sure[2][x][y] = sure_b;
         }
     }
 }
@@ -464,17 +458,20 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
     // Compute gradients
     scalar *gradients;
     gradients = (scalar*) malloc(3 * W * H * sizeof(scalar));
-    for(int x =  R+f_min; x < W - R - f_min; ++x) {
-        for(int y =  R+f_min; y < H -  R - f_min; ++y) {
-            for(int i=0; i<NB_FEATURES;++i) {
+
+    for(int i=0; i<NB_FEATURES;++i) {
+        for(int x =  R+f_min; x < W - R - f_min; ++x) {
+            for(int y =  R+f_min; y < H -  R - f_min; ++y) {
+                
                 scalar diffL = features[i][x][y] - features[i][x-1][y];
                 scalar diffR = features[i][x][y] - features[i][x+1][y];
                 scalar diffU = features[i][x][y] - features[i][x][y-1];
                 scalar diffD = features[i][x][y] - features[i][x][y+1];
 
                 gradients[3 * (x * W + y) + i] = fmin(diffL*diffL, diffR*diffR) + fmin(diffU*diffU, diffD*diffD);
-            }
-        } 
+            
+            } 
+        }
     }
 
     // Precompute size of neighbourhood
@@ -509,18 +506,20 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
                     }
                 }
             }
+            memset(features_weights_r, 0, W*H*sizeof(scalar));
+            memset(features_weights_b, 0, W*H*sizeof(scalar));
+            for(int j=0; j<NB_FEATURES;++j){
+                // Precompute feature weights
+                for(int xp = R + f_min; xp < W - R - f_min; ++xp) {
+                    for(int yp = R + f_min; yp < H - R - f_min; ++yp) {
+                        
+                        int xq = xp + r_x;
+                        int yq = yp + r_y;
 
-            // Precompute feature weights
-            for(int xp = R + f_min; xp < W - R - f_min; ++xp) {
-                for(int yp = R + f_min; yp < H - R - f_min; ++yp) {
-                    
-                    int xq = xp + r_x;
-                    int yq = yp + r_y;
+                        scalar df_r = features_weights_r[xp * W + yp];
+                        scalar df_b = features_weights_b[xp * W + yp];
 
-                    scalar df_r = 0.f;
-                    scalar df_b = 0.f;
-
-                    for(int j=0; j<NB_FEATURES;++j){
+                        
                         scalar sqdist = features[j][xp][yp] - features[j][xq][yq];
                         scalar var_cancel = features_var[j][xp][yp] + fmin(features_var[j][xp][yp], features_var[j][xq][yq]);
                         sqdist *= sqdist;
@@ -538,11 +537,12 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
                         //df_b = fmin(df_b, dist_var/norm_b[j * WH + xp * W + yp]);
                         df_r = fmin(df_r, (dist_var)/normalization_r);
                         df_b = fmin(df_b, (dist_var)/normalization_b);
-                    }
+                        
 
-                    features_weights_r[xp * W + yp] = df_r;
-                    features_weights_b[xp * W + yp] = df_b;
-                } 
+                        features_weights_r[xp * W + yp] = df_r;
+                        features_weights_b[xp * W + yp] = df_b;
+                    } 
+                }
             }
 
             // #######################################################################################
@@ -747,15 +747,15 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
     }
 
     // Final Weight Normalization R
-    for(int xp = R + f_r; xp < W - R - f_r; ++xp) {
-        for(int yp = R + f_r; yp < H - R - f_r; yp+=4) {
-        
-            scalar w_0 = weight_sum_r[xp * W + yp];
-            scalar w_1 = weight_sum_r[xp * W + yp+1];
-            scalar w_2 = weight_sum_r[xp * W + yp+2];
-            scalar w_3 = weight_sum_r[xp * W + yp+3];
+    for (int i=0; i<3; i++){
+        for(int xp = R + f_r; xp < W - R - f_r; ++xp) {
+            for(int yp = R + f_r; yp < H - R - f_r; yp+=4) {
+            
+                scalar w_0 = weight_sum_r[xp * W + yp];
+                scalar w_1 = weight_sum_r[xp * W + yp+1];
+                scalar w_2 = weight_sum_r[xp * W + yp+2];
+                scalar w_3 = weight_sum_r[xp * W + yp+3];
 
-            for (int i=0; i<3; i++){
                 output_r[i][xp][yp] /= w_0;
                 output_r[i][xp][yp+1] /= w_1;
                 output_r[i][xp][yp+2] /= w_2;
@@ -765,37 +765,41 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
     }
 
     // Final Weight Normalization G
-   for(int xp = R + f_g; xp < W - R - f_g; ++xp) {
-        for(int yp = R + f_g; yp < H - R - f_g; yp+=4) {
-        
-            scalar w_0 = weight_sum_g[xp * W + yp];
-            scalar w_1 = weight_sum_g[xp * W + yp+1];
-            scalar w_2 = weight_sum_g[xp * W + yp+2];
-            scalar w_3 = weight_sum_g[xp * W + yp+3];
+    for (int i=0; i<3; i++){
+        for(int xp = R + f_g; xp < W - R - f_g; ++xp) {
+            for(int yp = R + f_g; yp < H - R - f_g; yp+=4) {
+            
+                scalar w_0 = weight_sum_g[xp * W + yp];
+                scalar w_1 = weight_sum_g[xp * W + yp+1];
+                scalar w_2 = weight_sum_g[xp * W + yp+2];
+                scalar w_3 = weight_sum_g[xp * W + yp+3];
 
-            for (int i=0; i<3; i++){
+                
                 output_g[i][xp][yp] /= w_0;
                 output_g[i][xp][yp+1] /= w_1;
                 output_g[i][xp][yp+2] /= w_2;
                 output_g[i][xp][yp+3] /= w_3;
+            
+                
             }
         }
     }
 
     // Final Weight Normalization B
-   for(int xp = R + f_b; xp < W - R - f_b; ++xp) {
-        for(int yp = R + f_b; yp < H - R - f_b; yp+=4) {
-        
-            scalar w_0 = weight_sum_b[xp * W + yp];
-            scalar w_1 = weight_sum_b[xp * W + yp+1];
-            scalar w_2 = weight_sum_b[xp * W + yp+2];
-            scalar w_3 = weight_sum_b[xp * W + yp+3];
+    for (int i=0; i<3; i++){
+        for(int xp = R + f_b; xp < W - R - f_b; ++xp) {
+            for(int yp = R + f_b; yp < H - R - f_b; yp+=4) {
+            
+                scalar w_0 = weight_sum_b[xp * W + yp];
+                scalar w_1 = weight_sum_b[xp * W + yp+1];
+                scalar w_2 = weight_sum_b[xp * W + yp+2];
+                scalar w_3 = weight_sum_b[xp * W + yp+3];
 
-            for (int i=0; i<3; i++){
                 output_b[i][xp][yp] /= w_0;
                 output_b[i][xp][yp+1] /= w_1;
                 output_b[i][xp][yp+2] /= w_2;
                 output_b[i][xp][yp+3] /= w_3;
+                
             }
         }
     }
