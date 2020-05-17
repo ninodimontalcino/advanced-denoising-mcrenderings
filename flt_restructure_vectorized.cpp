@@ -41,14 +41,14 @@ void sure_all_vec(scalar* sure, scalar* c, scalar* c_var, scalar* cand_r, scalar
 
                 // Squared
                 v_vec = _mm256_mul_ps(v_vec, v_vec);
-                d_r_vec = _mm256_mul_ps(d_r_vec, d_r_vec);
-                d_g_vec = _mm256_mul_ps(d_g_vec, d_g_vec);
-                d_b_vec = _mm256_mul_ps(d_b_vec, d_b_vec);
+                // d_r_vec = _mm256_mul_ps(d_r_vec, d_r_vec);
+                // d_g_vec = _mm256_mul_ps(d_g_vec, d_g_vec);
+                // d_b_vec = _mm256_mul_ps(d_b_vec, d_b_vec);
 
                 // Difference d_r = d_r-v
-                d_r_vec = _mm256_sub_ps(d_r_vec, v_vec);
-                d_g_vec = _mm256_sub_ps(d_g_vec, v_vec);
-                d_b_vec = _mm256_sub_ps(d_b_vec, v_vec);
+                d_r_vec = _mm256_fmsub_ps(d_r_vec, d_r_vec, v_vec);
+                d_g_vec = _mm256_fmsub_ps(d_g_vec, d_g_vec, v_vec);
+                d_b_vec = _mm256_fmsub_ps(d_b_vec, d_b_vec, v_vec);
 
                 // Summing up
                 sure_r_vec = _mm256_add_ps(sure_r_vec, d_r_vec);
@@ -69,6 +69,7 @@ void filtering_basic_vec(scalar* output, scalar* input, scalar* c, scalar* c_var
     
     int WH = W*H;
     const __m256 EPSILON_vec = _mm256_set1_ps(EPSILON);
+    const __m256 ones = _mm256_set1_ps(1.0);
 
 
     // Handling Inner Part   
@@ -104,7 +105,7 @@ void filtering_basic_vec(scalar* output, scalar* input, scalar* c, scalar* c_var
 
 
                     __m256 distance_vec = _mm256_setzero_ps();
-                    __m256 c_p_vec, c_q_vec, sqdist_vec, c_var_p_vec, c_var_q_vec, var_cancel_vec, normalization_vec;
+                    __m256 c_p_vec, c_q_vec, sqdist_vec, c_var_p_vec, c_var_q_vec, var_cancel_vec, normalization_vec, normalization_quot;
                     for (int i=0; i<3; i++){
                         c_var_p_vec = _mm256_loadu_ps(c_var+i * WH + xp * W + yp);
                         c_var_q_vec = _mm256_loadu_ps(c_var+i * WH + xq * W + yq);
@@ -115,16 +116,15 @@ void filtering_basic_vec(scalar* output, scalar* input, scalar* c, scalar* c_var
                         sqdist_vec = _mm256_sub_ps(c_p_vec, c_q_vec);
                         var_cancel_vec = _mm256_min_ps(c_var_p_vec, c_var_q_vec);
 
-                        normalization_vec = _mm256_mul_ps(k_c_squared_vec, normalization_vec);
-                        sqdist_vec = _mm256_mul_ps(sqdist_vec, sqdist_vec);
+                        //normalization_vec = _mm256_mul_ps(k_c_squared_vec, normalization_vec);
+                        //sqdist_vec = _mm256_mul_ps(sqdist_vec, sqdist_vec);
                         var_cancel_vec = _mm256_add_ps(c_var_p_vec, var_cancel_vec);
 
-                        normalization_vec = _mm256_add_ps(EPSILON_vec, normalization_vec);
+                        normalization_vec = _mm256_fmadd_ps(k_c_squared_vec, normalization_vec, EPSILON_vec);
 
-                        sqdist_vec = _mm256_sub_ps(sqdist_vec, var_cancel_vec);
-                        sqdist_vec = _mm256_div_ps(sqdist_vec, normalization_vec);
-                        
-                        distance_vec = _mm256_add_ps(distance_vec, sqdist_vec);
+                        sqdist_vec = _mm256_fmsub_ps(sqdist_vec, sqdist_vec, var_cancel_vec);
+                        normalization_quot = _mm256_div_ps(ones, normalization_vec);
+                        distance_vec = _mm256_fmadd_ps(normalization_quot, sqdist_vec, distance_vec);
                     }
                     _mm256_storeu_ps(temp+xp*W+yp, distance_vec);
 
@@ -173,8 +173,8 @@ void filtering_basic_vec(scalar* output, scalar* input, scalar* c, scalar* c_var
                     for (int i=0; i<3; i++){
                         input_vec = _mm256_loadu_ps(input+i * WH + xq * W + yq);
                         output_vec = _mm256_loadu_ps(output+i * WH + xp * W + yp);
-                        input_vec = _mm256_mul_ps(weight_vec, input_vec);
-                        output_vec = _mm256_add_ps(input_vec, output_vec);
+                        //input_vec = _mm256_mul_ps(weight_vec, input_vec);
+                        output_vec = _mm256_fmadd_ps(input_vec, weight_vec, output_vec);
                         _mm256_storeu_ps(output+i * WH + xp * W + yp, output_vec);                        
                     }
                 }
@@ -224,6 +224,7 @@ void feature_prefiltering_vec(scalar* output, scalar* output_var, scalar* featur
 
     int WH = W*H;
     const __m256 EPSILON_vec = _mm256_set1_ps(EPSILON);
+    const __m256 ones = _mm256_set1_ps(1.0);
     
     // Handling Inner Part   
     // -------------------
@@ -255,25 +256,14 @@ void feature_prefiltering_vec(scalar* output, scalar* output_var, scalar* featur
                     int xq = xp + r_x;
                     int yq = yp + r_y;
 
-                    scalar distance = 0;
-                    for (int i=0; i<3; i++){                        
-                        scalar sqdist = features[i * WH + xp * W + yp] - features[i * WH + xq * W + yq];
-                        sqdist *= sqdist;
-                        scalar var_cancel = features_var[i * WH + xp * W + yp] + fmin(features_var[i * WH + xp * W + yp], features_var[i * WH + xq * W + yq]);
-                        scalar normalization = EPSILON + k_c_squared*(features_var[i * WH + xp * W + yp] + features_var[i * WH + xq * W + yq]);
-                        distance += (sqdist - var_cancel) / normalization;
-                    }
-
-                    temp[xp * W + yp] = distance;
-
 
                     __m256 distance_vec = _mm256_setzero_ps();
-                    __m256 sqdist_vec, feature_p_vec, feature_q_vec, feature_var_p_vec, feature_var_q_vec, var_cancel_vec, normalization_vec, dist_tmp;
+                    __m256 sqdist_vec, feature_p_vec, feature_q_vec, feature_var_p_vec, feature_var_q_vec, var_cancel_vec, normalization_vec, normalization_quot, dist_tmp;
                     for (int i=0; i<3; i++){               
                         feature_p_vec = _mm256_loadu_ps(features+i * WH + xp * W + yp);
                         feature_q_vec = _mm256_loadu_ps(features+i * WH + xq * W + yq);
                         sqdist_vec = _mm256_sub_ps(feature_p_vec, feature_q_vec);
-                        sqdist_vec = _mm256_mul_ps(sqdist_vec, sqdist_vec);         
+                        //sqdist_vec = _mm256_mul_ps(sqdist_vec, sqdist_vec);         
 
                         feature_var_p_vec = _mm256_loadu_ps(features_var+i * WH + xp * W + yp);
                         feature_var_q_vec = _mm256_loadu_ps(features_var+i * WH + xq * W + yq);
@@ -281,12 +271,12 @@ void feature_prefiltering_vec(scalar* output, scalar* output_var, scalar* featur
                         var_cancel_vec = _mm256_add_ps(var_cancel_vec, feature_var_p_vec);
                         
                         normalization_vec = _mm256_add_ps(feature_var_p_vec, feature_var_q_vec);
-                        normalization_vec = _mm256_mul_ps(normalization_vec, k_c_squared_vec);
-                        normalization_vec = _mm256_add_ps(normalization_vec, EPSILON_vec);
+                        //normalization_vec = _mm256_mul_ps(normalization_vec, k_c_squared_vec);
+                        normalization_vec = _mm256_fmadd_ps(k_c_squared_vec, normalization_vec, EPSILON_vec);
 
-                        dist_tmp = _mm256_sub_ps(sqdist_vec, var_cancel_vec);
-                        dist_tmp = _mm256_div_ps(dist_tmp, normalization_vec);
-                        distance_vec = _mm256_add_ps(distance_vec, dist_tmp);
+                        sqdist_vec = _mm256_fmsub_ps(sqdist_vec, sqdist_vec, var_cancel_vec);
+                        normalization_quot = _mm256_div_ps(ones, normalization_vec);
+                        distance_vec = _mm256_fmadd_ps(normalization_quot, sqdist_vec, distance_vec);
                     }
 
                     _mm256_storeu_ps(temp+xp*W+yp, distance_vec);
@@ -336,14 +326,14 @@ void feature_prefiltering_vec(scalar* output, scalar* output_var, scalar* featur
                     for (int i=0; i<3; i++){
                         features_vec = _mm256_loadu_ps(features+i * WH + xq * W + yq);
                         output_vec = _mm256_loadu_ps(output+i * WH + xp * W + yp);
-                        features_vec = _mm256_mul_ps(weight_vec, features_vec);
-                        output_vec = _mm256_add_ps(features_vec, output_vec);
+                        //features_vec = _mm256_mul_ps(weight_vec, features_vec);
+                        output_vec = _mm256_fmadd_ps(features_vec, weight_vec, output_vec);
                         _mm256_storeu_ps(output+i * WH + xp * W + yp, output_vec);
                         
                         features_var_vec = _mm256_loadu_ps(features_var+i * WH + xq * W + yq);
                         output_var_vec = _mm256_loadu_ps(output_var+i * WH + xp * W + yp);
-                        features_var_vec = _mm256_mul_ps(weight_vec, features_var_vec);
-                        output_var_vec = _mm256_add_ps(features_var_vec, output_var_vec);
+                        //features_var_vec = _mm256_mul_ps(weight_vec, features_var_vec);
+                        output_var_vec = _mm256_fmadd_ps(features_var_vec, weight_vec, output_var_vec);
                         _mm256_storeu_ps(output_var+i * WH + xp * W + yp, output_var_vec);                          
                     }
                     
@@ -518,17 +508,17 @@ void candidate_filtering_all_vec(scalar* output_r, scalar* output_g, scalar* out
                         color_var_q_vec = _mm256_loadu_ps(color_var + i * WH + xq * W + yq);
 
                         sqdist_vec = _mm256_sub_ps(color_p_vec, color_q_vec);
-                        sqdist_vec = _mm256_mul_ps(sqdist_vec, sqdist_vec);
+                        //sqdist_vec = _mm256_mul_ps(sqdist_vec, sqdist_vec);
 
                         var_cancel_vec = _mm256_min_ps(color_var_p_vec, color_var_q_vec);
                         var_cancel_vec = _mm256_add_ps(var_cancel_vec, color_var_p_vec);
 
                         var_term_vec = _mm256_add_ps(color_var_p_vec, color_var_q_vec);
 
-                        normalization_r_vec = _mm256_mul_ps(k_c_squared_r_vec, var_term_vec);
-                        normalization_r_vec = _mm256_add_ps(EPSILON_vec, normalization_r_vec);
+                        //normalization_r_vec = _mm256_mul_ps(k_c_squared_r_vec, var_term_vec);
+                        normalization_r_vec = _mm256_fmadd_ps(k_c_squared_r_vec, var_term_vec, EPSILON_vec);
 
-                        dist_var_vec = _mm256_sub_ps(sqdist_vec, var_cancel_vec);
+                        dist_var_vec = _mm256_fmsub_ps(sqdist_vec, sqdist_vec, var_cancel_vec);
                         dist_var_vec = _mm256_div_ps(dist_var_vec, normalization_r_vec);
 
                         distance_r_vec = _mm256_add_ps(distance_r_vec, dist_var_vec);
@@ -560,7 +550,7 @@ void candidate_filtering_all_vec(scalar* output_r, scalar* output_g, scalar* out
                         grad_vec = _mm256_loadu_ps(gradients+j * WH + xp * W + yp);
 
                         sqdist_vec = _mm256_sub_ps(features_p_vec, features_q_vec);
-                        sqdist_vec = _mm256_mul_ps(sqdist_vec, sqdist_vec);
+                        //sqdist_vec = _mm256_mul_ps(sqdist_vec, sqdist_vec);
 
                         var_cancel_vec = _mm256_min_ps(features_var_q_vec, features_var_p_vec);
                         var_cancel_vec = _mm256_add_ps(features_var_p_vec, var_cancel_vec);
@@ -571,7 +561,7 @@ void candidate_filtering_all_vec(scalar* output_r, scalar* output_g, scalar* out
                         normalization_r_vec = _mm256_mul_ps(k_f_squared_r_vec, normalization_r_vec);
                         normalization_b_vec = _mm256_mul_ps(k_f_squared_b_vec, normalization_b_vec);
 
-                        dist_var_vec = _mm256_sub_ps(sqdist_vec, var_cancel_vec);
+                        dist_var_vec = _mm256_fmsub_ps(sqdist_vec, sqdist_vec, var_cancel_vec);
 
                         tmp_1 = _mm256_div_ps(dist_var_vec, normalization_r_vec);
                         tmp_2 = _mm256_div_ps(dist_var_vec, normalization_b_vec);
@@ -642,9 +632,9 @@ void candidate_filtering_all_vec(scalar* output_r, scalar* output_g, scalar* out
                     for (int i=0; i<3; i++){
                         output_r_vec = _mm256_loadu_ps(output_r+i * WH + xp * W + yp);
                         color_vec = _mm256_loadu_ps(color+i * WH + xq * W + yq);
-                        color_vec = _mm256_mul_ps(color_vec, weight_vec);
+                        //color_vec = _mm256_mul_ps(color_vec, weight_vec);
 
-                        output_r_vec = _mm256_add_ps(output_r_vec, color_vec);
+                        output_r_vec = _mm256_fmadd_ps(color_vec, weight_vec, output_r_vec);
 
                         _mm256_storeu_ps(output_r+i * WH + xp * W + yp, output_r_vec);
                     }
@@ -700,9 +690,9 @@ void candidate_filtering_all_vec(scalar* output_r, scalar* output_g, scalar* out
                     for (int i=0; i<3; i++){
                         output_g_vec = _mm256_loadu_ps(output_g+i * WH + xp * W + yp);
                         color_vec = _mm256_loadu_ps(color+i * WH + xq * W + yq);
-                        color_vec = _mm256_mul_ps(color_vec, weight_vec);
+                        //color_vec = _mm256_mul_ps(color_vec, weight_vec);
 
-                        output_g_vec = _mm256_add_ps(output_g_vec, color_vec);
+                        output_g_vec = _mm256_fmadd_ps(color_vec, weight_vec, output_g_vec);
 
                         _mm256_storeu_ps(output_g+i * WH + xp * W + yp, output_g_vec);
                     }
@@ -730,9 +720,9 @@ void candidate_filtering_all_vec(scalar* output_r, scalar* output_g, scalar* out
                     
                     for (int i=0; i<3; i++){
                         color_vec = _mm256_loadu_ps(color+i * WH + xq * W + yq);
-                        color_vec = _mm256_mul_ps(weight_vec, color_vec);
+                        //color_vec = _mm256_mul_ps(weight_vec, color_vec);
                         output_b_vec = _mm256_loadu_ps(output_b+i * WH + xp * W + yp);
-                        output_b_vec = _mm256_add_ps(output_b_vec, color_vec);
+                        output_b_vec = _mm256_fmadd_ps(color_vec, weight_vec, output_b_vec);
                         _mm256_storeu_ps(output_b+i * WH + xp * W + yp, output_b_vec);
                     }
                 }
