@@ -864,7 +864,7 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
     free(weight_sum_b);
     free(temp);
     free(temp2_r);
-    free(&temp2_g);
+    free(temp2_g);
     free(features_weights_r);
     free(features_weights_b);
     //free(norm_r);
