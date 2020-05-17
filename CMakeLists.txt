@@ -68,6 +68,7 @@ add_executable(main
               implementations/register.hpp
               implementations/basic.cpp
               implementations/basic_restructure.cpp
+              implementations/basic_restructure1.cpp
               implementations/basic_restructure2.cpp
               implementations/basic_restructure3.cpp
 
