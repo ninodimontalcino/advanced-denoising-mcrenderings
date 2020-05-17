@@ -598,12 +598,25 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
                     scalar sum_2 = 0.f;
                     scalar sum_3 = 0.f;
 
-                    for (int k=-f_r; k<=f_r; k++){
-                        sum_0 += temp2_r[(xp+k) * W + yp];
-                        sum_1 += temp2_r[(xp+k) * W + yp+1];
-                        sum_2 += temp2_r[(xp+k) * W + yp+2];
-                        sum_3 += temp2_r[(xp+k) * W + yp+3];
-                    }
+                    // Unrolled Summation => Fixed for f_r=1 => 2*f+1 = 3
+                    sum_0 += temp2_r[(xp-1) * W + yp];    
+                    sum_0 += temp2_r[(xp) * W + yp];
+                    sum_0 += temp2_r[(xp+1) * W + yp];
+
+                    sum_1 += temp2_r[(xp-1) * W + yp+1];
+                    sum_1 += temp2_r[(xp) * W + yp+1];
+                    sum_1 += temp2_r[(xp+1) * W + yp+1];
+
+                    sum_2 += temp2_r[(xp-1) * W + yp+2];
+                    sum_2 += temp2_r[(xp) * W + yp+2];
+                    sum_2 += temp2_r[(xp+1) * W + yp+2];
+   
+                    sum_3 += temp2_r[(xp-1) * W + yp+3];
+                    sum_3 += temp2_r[(xp) * W + yp+3];
+                    sum_3 += temp2_r[(xp+1) * W + yp+3];
+
+
+                    // Compute Color Weight
                     scalar color_weight_0 = (sum_0 * neigh_r_inv);
                     scalar color_weight_1 = (sum_1 * neigh_r_inv);
                     scalar color_weight_2 = (sum_2 * neigh_r_inv);
@@ -679,13 +692,40 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
                     scalar sum_2 = 0.f;
                     scalar sum_3 = 0.f;
 
-                    for (int k=-f_g; k<=f_g; k++){
-                        sum_0 += temp2_g[(xp+k) * W + yp];
-                        sum_1 += temp2_g[(xp+k) * W + yp+1];
-                        sum_2 += temp2_g[(xp+k) * W + yp+2];
-                        sum_3 += temp2_g[(xp+k) * W + yp+3];
-                    }
+                    // Unrolled Summation => Fixed for f_g=3 => 2*f_g+1 = 7
+                    sum_0 += temp2_g[(xp-3) * W + yp];
+                    sum_0 += temp2_g[(xp-2) * W + yp];
+                    sum_0 += temp2_g[(xp-1) * W + yp];
+                    sum_0 += temp2_g[(xp) * W + yp];
+                    sum_0 += temp2_g[(xp+1) * W + yp];
+                    sum_0 += temp2_g[(xp+2) * W + yp];
+                    sum_0 += temp2_g[(xp+3) * W + yp];
 
+                    sum_1 += temp2_g[(xp-3) * W + yp+1];
+                    sum_1 += temp2_g[(xp-2) * W + yp+1];
+                    sum_1 += temp2_g[(xp-1) * W + yp+1];
+                    sum_1 += temp2_g[(xp) * W + yp+1];
+                    sum_1 += temp2_g[(xp+1) * W + yp+1];
+                    sum_1 += temp2_g[(xp+2) * W + yp+1];
+                    sum_1 += temp2_g[(xp+3) * W + yp+1];
+
+                    sum_2 += temp2_g[(xp-3) * W + yp+2];
+                    sum_2 += temp2_g[(xp-2) * W + yp+2];
+                    sum_2 += temp2_g[(xp-1) * W + yp+2];
+                    sum_2 += temp2_g[(xp) * W + yp+2];
+                    sum_2 += temp2_g[(xp+1) * W + yp+2];
+                    sum_2 += temp2_g[(xp+2) * W + yp+2];
+                    sum_2 += temp2_g[(xp+3) * W + yp+2];
+
+                    sum_3 += temp2_g[(xp-3) * W + yp+3];
+                    sum_3 += temp2_g[(xp-2) * W + yp+3];
+                    sum_3 += temp2_g[(xp-1) * W + yp+3];
+                    sum_3 += temp2_g[(xp) * W + yp+3];
+                    sum_3 += temp2_g[(xp+1) * W + yp+3];
+                    sum_3 += temp2_g[(xp+2) * W + yp+3];
+                    sum_3 += temp2_g[(xp+3) * W + yp+3];
+
+                    // Compute Color Weight
                     scalar color_weight_0 = (sum_0 * neigh_g_inv);
                     scalar color_weight_1 = (sum_1 * neigh_g_inv);
                     scalar color_weight_2 = (sum_2 * neigh_g_inv);

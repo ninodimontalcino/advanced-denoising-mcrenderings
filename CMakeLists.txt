@@ -8,7 +8,8 @@ project(team053)
 set(CMAKE_BUILD_TYPE Release)
 #set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_FLAGS "-Wno-deprecated -O3 -ffast-math -march=native" )
+#set(CMAKE_CXX_FLAGS "-Wno-deprecated -O3 -ffast-math -march=native -fno-tree-vectorize" )
+set(CMAKE_CXX_FLAGS "-Wno-deprecated -O3 -ffast-math -fno-tree-vectorize" )
 
 ###########################################################################
 # OpenEXR (taken from https://github.com/mmp/pbrt-v3/blob/master/CMakeLists.txt)
