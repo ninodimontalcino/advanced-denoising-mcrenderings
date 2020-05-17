@@ -24,7 +24,12 @@ void feature_prefiltering_ILP(buffer output, buffer output_var, buffer features,
 void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output_b, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters* p, int W, int H);
 
 // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-// VECTORIZED VERSION
-// ...
+// NEW LOOP ORDERING OVER ILP
+void sure_all_loop(buffer sure, buffer c, buffer c_var, buffer cand_r, buffer cand_g, buffer cand_b, int W, int H);
+void filtering_basic_loop(buffer output, buffer input, buffer c, buffer c_var, Flt_parameters p, int W, int H);
+void feature_prefiltering_loop(buffer output, buffer output_var, buffer features, buffer features_var, Flt_parameters p, int W, int H);
+void candidate_filtering_loop(buffer output, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters p, int W, int H);
+void candidate_filtering_all_loop(buffer output_r, buffer output_g, buffer output_b, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters* p, int W, int H);
+
 
 #endif //FLT_2_H
