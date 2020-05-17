@@ -468,7 +468,7 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
                 scalar diffU = features[i][x][y] - features[i][x][y-1];
                 scalar diffD = features[i][x][y] - features[i][x][y+1];
 
-                gradients[3 * (x * W + y) + i] = fmin(diffL*diffL, diffR*diffR) + fmin(diffU*diffU, diffD*diffD);
+                gradients[i * WH + x * W + y] = fmin(diffL*diffL, diffR*diffR) + fmin(diffU*diffU, diffD*diffD);
             
             } 
         }
@@ -528,7 +528,7 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
                         // ============ !!!!!!! =================================================================
                         // ToDo: Precompute normalization constants => always the same independet of R
                         // @Comment from Nino: Not successfull so far => same runtime but less flops => yet less performance
-                        scalar var_max = fmax(features_var[j][xp][yp], gradients[3 * (xp * W + yp) + j]);
+                        scalar var_max = fmax(features_var[j][xp][yp], gradients[j * WH + xp * W + yp]);
                         scalar normalization_r = k_f_squared_r*fmax(tau_r, var_max);
                         scalar normalization_b = k_f_squared_b*fmax(tau_b, var_max);
                         // ============ !!!!!!! =================================================================
@@ -746,16 +746,17 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
         }
     }
 
-    // Final Weight Normalization R
-    for (int i=0; i<3; i++){
-        for(int xp = R + f_r; xp < W - R - f_r; ++xp) {
-            for(int yp = R + f_r; yp < H - R - f_r; yp+=4) {
-            
-                scalar w_0 = weight_sum_r[xp * W + yp];
-                scalar w_1 = weight_sum_r[xp * W + yp+1];
-                scalar w_2 = weight_sum_r[xp * W + yp+2];
-                scalar w_3 = weight_sum_r[xp * W + yp+3];
 
+    // Final Weight Normalization R
+    for(int xp = R + f_r; xp < W - R - f_r; ++xp) {
+        for(int yp = R + f_r; yp < H - R - f_r; yp+=4) {
+        
+            scalar w_0 = weight_sum_r[xp * W + yp];
+            scalar w_1 = weight_sum_r[xp * W + yp+1];
+            scalar w_2 = weight_sum_r[xp * W + yp+2];
+            scalar w_3 = weight_sum_r[xp * W + yp+3];
+
+            for (int i=0; i<3; i++){
                 output_r[i][xp][yp] /= w_0;
                 output_r[i][xp][yp+1] /= w_1;
                 output_r[i][xp][yp+2] /= w_2;
@@ -765,44 +766,41 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
     }
 
     // Final Weight Normalization G
-    for (int i=0; i<3; i++){
-        for(int xp = R + f_g; xp < W - R - f_g; ++xp) {
-            for(int yp = R + f_g; yp < H - R - f_g; yp+=4) {
-            
-                scalar w_0 = weight_sum_g[xp * W + yp];
-                scalar w_1 = weight_sum_g[xp * W + yp+1];
-                scalar w_2 = weight_sum_g[xp * W + yp+2];
-                scalar w_3 = weight_sum_g[xp * W + yp+3];
+   for(int xp = R + f_g; xp < W - R - f_g; ++xp) {
+        for(int yp = R + f_g; yp < H - R - f_g; yp+=4) {
+        
+            scalar w_0 = weight_sum_g[xp * W + yp];
+            scalar w_1 = weight_sum_g[xp * W + yp+1];
+            scalar w_2 = weight_sum_g[xp * W + yp+2];
+            scalar w_3 = weight_sum_g[xp * W + yp+3];
 
-                
+            for (int i=0; i<3; i++){
                 output_g[i][xp][yp] /= w_0;
                 output_g[i][xp][yp+1] /= w_1;
                 output_g[i][xp][yp+2] /= w_2;
                 output_g[i][xp][yp+3] /= w_3;
-            
-                
             }
         }
     }
 
     // Final Weight Normalization B
-    for (int i=0; i<3; i++){
-        for(int xp = R + f_b; xp < W - R - f_b; ++xp) {
-            for(int yp = R + f_b; yp < H - R - f_b; yp+=4) {
-            
-                scalar w_0 = weight_sum_b[xp * W + yp];
-                scalar w_1 = weight_sum_b[xp * W + yp+1];
-                scalar w_2 = weight_sum_b[xp * W + yp+2];
-                scalar w_3 = weight_sum_b[xp * W + yp+3];
+   for(int xp = R + f_b; xp < W - R - f_b; ++xp) {
+        for(int yp = R + f_b; yp < H - R - f_b; yp+=4) {
+        
+            scalar w_0 = weight_sum_b[xp * W + yp];
+            scalar w_1 = weight_sum_b[xp * W + yp+1];
+            scalar w_2 = weight_sum_b[xp * W + yp+2];
+            scalar w_3 = weight_sum_b[xp * W + yp+3];
 
+            for (int i=0; i<3; i++){
                 output_b[i][xp][yp] /= w_0;
                 output_b[i][xp][yp+1] /= w_1;
                 output_b[i][xp][yp+2] /= w_2;
                 output_b[i][xp][yp+3] /= w_3;
-                
             }
         }
     }
+
 
     // Handline Border Cases 
     // ----------------------------------
