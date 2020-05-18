@@ -89,7 +89,7 @@ using namespace std;
     Flt_parameters p_b = { .kc = INFINITY, .kf = 0.6, .tau = 0.0001, .f = 1, .r = R};
     buffer b;
     allocate_buffer_zero(&b, img_width, img_height);
-    candidate_filtering_ILP(b, c, c_var, f_filtered, f_var_filtered, p_b, img_width, img_height);
+    candidate_filtering_THIRD_ILP(b, c, c_var, f_filtered, f_var_filtered, p_b, img_width, img_height);
     
     // DEBUGGING PART
     if(DEBUG) {
