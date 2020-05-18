@@ -63,7 +63,7 @@ inline __attribute__((always_inline)) void compute_denominators(scalar *denomina
                 inverted_maxi_feat = 1.0f / maxi_feat;
 
                 // Store
-                denominators[3* (x * W + y) + i] = inverted_maxi_feat;
+                denominators[WH*i + x * W + y] = grad;
             
             } 
         }
@@ -143,84 +143,49 @@ inline __attribute__((always_inline)) void color_weights_ILP2(scalar *temp, buff
     }
 }
 
-inline __attribute__((always_inline)) void precompute_features_ILP2(scalar *features_weights_r, buffer output_b, scalar *weight_sum_b, buffer color, buffer features, buffer features_var, scalar *denominators, const int r_x, const int r_y, const int R, const int W, const int H) {
-    scalar f0p, f1p, f2p, f0q, f1q, f2q;
-    scalar f0varp, f1varp, f2varp, f0varq, f1varq, f2varq;
-    scalar denom0, denom1, denom2;
-    scalar col0, col1, col2;
-    scalar b0, b1, b2;
-    scalar weight_sum_init, new_weight_sum;
+inline __attribute__((always_inline)) void precompute_features_ILP2(scalar *features_weights_r, scalar *features_weights_b, scalar *weight_sum_b, buffer color, buffer features, buffer features_var, scalar *denominators, const int r_x, const int r_y, const int R, const int W, const int H) {
+    const int WH = W*H;
 
-    scalar dist0, dist1, dist2;
-    scalar sqdist0, sqdist1, sqdist2;
-    scalar var_min0, var_min1, var_min2;
-    scalar var_cancel0, var_cancel1, var_cancel2;
-    scalar norm_r0, norm_r1, norm_r2;
-    scalar norm_b0, norm_b1, norm_b2;
-    scalar dist_var0, dist_var1, dist_var2;
-    scalar df_r0, df_r1, df_r2;
-    scalar df_b0, df_b1, df_b2;
-    scalar df_r = 0.f, df_b = 0.f, df_b_exp;
-    scalar convolb0, convolb1, convolb2;
-    scalar outb0, outb1, outb2;
+    scalar df_r = 0.f, df_b = 0.f;
+    scalar fp, fq, varp, varq;
+    scalar grad;
+    scalar dist, sqdist, varpq, var_cancel, var_max, normalization_b, normalization_r, dist_var;
+
     
     for(int xp = R + F_R; xp < W - R - F_R; ++xp) {
         for(int yp = R + F_R; yp < H - R - F_R; ++yp) {
-            
+            df_r = 0.f; df_b = 0.f;
             int xq = xp + r_x;
             int yq = yp + r_y;
+            for(int j=0; j<NB_FEATURES;++j){
+                
+                fp = features[j][xp][yp];
+                fq = features[j][xq][yq];
+                varp = features_var[j][xp][yp];
+                varq = features_var[j][xq][yq];
+                grad = denominators[j * WH + xp * W + yp];
+                
+                dist = fp - fq;
+                varpq = fmin(varp, varq);
+                var_cancel = varp + varpq;
+                sqdist = dist * dist;
+                dist_var = var_cancel - sqdist;
 
-            for(int i=0;i<NB_FEATURES;++i) {
+                // ============ !!!!!!! =================================================================
+                // ToDo: Precompute normalization constants => always the same independet of R
+                // @Comment from Nino: Not successfull so far => same runtime but less flops => yet less performance
+                scalar var_max = fmax(varp, grad);
+                scalar normalization_r = KF_SQUARED*fmax(TAU_R, var_max);
+                scalar normalization_b = KF_SQUARED*fmax(TAU_B, var_max);
+                // ============ !!!!!!! =================================================================
 
-                // Read
-                f0p = features[i][xp][yp];
-                f0q = features[i][xq][yq];
-                f0varp = features_var[i][xp][yp];
-                f0varq = features_var[i][xq][yq];
-                denom0 = denominators[3* (xp * W + yp) + i];
-
-                // Compute
-                dist0 = f0p - f0q;
-                var_min0 = fmin(f0varp, f0varq);
-                sqdist0 = dist0 * dist0;
-                var_cancel0 = f0varp + var_min0;
-
-                norm_r0 = fmin(TAU_KF_R, denom0);
-                norm_b0 = fmin(TAU_KF_B, denom0);
-
-                dist_var0 = sqdist0 - var_cancel0;
-
-                df_r0 = dist_var0 * norm_r0;
-
-                df_b0 = dist_var0 * norm_b0;
-
-                df_r = fmax(df_r, df_r0);
-                df_b = fmax(df_b, df_b0);
-            }
-
-            df_b_exp = exp(-df_b);
-
-            col0 = color[0][xq][yq];
-            col1 = color[1][xq][yq];
-            col2 = color[2][xq][yq];
-            b0 = output_b[0][xp][yp];
-            b1 = output_b[1][xp][yp];
-            b2 = output_b[2][xp][yp];
-
-            convolb0 = df_b_exp * col0;
-            convolb1 = df_b_exp * col1;
-            convolb2 = df_b_exp * col2;
-
-            outb0 = b0 + convolb0;
-            outb1 = b1 + convolb1;
-            outb2 = b2 + convolb2;
-
-            // Store
-            weight_sum_b[xp*W + yp] += df_b_exp;
-            output_b[0][xp][yp] = outb0;
-            output_b[1][xp][yp] = outb1;
-            output_b[2][xp][yp] = outb2;
-            features_weights_r[xp*W + yp] = -df_r;
+                //df_r = fmin(df_r, dist_var/norm_r[j * WH + xp * W + yp]);
+                //df_b = fmin(df_b, dist_var/norm_b[j * WH + xp * W + yp]);
+                df_r = fmin(df_r, (dist_var)/normalization_r);
+                df_b = fmin(df_b, (dist_var)/normalization_b);
+            } 
+            features_weights_r[xp * W + yp] = df_r;
+            features_weights_b[xp * W + yp] = df_b;
         }
     }
 }
@@ -252,7 +217,9 @@ void candidate_filtering_all_ILP2(buffer output_r, buffer output_g, buffer outpu
 
     // Allocate feature weights buffer
     scalar* features_weights_r;
+    scalar* features_weights_b;
     features_weights_r = (scalar*) malloc(WH * sizeof(scalar));
+    features_weights_b = (scalar*) malloc(WH * sizeof(scalar));
     
     // Compute gradients and precompute divs
     scalar *denominators;
@@ -278,7 +245,7 @@ void candidate_filtering_all_ILP2(buffer output_r, buffer output_g, buffer outpu
 
            
             // Precompute feature weights and compute candidate B
-            precompute_features_ILP2(features_weights_r, output_b, weight_sum_b, color, features, features_var, denominators, r_x, r_y, R, W, H);
+            precompute_features_ILP2(features_weights_r, features_weights_b, weight_sum_b, color, features, features_var, denominators, r_x, r_y, R, W, H);
 
             
 
@@ -485,6 +452,37 @@ void candidate_filtering_all_ILP2(buffer output_r, buffer output_g, buffer outpu
                         output_g[i][xp][yp+1] += weight_1 * color[i][xq][yq+1];
                         output_g[i][xp][yp+2] += weight_2 * color[i][xq][yq+2];
                         output_g[i][xp][yp+3] += weight_3 * color[i][xq][yq+3];
+                    }
+                }
+            }
+
+            // ----------------------------------------------
+            // Candidate B 
+            // => no color weight computation due to kc = Inf
+            // ----------------------------------------------
+
+            for(int xp = R + F_B; xp < W - R - F_B; ++xp) {
+                for(int yp = R + F_B; yp < H - R - F_B; yp+=4) {
+
+                    int xq = xp + r_x;
+                    int yq = yp + r_y;
+
+                    scalar weight_0 = exp(features_weights_b[xp * W + yp]);
+                    scalar weight_1 = exp(features_weights_b[xp * W + yp+1]);
+                    scalar weight_2 = exp(features_weights_b[xp * W + yp+2]);
+                    scalar weight_3 = exp(features_weights_b[xp * W + yp+3]);
+
+                    weight_sum_b[xp * W + yp] += weight_0;
+                    weight_sum_b[xp * W + yp+1] += weight_1;
+                    weight_sum_b[xp * W + yp+2] += weight_2;
+                    weight_sum_b[xp * W + yp+3] += weight_3;
+
+                    
+                    for (int i=0; i<3; i++){
+                        output_b[i][xp][yp] += weight_0 * color[i][xq][yq];
+                        output_b[i][xp][yp+1] += weight_1 * color[i][xq][yq+1];
+                        output_b[i][xp][yp+2] += weight_2 * color[i][xq][yq+2];
+                        output_b[i][xp][yp+3] += weight_3 * color[i][xq][yq+3];
                     }
                 }
             }
