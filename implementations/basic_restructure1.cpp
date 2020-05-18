@@ -65,7 +65,7 @@ using namespace std;
     Flt_parameters p_r = { .kc = 2.0, .kf = 0.6, .tau = 0.001, .f = 1, .r = R};
     buffer r;
     allocate_buffer_zero(&r, img_width, img_height);
-    candidate_filtering_ILP(r, c, c_var, f_filtered, f_var_filtered, p_r, img_width, img_height);
+    candidate_filtering_FIRST_ILP(r, c, c_var, f_filtered, f_var_filtered, p_r, img_width, img_height);
     
     // DEBUGGING PART
     if(DEBUG) {
@@ -77,7 +77,7 @@ using namespace std;
     Flt_parameters p_g = { .kc = 2.0, .kf = 0.6, .tau = 0.001, .f = 3, .r = R};
     buffer g;
     allocate_buffer_zero(&g, img_width, img_height);
-    candidate_filtering_ILP(g, c, c_var, f_filtered, f_var_filtered, p_g, img_width, img_height);
+    candidate_filtering_SECOND_ILP(g, c, c_var, f_filtered, f_var_filtered, p_g, img_width, img_height);
     
     // DEBUGGING PART
     if(DEBUG) {

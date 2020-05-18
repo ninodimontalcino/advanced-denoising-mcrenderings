@@ -48,21 +48,22 @@ add_executable(main
 
               # Header Files
               tsc_x86.h 
+              denoise.h
               exr.h
               memory_mgmt.hpp
-              denoise.h
+              validation.hpp
               flt.hpp 
               flt_restructure.hpp
-              validation.hpp
 
               # General Source Files
               main.cpp 
               exr.cpp
               memory_mgmt.cpp 
+              validation.cpp
               flt.cpp 
               flt_restructure.cpp 
-              flt_restructure_ILP.cpp 
-              validation.cpp
+              flt_restructure_ILP.cpp
+              flt_restructure_VEC.cpp 
 
               # Implementations (BASIC and OPTIMIZED)
               implementations/register.hpp
