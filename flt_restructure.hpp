@@ -25,7 +25,7 @@ void feature_prefiltering_ILP(buffer output, buffer output_var, buffer features,
 void candidate_filtering_ILP(buffer output, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters p, int W, int H);
 void candidate_filtering_THIRD_ILP(buffer output, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters p, int W, int H);
 void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output_b, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters* p, int W, int H);
-void candidate_filtering_all_ILP2(buffer output_r, buffer output_g, buffer output_b, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters* p, int W, int H);
+void candidate_filtering_all_ILP2(buffer output_r, buffer output_g, buffer output_b, buffer color, buffer color_var, buffer features, buffer features_var, const int R, const int W, const int H);
 
 
 #endif //FLT_2_H

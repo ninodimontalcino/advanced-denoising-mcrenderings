@@ -63,15 +63,11 @@ using namespace std;
     // ----------------------------------------------
 
     // (a) Candidate Filter: FIRST
-    Flt_parameters p_all[3];
-    p_all[0] = { .kc = 2.0, .kf = 0.6, .tau = 0.001, .f = 1, .r = R};
-    p_all[1] = { .kc = 2.0, .kf = 0.6, .tau = 0.001, .f = 3, .r = R};
-    p_all[2] = { .kc = INFINITY, .kf = 0.6, .tau = 0.0001, .f = 1, .r = R};   // Fixed Variable: kc=INF => is exploited in filtering
     buffer r, g, b;
     allocate_buffer_zero(&r, img_width, img_height);
     allocate_buffer_zero(&g, img_width, img_height);
     allocate_buffer_zero(&b, img_width, img_height);
-    candidate_filtering_all_ILP2(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, img_width, img_height);
+    candidate_filtering_all_ILP2(r, g, b, c, c_var, f_filtered, f_var_filtered, R, img_width, img_height);
 
     
     // DEBUGGING PART
