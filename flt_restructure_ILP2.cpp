@@ -21,54 +21,56 @@
 #define TAU_KF_R 1.0f/(TAU_R*KF_SQUARED)
 #define TAU_KF_B 1.0f/(TAU_B*KF_SQUARED)
 
+// $auto_unroll
 inline __attribute__((always_inline)) void compute_denominators(scalar *denominators, buffer features, buffer features_var, const int R, const int W, const int H) {
     const int WH = W*H;
     
-    scalar featC, featL, featR, featU, featD, feat_var;
-    scalar diffL, diffR, diffU, diffD;
-    scalar sqdiffL, sqdiffR, sqdiffU, sqdiffD;
-    scalar gradH, gradV, grad;
-    scalar maxi_feat, inverted_maxi_feat;
+    scalar featC0, featL0, featR0, featU0, featD0, feat_var0;
+    scalar diffL0, diffR0, diffU0, diffD0;
+    scalar sqdiffL0, sqdiffR0, sqdiffU0, sqdiffD0;
+    scalar gradH0, gradV0, grad0;
+    // scalar maxi_feat, inverted_maxi_feat;
     
     for(int i=0; i<NB_FEATURES;++i) {
         for(int x =  R+F_R; x < W - R - F_R; ++x) {
-            for(int y =  R+F_R; y < H -  R - F_R; ++y) {
+            for(int y =  R+F_R; y < H -  R - F_R; y += 1) {
 
                 // Read
-                featC = features[i][x][y];
-                featL = features[i][x-1][y];
-                featR = features[i][x+1][y];
-                featU = features[i][x][y+1];
-                featD = features[i][x][y-1];
-                feat_var = features_var[i][x][y];
+                featC0 = features[i][x][y + 0];
+                featL0 = features[i][x-1][y + 0];
+                featR0 = features[i][x+1][y + 0];
+                featU0 = features[i][x][y+1 + 0];
+                featD0 = features[i][x][y-1 + 0];
+                //feat_var = features_var[i][x][y];
                 
                 // Compute gradients
-                diffL = featC - featL;
-                diffR = featC - featR;
-                diffU = featC - featU;
-                diffD = featC - featD;
+                diffL0 = featC0 - featL0;
+                diffR0 = featC0 - featR0;
+                diffU0 = featC0 - featU0;
+                diffD0 = featC0 - featD0;
 
-                sqdiffL = diffL * diffL;
-                sqdiffR = diffR * diffR;
-                sqdiffU = diffU * diffU;
-                sqdiffD = diffD * diffD;
+                sqdiffL0 = diffL0 * diffL0;
+                sqdiffR0 = diffR0 * diffR0;
+                sqdiffU0 = diffU0 * diffU0;
+                sqdiffD0 = diffD0 * diffD0;
                 
-                gradH = fmin(sqdiffL, sqdiffR);
-                gradV = fmin(sqdiffU, sqdiffD);
+                gradH0 = fmin(sqdiffL0, sqdiffR0);
+                gradV0 = fmin(sqdiffU0, sqdiffD0);
 
-                grad = gradV + gradH;
+                grad0 = gradV0 + gradH0;
 
                 // Compute denominator
-                maxi_feat = KF_SQUARED * fmax(feat_var, grad);
-                inverted_maxi_feat = 1.0f / maxi_feat;
+                //maxi_feat = KF_SQUARED * fmax(feat_var, grad);
+                //inverted_maxi_feat = 1.0f / maxi_feat;
 
                 // Store
-                denominators[WH*i + x * W + y] = grad;
+                denominators[WH*i + x * W + y + 0] = grad0;
             
             } 
         }
     }
 }
+// $end_unroll
 
 inline __attribute__((always_inline)) void color_weights_ILP2(scalar *temp, buffer color, buffer color_var, const int r_x, const int r_y, const int W, const int H, const int R) {
     scalar colpr, colqr, varpr, varqr;
@@ -143,53 +145,98 @@ inline __attribute__((always_inline)) void color_weights_ILP2(scalar *temp, buff
     }
 }
 
+// $unroll 3
 inline __attribute__((always_inline)) void precompute_features_ILP2(scalar *features_weights_r, scalar *features_weights_b, scalar *weight_sum_b, buffer color, buffer features, buffer features_var, scalar *denominators, const int r_x, const int r_y, const int R, const int W, const int H) {
     const int WH = W*H;
 
-    scalar df_r = 0.f, df_b = 0.f;
-    scalar fp, fq, varp, varq;
-    scalar grad;
-    scalar dist, sqdist, varpq, var_cancel, var_max, normalization_b, normalization_r, dist_var;
+    scalar df_r0 = 0.f, df_b0 = 0.f;
+    scalar df_r1 = 0.f, df_b1 = 0.f;
+    scalar df_r2 = 0.f, df_b2 = 0.f;
+    scalar fp0, fq0, varp0, varq0;
+    scalar fp1, fq1, varp1, varq1;
+    scalar fp2, fq2, varp2, varq2;
+    scalar grad0;
+    scalar grad1;
+    scalar grad2;
+    scalar dist0, sqdist0, varpq0, var_cancel0, var_max0, normalization_b0, normalization_r0, dist_var0;
+    scalar dist1, sqdist1, varpq1, var_cancel1, var_max1, normalization_b1, normalization_r1, dist_var1;
+    scalar dist2, sqdist2, varpq2, var_cancel2, var_max2, normalization_b2, normalization_r2, dist_var2;
 
     
     for(int xp = R + F_R; xp < W - R - F_R; ++xp) {
         for(int yp = R + F_R; yp < H - R - F_R; ++yp) {
-            df_r = 0.f; df_b = 0.f;
+            df_r0 = 0.f; df_b0 = 0.f;
+            df_r1 = 0.f; df_b1 = 0.f;
+            df_r2 = 0.f; df_b2 = 0.f;
             int xq = xp + r_x;
             int yq = yp + r_y;
-            for(int j=0; j<NB_FEATURES;++j){
+            for(int j=0; j<NB_FEATURES;j += 3){
                 
-                fp = features[j][xp][yp];
-                fq = features[j][xq][yq];
-                varp = features_var[j][xp][yp];
-                varq = features_var[j][xq][yq];
-                grad = denominators[j * WH + xp * W + yp];
+                fp0 = features[j][xp][yp + 0];
+                fp1 = features[j][xp][yp + 1];
+                fp2 = features[j][xp][yp + 2];
+                fq0 = features[j][xq][yq + 0];
+                fq1 = features[j][xq][yq + 1];
+                fq2 = features[j][xq][yq + 2];
+                varp0 = features_var[j][xp][yp + 0];
+                varp1 = features_var[j][xp][yp + 1];
+                varp2 = features_var[j][xp][yp + 2];
+                varq0 = features_var[j][xq][yq + 0];
+                varq1 = features_var[j][xq][yq + 1];
+                varq2 = features_var[j][xq][yq + 2];
+                grad0 = denominators[j * WH + xp * W + yp + 0];
+                grad1 = denominators[j * WH + xp * W + yp + 1];
+                grad2 = denominators[j * WH + xp * W + yp + 2];
                 
-                dist = fp - fq;
-                varpq = fmin(varp, varq);
-                var_cancel = varp + varpq;
-                sqdist = dist * dist;
-                dist_var = var_cancel - sqdist;
+                dist0 = fp0 - fq0;
+                dist1 = fp1 - fq1;
+                dist2 = fp2 - fq2;
+                varpq0 = fmin(varp0, varq0);
+                varpq1 = fmin(varp1, varq1);
+                varpq2 = fmin(varp2, varq2);
+                var_cancel0 = varp0 + varpq0;
+                var_cancel1 = varp1 + varpq1;
+                var_cancel2 = varp2 + varpq2;
+                sqdist0 = dist0 * dist0;
+                sqdist1 = dist1 * dist1;
+                sqdist2 = dist2 * dist2;
+                dist_var0 = var_cancel0 - sqdist0;
+                dist_var1 = var_cancel1 - sqdist1;
+                dist_var2 = var_cancel2 - sqdist2;
 
                 // ============ !!!!!!! =================================================================
                 // ToDo: Precompute normalization constants => always the same independet of R
                 // @Comment from Nino: Not successfull so far => same runtime but less flops => yet less performance
-                scalar var_max = fmax(varp, grad);
-                scalar normalization_r = KF_SQUARED*fmax(TAU_R, var_max);
-                scalar normalization_b = KF_SQUARED*fmax(TAU_B, var_max);
+                scalar var_max0 = fmax(varp0, grad0);
+                scalar var_max1 = fmax(varp1, grad1);
+                scalar var_max2 = fmax(varp2, grad2);
+                scalar normalization_r0 = KF_SQUARED*fmax(TAU_R, var_max0);
+                scalar normalization_r1 = KF_SQUARED*fmax(TAU_R, var_max1);
+                scalar normalization_r2 = KF_SQUARED*fmax(TAU_R, var_max2);
+                scalar normalization_b0 = KF_SQUARED*fmax(TAU_B, var_max0);
+                scalar normalization_b1 = KF_SQUARED*fmax(TAU_B, var_max1);
+                scalar normalization_b2 = KF_SQUARED*fmax(TAU_B, var_max2);
                 // ============ !!!!!!! =================================================================
 
                 //df_r = fmin(df_r, dist_var/norm_r[j * WH + xp * W + yp]);
                 //df_b = fmin(df_b, dist_var/norm_b[j * WH + xp * W + yp]);
-                df_r = fmin(df_r, (dist_var)/normalization_r);
-                df_b = fmin(df_b, (dist_var)/normalization_b);
+                df_r0 = fmin(df_r0, (dist_var0)/normalization_r0);
+                df_r1 = fmin(df_r1, (dist_var1)/normalization_r1);
+                df_r2 = fmin(df_r2, (dist_var2)/normalization_r2);
+                df_b0 = fmin(df_b0, (dist_var0)/normalization_b0);
+                df_b1 = fmin(df_b1, (dist_var1)/normalization_b1);
+                df_b2 = fmin(df_b2, (dist_var2)/normalization_b2);
             } 
-            features_weights_r[xp * W + yp] = df_r;
-            features_weights_b[xp * W + yp] = df_b;
+            features_weights_r[xp * W + yp + 0] = df_r0;
+            features_weights_r[xp * W + yp + 1] = df_r1;
+            features_weights_r[xp * W + yp + 2] = df_r2;
+            features_weights_b[xp * W + yp + 0] = df_b0;
+            features_weights_b[xp * W + yp + 1] = df_b1;
+            features_weights_b[xp * W + yp + 2] = df_b2;
         }
     }
 }
-
+// $end_unroll
 
 void candidate_filtering_all_ILP2(buffer output_r, buffer output_g, buffer output_b, buffer color, buffer color_var, buffer features, buffer features_var, const int R, const int W, const int H){
 
