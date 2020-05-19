@@ -121,33 +121,35 @@ using namespace std;
     buffer sel;
     allocate_buffer(&sel, img_width, img_height);
     
-    __m256 e0, e1, e2, mask0, mask1, mask;
+    __m256 e0, e1, e2;
+    __m256 mask0_0, mask1_0, mask_0;
+    __m256 mask0_1, mask1_1, mask_1;
+    __m256 mask0_2, mask1_2, mask_2;
+    const __m256 ones = _mm256_set1_ps(1.);
     // Compute selection maps
     for (int x = 0; x < img_width; x++){
-        for (int y = 0; y < img_height; y++){
+        for (int y = 0; y < img_height; y+=8){
 
-                // e0 = _mm256_loadu_ps(e[0][x]+y);
-                // e1 = _mm256_loadu_ps(e[1][x]+y);
-                // e2 = _mm256_loadu_ps(e[2][x]+y);
+                e0 = _mm256_loadu_ps(e[0][x]+y);
+                e1 = _mm256_loadu_ps(e[1][x]+y);
+                e2 = _mm256_loadu_ps(e[2][x]+y);
                 
-                // mask0 = _mm256_cmp_ps(e0, e1, _CMP_LT_OQ);
-                // mask1 = _mm256_cmp_ps(e0, e2, _CMP_LT_OQ);
-                // mask = _mm256_and_ps(mask0, mask1);
-                // _mm256_storeu_ps(sel[0][x]+y, mask);
+                mask0_0 = _mm256_cmp_ps(e0, e1, _CMP_LT_OQ);
+                mask1_0 = _mm256_cmp_ps(e0, e2, _CMP_LT_OQ);
+                mask0_1 = _mm256_cmp_ps(e1, e0, _CMP_LT_OQ);
+                mask1_1 = _mm256_cmp_ps(e1, e2, _CMP_LT_OQ);
+                mask0_2 = _mm256_cmp_ps(e2, e0, _CMP_LT_OQ);
+                mask1_2 = _mm256_cmp_ps(e1, e2, _CMP_LT_OQ);
 
-                // mask0 = _mm256_cmp_ps(e1, e0, _CMP_LT_OQ);
-                // mask1 = _mm256_cmp_ps(e1, e2, _CMP_LT_OQ);
-                // mask = _mm256_and_ps(mask0, mask1);
-                // _mm256_storeu_ps(sel[1][x]+y, mask);
-
-                // mask0 = _mm256_cmp_ps(e2, e0, _CMP_LT_OQ);
-                // mask1 = _mm256_cmp_ps(e1, e2, _CMP_LT_OQ);
-                // mask = _mm256_and_ps(mask0, mask1);
-                // _mm256_storeu_ps(sel[2][x]+y, mask);                                
-                              
-                sel[0][x][y] = e[0][x][y] < e[1][x][y] && e[0][x][y] < e[2][x][y];
-                sel[1][x][y] = e[1][x][y] < e[0][x][y] && e[1][x][y] < e[2][x][y];
-                sel[2][x][y] = e[2][x][y] < e[0][x][y] && e[1][x][y] < e[2][x][y];
+                mask_0 = _mm256_and_ps(mask0_0, mask1_0);
+                mask_1 = _mm256_and_ps(mask0_1, mask1_1);
+                mask_2 = _mm256_and_ps(mask0_2, mask1_2);
+                mask_0 = _mm256_and_ps(ones, mask_0);
+                mask_1 = _mm256_and_ps(ones, mask_1);
+                mask_2 = _mm256_and_ps(ones, mask_2);
+                _mm256_storeu_ps(sel[0][x]+y, mask_0);
+                _mm256_storeu_ps(sel[1][x]+y, mask_1);
+                _mm256_storeu_ps(sel[2][x]+y, mask_2);                                
         }
     }
 
