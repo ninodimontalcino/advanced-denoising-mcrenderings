@@ -6,8 +6,6 @@
 #include "../memory_mgmt.hpp"
 
 #include "../denoise.h"
-#include <immintrin.h>
-// #include "../avx_mathfun.h"
 
 
 using namespace std;
@@ -30,7 +28,7 @@ using namespace std;
 å
     \return void --> denoised image in buffer out_img
  */
- void basic_restructure4(buffer out_img, buffer c, buffer c_var, buffer f, buffer f_var, int R, int img_width, int img_height){
+ void basic_restructure3bis(buffer out_img, buffer c, buffer c_var, buffer f, buffer f_var, int R, int img_width, int img_height){
 
     if(DEBUG) {
         cout << "--------------------------------------------------" << endl;
@@ -50,7 +48,7 @@ using namespace std;
     buffer f_var_filtered;
     allocate_buffer_zero(&f_filtered, img_width, img_height);
     allocate_buffer_zero(&f_var_filtered, img_width, img_height);
-    feature_prefiltering_VEC(f_filtered, f_var_filtered, f, f_var, p_pre, img_width, img_height);
+    feature_prefiltering_ILP(f_filtered, f_var_filtered, f, f_var, p_pre, img_width, img_height);
     
     // DEBUGGING PART
     if(DEBUG) {
@@ -65,15 +63,11 @@ using namespace std;
     // ----------------------------------------------
 
     // (a) Candidate Filter: FIRST
-    Flt_parameters p_all[3];
-    p_all[0] = { .kc = 2.0, .kf = 0.6, .tau = 0.001, .f = 1, .r = R};
-    p_all[1] = { .kc = 2.0, .kf = 0.6, .tau = 0.001, .f = 3, .r = R};
-    p_all[2] = { .kc = INFINITY, .kf = 0.6, .tau = 0.0001, .f = 1, .r = R};   // Fixed Variable: kc=INF => is exploited in filtering
     buffer r, g, b;
     allocate_buffer_zero(&r, img_width, img_height);
     allocate_buffer_zero(&g, img_width, img_height);
     allocate_buffer_zero(&b, img_width, img_height);
-    candidate_filtering_all_VEC(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, img_width, img_height);
+    candidate_filtering_all_ILP2(r, g, b, c, c_var, f_filtered, f_var_filtered, R, img_width, img_height);
 
     
     // DEBUGGING PART
@@ -90,8 +84,8 @@ using namespace std;
 
     // (a) Compute SURE error estimates
     buffer sure;
-    allocate_buffer(&sure, img_width, img_height); // Zero allocation done in Sure
-    sure_all_VEC(sure, c, c_var, r, g, b, img_width, img_height);
+    allocate_buffer_zero(&sure, img_width, img_height);
+    sure_all(sure, c, c_var, r, g, b, img_width, img_height);
     
     // DEBUGGING PART
     if(DEBUG) {
@@ -105,7 +99,7 @@ using namespace std;
     Flt_parameters p_sure = { .kc = 1.0, .kf = INFINITY, .tau = 0.001, .f = 1, .r = 1};
     buffer e;
     allocate_buffer_zero(&e, img_width, img_height);
-    filtering_basic_f1_VEC(e, sure, c, c_var, p_sure, img_width, img_height);
+    filtering_basic_f1_ILP(e, sure, c, c_var, p_sure, img_width, img_height);
     
     // DEBUG PART
     if(DEBUG) {
@@ -121,35 +115,12 @@ using namespace std;
     buffer sel;
     allocate_buffer(&sel, img_width, img_height);
     
-    __m256 e0, e1, e2;
-    __m256 mask0_0, mask1_0, mask_0;
-    __m256 mask0_1, mask1_1, mask_1;
-    __m256 mask0_2, mask1_2, mask_2;
-    const __m256 ones = _mm256_set1_ps(1.);
     // Compute selection maps
     for (int x = 0; x < img_width; x++){
-        for (int y = 0; y < img_height; y+=8){
-
-                e0 = _mm256_loadu_ps(e[0][x]+y);
-                e1 = _mm256_loadu_ps(e[1][x]+y);
-                e2 = _mm256_loadu_ps(e[2][x]+y);
-                
-                mask0_0 = _mm256_cmp_ps(e0, e1, _CMP_LT_OQ);
-                mask1_0 = _mm256_cmp_ps(e0, e2, _CMP_LT_OQ);
-                mask0_1 = _mm256_cmp_ps(e1, e0, _CMP_LT_OQ);
-                mask1_1 = _mm256_cmp_ps(e1, e2, _CMP_LT_OQ);
-                mask0_2 = _mm256_cmp_ps(e2, e0, _CMP_LT_OQ);
-                mask1_2 = _mm256_cmp_ps(e1, e2, _CMP_LT_OQ);
-
-                mask_0 = _mm256_and_ps(mask0_0, mask1_0);
-                mask_1 = _mm256_and_ps(mask0_1, mask1_1);
-                mask_2 = _mm256_and_ps(mask0_2, mask1_2);
-                mask_0 = _mm256_and_ps(ones, mask_0);
-                mask_1 = _mm256_and_ps(ones, mask_1);
-                mask_2 = _mm256_and_ps(ones, mask_2);
-                _mm256_storeu_ps(sel[0][x]+y, mask_0);
-                _mm256_storeu_ps(sel[1][x]+y, mask_1);
-                _mm256_storeu_ps(sel[2][x]+y, mask_2);                                
+        for (int y = 0; y < img_height; y++){
+                sel[0][x][y] = e[0][x][y] < e[1][x][y] && e[0][x][y] < e[2][x][y];
+                sel[1][x][y] = e[1][x][y] < e[0][x][y] && e[1][x][y] < e[2][x][y];
+                sel[2][x][y] = e[2][x][y] < e[0][x][y] && e[1][x][y] < e[2][x][y];
         }
     }
 
@@ -167,7 +138,7 @@ using namespace std;
     Flt_parameters p_sel = { .kc = 1.0, .kf = INFINITY, .tau = 0.0001, .f = 1, .r = 5};
     buffer sel_filtered;
     allocate_buffer_zero(&sel_filtered, img_width, img_height);
-    filtering_basic_f1_VEC(sel_filtered, sel, c, c_var, p_sel, img_width, img_height);
+    filtering_basic_f1_ILP(sel_filtered, sel, c, c_var, p_sel, img_width, img_height);
 
     // DEBUG PART
     if(DEBUG) {

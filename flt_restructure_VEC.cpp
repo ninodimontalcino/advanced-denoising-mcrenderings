@@ -395,6 +395,818 @@ void filtering_basic_VEC(buffer output, buffer input, buffer color, buffer color
 
 
 
+void filtering_basic_f3_VEC(buffer output, buffer input, buffer c, buffer c_var, Flt_parameters p, int W, int H){
+    
+    const __m256 EPSILON_vec = _mm256_set1_ps(EPSILON);
+
+    scalar K_C_SQUARED = p.kc * p.kc;
+    const __m256 k_c_squared_vec = _mm256_set1_ps(K_C_SQUARED);
+    int R = p.r;
+    int F = p.f;
+    
+    // ------------------------
+    // VARIABLE DEFINITION
+    // ------------------------
+    int xq, yq;
+    scalar sqdist0, sqdist1, sqdist2; 
+    scalar var_cancel0, var_cancel1, var_cancel2;
+    scalar normalization0, normalization1, normalization2;
+    scalar term0, term1, term2;
+    scalar weight_0, weight_1, weight_2, weight_3;
+    scalar sum_0, sum_1, sum_2, sum_3, sum_4, sum_5, sum_6, sum_7;
+    scalar w_0, w_1, w_2, w_3;
+
+    __m256 c_p_vec_0, c_q_vec_0, c_var_p_vec_0, c_var_q_vec_0, var_cancel_vec_0;
+    __m256 c_p_vec_1, c_q_vec_1, c_var_p_vec_1, c_var_q_vec_1, var_cancel_vec_1;
+    __m256 c_p_vec_2, c_q_vec_2, c_var_p_vec_2, c_var_q_vec_2, var_cancel_vec_2;
+    __m256 sqdist_vec_0, sqdist_vec_1, sqdist_vec_2;
+    __m256 normalization_vec_0, normalization_vec_1, normalization_vec_2;
+
+    // ------------------------
+    // MEMORY ALLOCATION
+    // ------------------------
+
+    // Allocate buffer weights_sum for normalizing
+    scalar* weight_sum;
+    weight_sum = (scalar*) calloc(W*H, sizeof(scalar));
+
+    // Init temp channel
+    scalar* temp;
+    scalar* temp2;
+    temp = (scalar*) malloc(W*H*sizeof(scalar));
+    temp2 = (scalar*) malloc(W*H*sizeof(scalar));
+
+    // Precompute size of neighbourhood
+    scalar NEIGH_INV = 1./ (3*(2*F+1)*(2*F+1));
+    scalar NEIGH_INV_MIN = - NEIGH_INV;
+    __m256 NEIGH_INV_MIN_VEC = _mm256_set1_ps(NEIGH_INV_MIN);
+
+    // The end of the vectorized part
+    int final_yp = H - 32 + p.r+p.f;
+
+    // Covering the neighbourhood
+    for (int r_x = -R; r_x <= R; r_x++){
+        for (int r_y = -R; r_y <= R; r_y++){
+        
+            // Compute Color Weight for all pixels with fixed r
+            for(int xp = R; xp < W - R; ++xp) {
+                for(int yp = R; yp < H - R; yp+=8) {
+
+                    xq = xp + r_x;
+                    yq = yp + r_y;
+                    
+                    c_var_p_vec_0 = _mm256_loadu_ps(c_var[0][xp]+yp);
+                    c_var_q_vec_0 = _mm256_loadu_ps(c_var[0][xq]+yq);
+                    c_p_vec_0 = _mm256_loadu_ps(c[0][xp]+yp);
+                    c_q_vec_0 = _mm256_loadu_ps(c[0][xq]+yq);
+                    c_var_p_vec_1 = _mm256_loadu_ps(c_var[1][xp]+yp);
+                    c_var_q_vec_1 = _mm256_loadu_ps(c_var[1][xq]+yq);
+                    c_p_vec_1 = _mm256_loadu_ps(c[1][xp]+yp);
+                    c_q_vec_1 = _mm256_loadu_ps(c[1][xq]+yq);
+                    c_var_p_vec_2 = _mm256_loadu_ps(c_var[2][xp]+yp);
+                    c_var_q_vec_2 = _mm256_loadu_ps(c_var[2][xq]+yq);
+                    c_p_vec_2 = _mm256_loadu_ps(c[2][xp]+yp);
+                    c_q_vec_2 = _mm256_loadu_ps(c[2][xq]+yq);
+
+                    normalization_vec_0 = _mm256_add_ps(c_var_p_vec_0, c_var_q_vec_0);
+                    normalization_vec_1 = _mm256_add_ps(c_var_p_vec_1, c_var_q_vec_1);
+                    normalization_vec_2 = _mm256_add_ps(c_var_p_vec_2, c_var_q_vec_2);
+                    sqdist_vec_0 = _mm256_sub_ps(c_p_vec_0, c_q_vec_0);
+                    sqdist_vec_1 = _mm256_sub_ps(c_p_vec_1, c_q_vec_1);
+                    sqdist_vec_2 = _mm256_sub_ps(c_p_vec_2, c_q_vec_2);
+                    var_cancel_vec_0 = _mm256_min_ps(c_var_p_vec_0, c_var_q_vec_0);
+                    var_cancel_vec_1 = _mm256_min_ps(c_var_p_vec_1, c_var_q_vec_1);
+                    var_cancel_vec_2 = _mm256_min_ps(c_var_p_vec_2, c_var_q_vec_2);
+
+                    normalization_vec_0 = _mm256_mul_ps(k_c_squared_vec, normalization_vec_0);
+                    normalization_vec_1 = _mm256_mul_ps(k_c_squared_vec, normalization_vec_1);
+                    normalization_vec_2 = _mm256_mul_ps(k_c_squared_vec, normalization_vec_2);
+                    sqdist_vec_0 = _mm256_mul_ps(sqdist_vec_0, sqdist_vec_0);
+                    sqdist_vec_1 = _mm256_mul_ps(sqdist_vec_1, sqdist_vec_1);
+                    sqdist_vec_2 = _mm256_mul_ps(sqdist_vec_2, sqdist_vec_2);
+                    var_cancel_vec_0 = _mm256_add_ps(c_var_p_vec_0, var_cancel_vec_0);
+                    var_cancel_vec_1 = _mm256_add_ps(c_var_p_vec_1, var_cancel_vec_1);
+                    var_cancel_vec_2 = _mm256_add_ps(c_var_p_vec_2, var_cancel_vec_2);
+
+                    normalization_vec_0 = _mm256_add_ps(EPSILON_vec, normalization_vec_0);
+                    sqdist_vec_0 = _mm256_sub_ps(sqdist_vec_0, var_cancel_vec_0);
+                    normalization_vec_1 = _mm256_add_ps(EPSILON_vec, normalization_vec_1);
+                    sqdist_vec_1 = _mm256_sub_ps(sqdist_vec_1, var_cancel_vec_1);
+                    normalization_vec_2 = _mm256_add_ps(EPSILON_vec, normalization_vec_2);
+                    sqdist_vec_2 = _mm256_sub_ps(sqdist_vec_2, var_cancel_vec_2);
+
+                    sqdist_vec_0 = _mm256_div_ps(sqdist_vec_0, normalization_vec_0);
+                    sqdist_vec_1 = _mm256_div_ps(sqdist_vec_1, normalization_vec_1);
+                    sqdist_vec_2 = _mm256_div_ps(sqdist_vec_2, normalization_vec_2);
+
+                    sqdist_vec_0 = _mm256_add_ps(sqdist_vec_0, sqdist_vec_1);
+                    sqdist_vec_0 = _mm256_add_ps(sqdist_vec_0, sqdist_vec_2);
+
+                    _mm256_storeu_ps(temp+xp*W+yp, sqdist_vec_0);
+                }
+            }
+
+
+            // Apply Box-Filtering for Patch Contribution => Use Box-Filter Seperability
+            // (1) Convolve along height
+            for(int xp = R; xp < W - R; ++xp) {
+                for(int yp = p.r + p.f; yp < H - p.r - p.f; yp+=64) {
+
+                    __m256 sum_0_vec = _mm256_setzero_ps();
+                    __m256 sum_1_vec = _mm256_setzero_ps();
+                    __m256 sum_2_vec = _mm256_setzero_ps();
+                    __m256 sum_3_vec = _mm256_setzero_ps();
+                    __m256 sum_4_vec = _mm256_setzero_ps();
+                    __m256 sum_5_vec = _mm256_setzero_ps();
+                    __m256 sum_6_vec = _mm256_setzero_ps();
+                    __m256 sum_7_vec = _mm256_setzero_ps();
+
+                    for (int k=-p.f; k<=p.f; k++){
+
+                        __m256 temp_vec_0 = _mm256_loadu_ps(temp+xp * W + yp+k);
+                        __m256 temp_vec_1 = _mm256_loadu_ps(temp+xp * W + (yp+1*8)+k);
+                        __m256 temp_vec_2 = _mm256_loadu_ps(temp+xp * W + (yp+2*8)+k);
+                        __m256 temp_vec_3 = _mm256_loadu_ps(temp+xp * W + (yp+3*8)+k);
+                        __m256 temp_vec_4 = _mm256_loadu_ps(temp+xp * W + (yp+4*8)+k);
+                        __m256 temp_vec_5 = _mm256_loadu_ps(temp+xp * W + (yp+5*8)+k);
+                        __m256 temp_vec_6 = _mm256_loadu_ps(temp+xp * W + (yp+6*8)+k);
+                        __m256 temp_vec_7 = _mm256_loadu_ps(temp+xp * W + (yp+7*8)+k);
+
+                        sum_0_vec = _mm256_add_ps(sum_0_vec, temp_vec_0);
+                        sum_1_vec = _mm256_add_ps(sum_1_vec, temp_vec_1);
+                        sum_2_vec = _mm256_add_ps(sum_2_vec, temp_vec_2);
+                        sum_3_vec = _mm256_add_ps(sum_3_vec, temp_vec_3);
+                        sum_4_vec = _mm256_add_ps(sum_4_vec, temp_vec_4);
+                        sum_5_vec = _mm256_add_ps(sum_5_vec, temp_vec_5);
+                        sum_6_vec = _mm256_add_ps(sum_6_vec, temp_vec_6);
+                        sum_7_vec = _mm256_add_ps(sum_7_vec, temp_vec_7);
+                    }
+
+                    _mm256_storeu_ps(temp2+ xp * W + (yp + 0 * 8), sum_0_vec);
+                    _mm256_storeu_ps(temp2+ xp * W + (yp + 1 * 8), sum_1_vec);
+                    _mm256_storeu_ps(temp2+ xp * W + (yp + 2 * 8), sum_2_vec);
+                    _mm256_storeu_ps(temp2+ xp * W + (yp + 3 * 8), sum_3_vec);
+                    _mm256_storeu_ps(temp2+ xp * W + (yp + 4 * 8), sum_4_vec);
+                    _mm256_storeu_ps(temp2+ xp * W + (yp + 5 * 8), sum_5_vec);
+                    _mm256_storeu_ps(temp2+ xp * W + (yp + 6 * 8), sum_6_vec);
+                    _mm256_storeu_ps(temp2+ xp * W + (yp + 7 * 8), sum_7_vec);
+                }
+            }
+
+            // (2) Convolve along width including weighted contribution
+            for(int xp = R + F; xp < W - R - F; ++xp) {
+                for(int yp = p.r + p.f; yp < H - 32; yp+=32) {
+
+                    int xq = xp + r_x;
+                    int yq = yp + r_y;
+
+                    __m256 sum_0_vec = _mm256_loadu_ps(temp2+(xp-3) * W + (yp+0*8));
+                    __m256 sum_1_vec = _mm256_loadu_ps(temp2+(xp-3) * W + (yp+1*8));
+                    __m256 sum_2_vec = _mm256_loadu_ps(temp2+(xp-3) * W + (yp+2*8));
+                    __m256 sum_3_vec = _mm256_loadu_ps(temp2+(xp-3) * W + (yp+3*8));
+
+                    __m256 temp2_vec_0 = _mm256_loadu_ps(temp2+(xp-2) * W + (yp+0*8));
+                    __m256 temp2_vec_1 = _mm256_loadu_ps(temp2+(xp-2) * W + (yp+1*8));
+                    __m256 temp2_vec_2 = _mm256_loadu_ps(temp2+(xp-2) * W + (yp+2*8));
+                    __m256 temp2_vec_3 = _mm256_loadu_ps(temp2+(xp-2) * W + (yp+3*8));
+                        
+                    sum_0_vec = _mm256_add_ps(sum_0_vec, temp2_vec_0);
+                    sum_1_vec = _mm256_add_ps(sum_1_vec, temp2_vec_1);
+                    sum_2_vec = _mm256_add_ps(sum_2_vec, temp2_vec_2);
+                    sum_3_vec = _mm256_add_ps(sum_3_vec, temp2_vec_3);
+                    
+
+                    temp2_vec_0 = _mm256_loadu_ps(temp2+(xp-1) * W + (yp+0*8));
+                    temp2_vec_1 = _mm256_loadu_ps(temp2+(xp-1) * W + (yp+1*8));
+                    temp2_vec_2 = _mm256_loadu_ps(temp2+(xp-1) * W + (yp+2*8));
+                    temp2_vec_3 = _mm256_loadu_ps(temp2+(xp-1) * W + (yp+3*8));
+                        
+                    sum_0_vec = _mm256_add_ps(sum_0_vec, temp2_vec_0);
+                    sum_1_vec = _mm256_add_ps(sum_1_vec, temp2_vec_1);
+                    sum_2_vec = _mm256_add_ps(sum_2_vec, temp2_vec_2);
+                    sum_3_vec = _mm256_add_ps(sum_3_vec, temp2_vec_3);
+
+
+                    temp2_vec_0 = _mm256_loadu_ps(temp2+xp * W + (yp+0*8));
+                    temp2_vec_1 = _mm256_loadu_ps(temp2+xp * W + (yp+1*8));
+                    temp2_vec_2 = _mm256_loadu_ps(temp2+xp * W + (yp+2*8));
+                    temp2_vec_3 = _mm256_loadu_ps(temp2+xp * W + (yp+3*8));
+                        
+                    sum_0_vec = _mm256_add_ps(sum_0_vec, temp2_vec_0);
+                    sum_1_vec = _mm256_add_ps(sum_1_vec, temp2_vec_1);
+                    sum_2_vec = _mm256_add_ps(sum_2_vec, temp2_vec_2);
+                    sum_3_vec = _mm256_add_ps(sum_3_vec, temp2_vec_3);
+
+
+                    temp2_vec_0 = _mm256_loadu_ps(temp2+(xp+1) * W + (yp+0*8));
+                    temp2_vec_1 = _mm256_loadu_ps(temp2+(xp+1) * W + (yp+1*8));
+                    temp2_vec_2 = _mm256_loadu_ps(temp2+(xp+1) * W + (yp+2*8));
+                    temp2_vec_3 = _mm256_loadu_ps(temp2+(xp+1) * W + (yp+3*8));
+                        
+                    sum_0_vec = _mm256_add_ps(sum_0_vec, temp2_vec_0);
+                    sum_1_vec = _mm256_add_ps(sum_1_vec, temp2_vec_1);
+                    sum_2_vec = _mm256_add_ps(sum_2_vec, temp2_vec_2);
+                    sum_3_vec = _mm256_add_ps(sum_3_vec, temp2_vec_3);
+
+                    temp2_vec_0 = _mm256_loadu_ps(temp2+(xp+2) * W + (yp+0*8));
+                    temp2_vec_1 = _mm256_loadu_ps(temp2+(xp+2) * W + (yp+1*8));
+                    temp2_vec_2 = _mm256_loadu_ps(temp2+(xp+2) * W + (yp+2*8));
+                    temp2_vec_3 = _mm256_loadu_ps(temp2+(xp+2) * W + (yp+3*8));
+                        
+                    sum_0_vec = _mm256_add_ps(sum_0_vec, temp2_vec_0);
+                    sum_1_vec = _mm256_add_ps(sum_1_vec, temp2_vec_1);
+                    sum_2_vec = _mm256_add_ps(sum_2_vec, temp2_vec_2);
+                    sum_3_vec = _mm256_add_ps(sum_3_vec, temp2_vec_3);
+
+                    temp2_vec_0 = _mm256_loadu_ps(temp2+(xp+3) * W + (yp+0*8));
+                    temp2_vec_1 = _mm256_loadu_ps(temp2+(xp+3) * W + (yp+1*8));
+                    temp2_vec_2 = _mm256_loadu_ps(temp2+(xp+3) * W + (yp+2*8));
+                    temp2_vec_3 = _mm256_loadu_ps(temp2+(xp+3) * W + (yp+3*8));
+                        
+                    sum_0_vec = _mm256_add_ps(sum_0_vec, temp2_vec_0);
+                    sum_1_vec = _mm256_add_ps(sum_1_vec, temp2_vec_1);
+                    sum_2_vec = _mm256_add_ps(sum_2_vec, temp2_vec_2);
+                    sum_3_vec = _mm256_add_ps(sum_3_vec, temp2_vec_3);
+
+                    // New optimization: using the opposite of neigh_inv to avoid the multiplication by -1, and take the min instead of max
+                    __m256 weight_vec_0 = _mm256_mul_ps(sum_0_vec, NEIGH_INV_MIN_VEC);
+                    __m256 weight_vec_1 = _mm256_mul_ps(sum_1_vec, NEIGH_INV_MIN_VEC);
+                    __m256 weight_vec_2 = _mm256_mul_ps(sum_2_vec, NEIGH_INV_MIN_VEC);
+                    __m256 weight_vec_3 = _mm256_mul_ps(sum_3_vec, NEIGH_INV_MIN_VEC);
+
+                    weight_vec_0 = _mm256_min_ps(_mm256_setzero_ps(), weight_vec_0);
+                    weight_vec_1 = _mm256_min_ps(_mm256_setzero_ps(), weight_vec_1);
+                    weight_vec_2 = _mm256_min_ps(_mm256_setzero_ps(), weight_vec_2);
+                    weight_vec_3 = _mm256_min_ps(_mm256_setzero_ps(), weight_vec_3);
+
+                    weight_vec_0 = exp256_ps(weight_vec_0);
+                    weight_vec_1 = exp256_ps(weight_vec_1);
+                    weight_vec_2 = exp256_ps(weight_vec_2);
+                    weight_vec_3 = exp256_ps(weight_vec_3);
+
+                    __m256 weight_sum_vec_0 = _mm256_loadu_ps(weight_sum+ xp * W + ( yp + 0 * 8));
+                    __m256 weight_sum_vec_1 = _mm256_loadu_ps(weight_sum+ xp * W + ( yp + 1 * 8));
+                    __m256 weight_sum_vec_2 = _mm256_loadu_ps(weight_sum+ xp * W + ( yp + 2 * 8));
+                    __m256 weight_sum_vec_3 = _mm256_loadu_ps(weight_sum+ xp * W + ( yp + 3 * 8));
+
+                    weight_sum_vec_0 = _mm256_add_ps(weight_sum_vec_0, weight_vec_0);
+                    weight_sum_vec_1 = _mm256_add_ps(weight_sum_vec_1, weight_vec_1);
+                    weight_sum_vec_2 = _mm256_add_ps(weight_sum_vec_2, weight_vec_2);
+                    weight_sum_vec_3 = _mm256_add_ps(weight_sum_vec_3, weight_vec_3);
+
+                    _mm256_storeu_ps(weight_sum+ xp * W + ( yp + 0 * 8), weight_sum_vec_0);
+                    _mm256_storeu_ps(weight_sum+ xp * W + ( yp + 1 * 8), weight_sum_vec_1);
+                    _mm256_storeu_ps(weight_sum+ xp * W + ( yp + 2 * 8), weight_sum_vec_2);
+                    _mm256_storeu_ps(weight_sum+ xp * W + ( yp + 3 * 8), weight_sum_vec_3);
+                    
+                    
+                    for (int i=0; i<3; i++){
+                        __m256 output_vec_0 = _mm256_loadu_ps(output[i][xp] + (yp + 0 * 8));
+                        __m256 input_vec_0 = _mm256_loadu_ps(input[i][xq] + (yq + 0 * 8));
+                        __m256 output_vec_1 = _mm256_loadu_ps(output[i][xp] + (yp + 1 * 8));
+                        __m256 input_vec_1 = _mm256_loadu_ps(input[i][xq] + (yq + 1 * 8));
+                        __m256 output_vec_2 = _mm256_loadu_ps(output[i][xp] + (yp + 2 * 8));
+                        __m256 input_vec_2 = _mm256_loadu_ps(input[i][xq] + (yq + 2 * 8));
+                        __m256 output_vec_3 = _mm256_loadu_ps(output[i][xp] + (yp + 3 * 8));
+                        __m256 input_vec_3 = _mm256_loadu_ps(input[i][xq] + (yq + 3 * 8));
+
+                        output_vec_0 = _mm256_fmadd_ps(weight_vec_0, input_vec_0, output_vec_0);
+                        output_vec_1 = _mm256_fmadd_ps(weight_vec_1, input_vec_1, output_vec_1);
+                        output_vec_2 = _mm256_fmadd_ps(weight_vec_2, input_vec_2, output_vec_2);
+                        output_vec_3 = _mm256_fmadd_ps(weight_vec_3, input_vec_3, output_vec_3);
+
+                        _mm256_storeu_ps(output[i][xp] + (yp + 0 * 8), output_vec_0);
+                        _mm256_storeu_ps(output[i][xp] + (yp + 1 * 8), output_vec_1);
+                        _mm256_storeu_ps(output[i][xp] + (yp + 2 * 8), output_vec_2);
+                        _mm256_storeu_ps(output[i][xp] + (yp + 3 * 8), output_vec_3);
+
+                    }
+                }
+
+                for(int yp = final_yp; yp < H - p.r - p.f; yp+=4) {
+                    
+                    
+                    int xq = xp + r_x;
+                    int yq = yp + r_y;
+
+                    scalar sum_0 = 0.f;
+                    scalar sum_1 = 0.f;
+                    scalar sum_2 = 0.f;
+                    scalar sum_3 = 0.f;
+
+                    sum_0 += temp2[(xp-3) * W + yp];
+                    sum_1 += temp2[(xp-3) * W + yp+1];
+                    sum_2 += temp2[(xp-3) * W + yp+2];
+                    sum_3 += temp2[(xp-3) * W + yp+3];
+
+                    sum_0 += temp2[(xp-2) * W + yp];
+                    sum_1 += temp2[(xp-2) * W + yp+1];
+                    sum_2 += temp2[(xp-2) * W + yp+2];
+                    sum_3 += temp2[(xp-2) * W + yp+3];
+
+                    sum_0 += temp2[(xp-1) * W + yp];
+                    sum_1 += temp2[(xp-1) * W + yp+1];
+                    sum_2 += temp2[(xp-1) * W + yp+2];
+                    sum_3 += temp2[(xp-1) * W + yp+3];
+
+                    sum_0 += temp2[(xp) * W + yp];
+                    sum_1 += temp2[(xp) * W + yp+1];
+                    sum_2 += temp2[(xp) * W + yp+2];
+                    sum_3 += temp2[(xp) * W + yp+3];
+
+                    sum_0 += temp2[(xp+1) * W + yp];
+                    sum_1 += temp2[(xp+1) * W + yp+1];
+                    sum_2 += temp2[(xp+1) * W + yp+2];
+                    sum_3 += temp2[(xp+1) * W + yp+3];
+
+                    sum_0 += temp2[(xp+2) * W + yp];
+                    sum_1 += temp2[(xp+2) * W + yp+1];
+                    sum_2 += temp2[(xp+2) * W + yp+2];
+                    sum_3 += temp2[(xp+2) * W + yp+3];
+
+                    sum_0 += temp2[(xp+3) * W + yp];
+                    sum_1 += temp2[(xp+3) * W + yp+1];
+                    sum_2 += temp2[(xp+3) * W + yp+2];
+                    sum_3 += temp2[(xp+3) * W + yp+3];
+                    
+                    // Final Weight
+                    weight_0 = exp(-fmax(0.f, (sum_0 * NEIGH_INV)));
+                    weight_1 = exp(-fmax(0.f, (sum_1 * NEIGH_INV)));
+                    weight_2 = exp(-fmax(0.f, (sum_2 * NEIGH_INV)));
+                    weight_3 = exp(-fmax(0.f, (sum_3 * NEIGH_INV)));
+                    
+                    weight_sum[xp * W + yp] += weight_0;
+                    weight_sum[xp * W + yp+1] += weight_1;
+                    weight_sum[xp * W + yp+2] += weight_2;
+                    weight_sum[xp * W + yp+3] += weight_3;
+                    
+                    for (int i=0; i<3; i++){
+                        output[i][xp][yp] += weight_0 * input[i][xq][yq];
+                        output[i][xp][yp+1] += weight_1 * input[i][xq][yq+1];
+                        output[i][xp][yp+2] += weight_2 * input[i][xq][yq+2];
+                        output[i][xp][yp+3] += weight_3 * input[i][xq][yq+3];
+                    }
+                }
+            }
+
+        }
+    }
+
+    // Final Weight Normalization
+    for(int xp = R + F; xp < W - R - F; ++xp) {
+        for(int yp = p.r + p.f ; yp < H - 32; yp+=32) {     
+
+            __m256 weight_sum_vec_0 = _mm256_loadu_ps(weight_sum + xp * W + (yp + 0 * 8));
+            __m256 weight_sum_vec_1 = _mm256_loadu_ps(weight_sum + xp * W + (yp + 1 * 8));
+            __m256 weight_sum_vec_2 = _mm256_loadu_ps(weight_sum + xp * W + (yp + 2 * 8));
+            __m256 weight_sum_vec_3 = _mm256_loadu_ps(weight_sum + xp * W + (yp + 3 * 8));
+
+
+            for (int i=0; i<3; i++){
+                __m256 output_vec_0 = _mm256_loadu_ps(output[i][xp] + (yp + 0 * 8));
+                __m256 output_vec_1 = _mm256_loadu_ps(output[i][xp] + (yp + 1 * 8));
+                __m256 output_vec_2 = _mm256_loadu_ps(output[i][xp] + (yp + 2 * 8));
+                __m256 output_vec_3 = _mm256_loadu_ps(output[i][xp] + (yp + 3 * 8));
+                
+                output_vec_0 = _mm256_div_ps(output_vec_0, weight_sum_vec_0);
+                output_vec_1 = _mm256_div_ps(output_vec_1, weight_sum_vec_1);
+                output_vec_2 = _mm256_div_ps(output_vec_2, weight_sum_vec_2);
+                output_vec_3 = _mm256_div_ps(output_vec_3, weight_sum_vec_3);
+
+                _mm256_storeu_ps(output[i][xp] + (yp + 0 * 8), output_vec_0);
+                _mm256_storeu_ps(output[i][xp] + (yp + 1 * 8), output_vec_1);
+                _mm256_storeu_ps(output[i][xp] + (yp + 2 * 8), output_vec_2);
+                _mm256_storeu_ps(output[i][xp] + (yp + 3 * 8), output_vec_3);
+            }
+        }
+
+        for(int yp = final_yp; yp < H - p.r - p.f; yp+=4) {     
+            
+            scalar w_0 = weight_sum[xp * W + yp];
+            scalar w_1 = weight_sum[xp * W + yp+1];
+            scalar w_2 = weight_sum[xp * W + yp+2];
+            scalar w_3 = weight_sum[xp * W + yp+3];
+
+            for (int i=0; i<3; i++){
+                output[i][xp][yp] /= w_0;
+                output[i][xp][yp+1] /= w_1;
+                output[i][xp][yp+2] /= w_2;
+                output[i][xp][yp+3] /= w_3;
+            }
+        }
+    }
+
+    // Handle Border Cases
+    // ---------------------
+    for (int i = 0; i < 3; i++){
+        for (int xp = 0; xp < W; xp++){
+            for(int yp = 0; yp < R + F; yp++){
+                output[i][xp][yp] = input[i][xp][yp];
+                output[i][xp][H - yp - 1] = input[i][xp][H - yp - 1];
+            }
+        }
+        for(int xp = 0; xp < R + F; xp++){
+            for (int yp = R + F ; yp < H - R - F; yp++){
+                output[i][xp][yp] = input[i][xp][yp];
+                output[i][W - xp - 1][yp] = input[i][W - xp - 1][yp];
+            }
+        }
+    }
+
+
+    free(weight_sum);
+    free(temp);
+    free(temp2); 
+}
+
+void filtering_basic_f1_VEC(buffer output, buffer input, buffer c, buffer c_var, Flt_parameters p, int W, int H){
+    
+    const __m256 EPSILON_vec = _mm256_set1_ps(EPSILON);
+
+    scalar K_C_SQUARED = p.kc * p.kc;
+    const __m256 k_c_squared_vec = _mm256_set1_ps(K_C_SQUARED);
+    int R = p.r;
+    int F = p.f;
+    
+    // ------------------------
+    // VARIABLE DEFINITION
+    // ------------------------
+    int xq, yq;
+    scalar sqdist0, sqdist1, sqdist2; 
+    scalar var_cancel0, var_cancel1, var_cancel2;
+    scalar normalization0, normalization1, normalization2;
+    scalar term0, term1, term2;
+    scalar weight_0, weight_1, weight_2, weight_3;
+    scalar sum_0, sum_1, sum_2, sum_3, sum_4, sum_5, sum_6, sum_7;
+    scalar w_0, w_1, w_2, w_3;
+
+    __m256 c_p_vec_0, c_q_vec_0, c_var_p_vec_0, c_var_q_vec_0, var_cancel_vec_0;
+    __m256 c_p_vec_1, c_q_vec_1, c_var_p_vec_1, c_var_q_vec_1, var_cancel_vec_1;
+    __m256 c_p_vec_2, c_q_vec_2, c_var_p_vec_2, c_var_q_vec_2, var_cancel_vec_2;
+    __m256 sqdist_vec_0, sqdist_vec_1, sqdist_vec_2;
+    __m256 normalization_vec_0, normalization_vec_1, normalization_vec_2;
+
+    // ------------------------
+    // MEMORY ALLOCATION
+    // ------------------------
+
+    // Allocate buffer weights_sum for normalizing
+    scalar* weight_sum;
+    weight_sum = (scalar*) calloc(W*H, sizeof(scalar));
+
+    // Init temp channel
+    scalar* temp;
+    scalar* temp2;
+    temp = (scalar*) malloc(W*H*sizeof(scalar));
+    temp2 = (scalar*) malloc(W*H*sizeof(scalar));
+
+    // Precompute size of neighbourhood
+    scalar NEIGH_INV = 1./ (3*(2*F+1)*(2*F+1));
+    scalar NEIGH_INV_MIN = - NEIGH_INV;
+    __m256 NEIGH_INV_MIN_VEC = _mm256_set1_ps(NEIGH_INV_MIN);
+
+
+    // The end of the vectorized part
+    int final_yp = H - 32 + p.r+p.f;
+
+    // Covering the neighbourhood
+    for (int r_x = -R; r_x <= R; r_x++){
+        for (int r_y = -R; r_y <= R; r_y++){
+        
+            // Compute Color Weight for all pixels with fixed r
+            for(int xp = R; xp < W - R; ++xp) {
+                for(int yp = R; yp < H - R; yp+=8) {
+
+                    xq = xp + r_x;
+                    yq = yp + r_y;
+                    
+                    sqdist0 = c[0][xp][yp] - c[0][xq][yq];
+                    sqdist1 = c[1][xp][yp] - c[1][xq][yq];
+                    sqdist2 = c[2][xp][yp] - c[2][xq][yq];
+
+                    sqdist0 *= sqdist0;
+                    sqdist1 *= sqdist1;
+                    sqdist2 *= sqdist2;
+
+                    var_cancel0 = c_var[0][xp][yp] + fmin(c_var[0][xp][yp], c_var[0][xq][yq]);
+                    var_cancel1 = c_var[1][xp][yp] + fmin(c_var[1][xp][yp], c_var[1][xq][yq]);
+                    var_cancel2 = c_var[2][xp][yp] + fmin(c_var[2][xp][yp], c_var[2][xq][yq]);
+
+                    normalization0 = EPSILON + K_C_SQUARED*(c_var[0][xp][yp] + c_var[0][xq][yq]);
+                    normalization1 = EPSILON + K_C_SQUARED*(c_var[1][xp][yp] + c_var[1][xq][yq]);
+                    normalization2 = EPSILON + K_C_SQUARED*(c_var[2][xp][yp] + c_var[2][xq][yq]);
+                    
+                    term0 = (sqdist0 - var_cancel0) / normalization0;
+                    term1 = (sqdist1 - var_cancel1) / normalization1;
+                    term2 = (sqdist2 - var_cancel2) / normalization2;
+                    
+                    temp[xp * W + yp] = term0 + term1 + term2;
+
+                    c_var_p_vec_0 = _mm256_loadu_ps(c_var[0][xp]+yp);
+                    c_var_q_vec_0 = _mm256_loadu_ps(c_var[0][xq]+yq);
+                    c_p_vec_0 = _mm256_loadu_ps(c[0][xp]+yp);
+                    c_q_vec_0 = _mm256_loadu_ps(c[0][xq]+yq);
+                    c_var_p_vec_1 = _mm256_loadu_ps(c_var[1][xp]+yp);
+                    c_var_q_vec_1 = _mm256_loadu_ps(c_var[1][xq]+yq);
+                    c_p_vec_1 = _mm256_loadu_ps(c[1][xp]+yp);
+                    c_q_vec_1 = _mm256_loadu_ps(c[1][xq]+yq);
+                    c_var_p_vec_2 = _mm256_loadu_ps(c_var[2][xp]+yp);
+                    c_var_q_vec_2 = _mm256_loadu_ps(c_var[2][xq]+yq);
+                    c_p_vec_2 = _mm256_loadu_ps(c[2][xp]+yp);
+                    c_q_vec_2 = _mm256_loadu_ps(c[2][xq]+yq);
+
+                    normalization_vec_0 = _mm256_add_ps(c_var_p_vec_0, c_var_q_vec_0);
+                    normalization_vec_1 = _mm256_add_ps(c_var_p_vec_1, c_var_q_vec_1);
+                    normalization_vec_2 = _mm256_add_ps(c_var_p_vec_2, c_var_q_vec_2);
+                    sqdist_vec_0 = _mm256_sub_ps(c_p_vec_0, c_q_vec_0);
+                    sqdist_vec_1 = _mm256_sub_ps(c_p_vec_1, c_q_vec_1);
+                    sqdist_vec_2 = _mm256_sub_ps(c_p_vec_2, c_q_vec_2);
+                    var_cancel_vec_0 = _mm256_min_ps(c_var_p_vec_0, c_var_q_vec_0);
+                    var_cancel_vec_1 = _mm256_min_ps(c_var_p_vec_1, c_var_q_vec_1);
+                    var_cancel_vec_2 = _mm256_min_ps(c_var_p_vec_2, c_var_q_vec_2);
+
+                    normalization_vec_0 = _mm256_mul_ps(k_c_squared_vec, normalization_vec_0);
+                    normalization_vec_1 = _mm256_mul_ps(k_c_squared_vec, normalization_vec_1);
+                    normalization_vec_2 = _mm256_mul_ps(k_c_squared_vec, normalization_vec_2);
+                    sqdist_vec_0 = _mm256_mul_ps(sqdist_vec_0, sqdist_vec_0);
+                    sqdist_vec_1 = _mm256_mul_ps(sqdist_vec_1, sqdist_vec_1);
+                    sqdist_vec_2 = _mm256_mul_ps(sqdist_vec_2, sqdist_vec_2);
+                    var_cancel_vec_0 = _mm256_add_ps(c_var_p_vec_0, var_cancel_vec_0);
+                    var_cancel_vec_1 = _mm256_add_ps(c_var_p_vec_1, var_cancel_vec_1);
+                    var_cancel_vec_2 = _mm256_add_ps(c_var_p_vec_2, var_cancel_vec_2);
+
+                    normalization_vec_0 = _mm256_add_ps(EPSILON_vec, normalization_vec_0);
+                    sqdist_vec_0 = _mm256_sub_ps(sqdist_vec_0, var_cancel_vec_0);
+                    normalization_vec_1 = _mm256_add_ps(EPSILON_vec, normalization_vec_1);
+                    sqdist_vec_1 = _mm256_sub_ps(sqdist_vec_1, var_cancel_vec_1);
+                    normalization_vec_2 = _mm256_add_ps(EPSILON_vec, normalization_vec_2);
+                    sqdist_vec_2 = _mm256_sub_ps(sqdist_vec_2, var_cancel_vec_2);
+
+                    sqdist_vec_0 = _mm256_div_ps(sqdist_vec_0, normalization_vec_0);
+                    sqdist_vec_1 = _mm256_div_ps(sqdist_vec_1, normalization_vec_1);
+                    sqdist_vec_2 = _mm256_div_ps(sqdist_vec_2, normalization_vec_2);
+
+                    sqdist_vec_0 = _mm256_add_ps(sqdist_vec_0, sqdist_vec_1);
+                    sqdist_vec_0 = _mm256_add_ps(sqdist_vec_0, sqdist_vec_2);
+
+                    _mm256_storeu_ps(temp+xp*W+yp, sqdist_vec_0);
+                }
+            }
+
+
+            // Apply Box-Filtering for Patch Contribution => Use Box-Filter Seperability
+            // (1) Convolve along height
+            for(int xp = R; xp < W - R; ++xp) {
+                for(int yp = p.r + p.f; yp < H - p.r - p.f; yp+=64) {
+
+                    __m256 sum_0_vec = _mm256_setzero_ps();
+                    __m256 sum_1_vec = _mm256_setzero_ps();
+                    __m256 sum_2_vec = _mm256_setzero_ps();
+                    __m256 sum_3_vec = _mm256_setzero_ps();
+                    __m256 sum_4_vec = _mm256_setzero_ps();
+                    __m256 sum_5_vec = _mm256_setzero_ps();
+                    __m256 sum_6_vec = _mm256_setzero_ps();
+                    __m256 sum_7_vec = _mm256_setzero_ps();
+
+                    for (int k=-p.f; k<=p.f; k++){
+
+                        __m256 temp_vec_0 = _mm256_loadu_ps(temp+xp * W + yp+k);
+                        __m256 temp_vec_1 = _mm256_loadu_ps(temp+xp * W + (yp+1*8)+k);
+                        __m256 temp_vec_2 = _mm256_loadu_ps(temp+xp * W + (yp+2*8)+k);
+                        __m256 temp_vec_3 = _mm256_loadu_ps(temp+xp * W + (yp+3*8)+k);
+                        __m256 temp_vec_4 = _mm256_loadu_ps(temp+xp * W + (yp+4*8)+k);
+                        __m256 temp_vec_5 = _mm256_loadu_ps(temp+xp * W + (yp+5*8)+k);
+                        __m256 temp_vec_6 = _mm256_loadu_ps(temp+xp * W + (yp+6*8)+k);
+                        __m256 temp_vec_7 = _mm256_loadu_ps(temp+xp * W + (yp+7*8)+k);
+
+                        sum_0_vec = _mm256_add_ps(sum_0_vec, temp_vec_0);
+                        sum_1_vec = _mm256_add_ps(sum_1_vec, temp_vec_1);
+                        sum_2_vec = _mm256_add_ps(sum_2_vec, temp_vec_2);
+                        sum_3_vec = _mm256_add_ps(sum_3_vec, temp_vec_3);
+                        sum_4_vec = _mm256_add_ps(sum_4_vec, temp_vec_4);
+                        sum_5_vec = _mm256_add_ps(sum_5_vec, temp_vec_5);
+                        sum_6_vec = _mm256_add_ps(sum_6_vec, temp_vec_6);
+                        sum_7_vec = _mm256_add_ps(sum_7_vec, temp_vec_7);
+                    }
+
+                    _mm256_storeu_ps(temp2+ xp * W + (yp + 0 * 8), sum_0_vec);
+                    _mm256_storeu_ps(temp2+ xp * W + (yp + 1 * 8), sum_1_vec);
+                    _mm256_storeu_ps(temp2+ xp * W + (yp + 2 * 8), sum_2_vec);
+                    _mm256_storeu_ps(temp2+ xp * W + (yp + 3 * 8), sum_3_vec);
+                    _mm256_storeu_ps(temp2+ xp * W + (yp + 4 * 8), sum_4_vec);
+                    _mm256_storeu_ps(temp2+ xp * W + (yp + 5 * 8), sum_5_vec);
+                    _mm256_storeu_ps(temp2+ xp * W + (yp + 6 * 8), sum_6_vec);
+                    _mm256_storeu_ps(temp2+ xp * W + (yp + 7 * 8), sum_7_vec);
+                }
+            }
+
+            // (2) Convolve along width including weighted contribution
+            for(int xp = R + F; xp < W - R - F; ++xp) {                
+                for(int yp = p.r + p.f; yp < H - 32; yp+=32) {
+
+                    int xq = xp + r_x;
+                    int yq = yp + r_y;
+
+                    __m256 sum_0_vec = _mm256_loadu_ps(temp2+(xp-1) * W + (yp+0*8));
+                    __m256 sum_1_vec = _mm256_loadu_ps(temp2+(xp-1) * W + (yp+1*8));
+                    __m256 sum_2_vec = _mm256_loadu_ps(temp2+(xp-1) * W + (yp+2*8));
+                    __m256 sum_3_vec = _mm256_loadu_ps(temp2+(xp-1) * W + (yp+3*8));
+
+
+                    __m256 temp2_vec_0 = _mm256_loadu_ps(temp2+xp * W + (yp+0*8));
+                    __m256 temp2_vec_1 = _mm256_loadu_ps(temp2+xp * W + (yp+1*8));
+                    __m256 temp2_vec_2 = _mm256_loadu_ps(temp2+xp * W + (yp+2*8));
+                    __m256 temp2_vec_3 = _mm256_loadu_ps(temp2+xp * W + (yp+3*8));
+                        
+                    sum_0_vec = _mm256_add_ps(sum_0_vec, temp2_vec_0);
+                    sum_1_vec = _mm256_add_ps(sum_1_vec, temp2_vec_1);
+                    sum_2_vec = _mm256_add_ps(sum_2_vec, temp2_vec_2);
+                    sum_3_vec = _mm256_add_ps(sum_3_vec, temp2_vec_3);
+
+
+                    temp2_vec_0 = _mm256_loadu_ps(temp2+(xp+1) * W + (yp+0*8));
+                    temp2_vec_1 = _mm256_loadu_ps(temp2+(xp+1) * W + (yp+1*8));
+                    temp2_vec_2 = _mm256_loadu_ps(temp2+(xp+1) * W + (yp+2*8));
+                    temp2_vec_3 = _mm256_loadu_ps(temp2+(xp+1) * W + (yp+3*8));
+                        
+                    sum_0_vec = _mm256_add_ps(sum_0_vec, temp2_vec_0);
+                    sum_1_vec = _mm256_add_ps(sum_1_vec, temp2_vec_1);
+                    sum_2_vec = _mm256_add_ps(sum_2_vec, temp2_vec_2);
+                    sum_3_vec = _mm256_add_ps(sum_3_vec, temp2_vec_3);
+
+                    // New optimization: using the opposite of neigh_inv to avoid the multiplication by -1, and take the min instead of max
+                    __m256 weight_vec_0 = _mm256_mul_ps(sum_0_vec, NEIGH_INV_MIN_VEC);
+                    __m256 weight_vec_1 = _mm256_mul_ps(sum_1_vec, NEIGH_INV_MIN_VEC);
+                    __m256 weight_vec_2 = _mm256_mul_ps(sum_2_vec, NEIGH_INV_MIN_VEC);
+                    __m256 weight_vec_3 = _mm256_mul_ps(sum_3_vec, NEIGH_INV_MIN_VEC);
+
+                    weight_vec_0 = _mm256_min_ps(_mm256_setzero_ps(), weight_vec_0);
+                    weight_vec_1 = _mm256_min_ps(_mm256_setzero_ps(), weight_vec_1);
+                    weight_vec_2 = _mm256_min_ps(_mm256_setzero_ps(), weight_vec_2);
+                    weight_vec_3 = _mm256_min_ps(_mm256_setzero_ps(), weight_vec_3);
+
+                    weight_vec_0 = exp256_ps(weight_vec_0);
+                    weight_vec_1 = exp256_ps(weight_vec_1);
+                    weight_vec_2 = exp256_ps(weight_vec_2);
+                    weight_vec_3 = exp256_ps(weight_vec_3);
+
+                    __m256 weight_sum_vec_0 = _mm256_loadu_ps(weight_sum+ xp * W + ( yp + 0 * 8));
+                    __m256 weight_sum_vec_1 = _mm256_loadu_ps(weight_sum+ xp * W + ( yp + 1 * 8));
+                    __m256 weight_sum_vec_2 = _mm256_loadu_ps(weight_sum+ xp * W + ( yp + 2 * 8));
+                    __m256 weight_sum_vec_3 = _mm256_loadu_ps(weight_sum+ xp * W + ( yp + 3 * 8));
+
+                    weight_sum_vec_0 = _mm256_add_ps(weight_sum_vec_0, weight_vec_0);
+                    weight_sum_vec_1 = _mm256_add_ps(weight_sum_vec_1, weight_vec_1);
+                    weight_sum_vec_2 = _mm256_add_ps(weight_sum_vec_2, weight_vec_2);
+                    weight_sum_vec_3 = _mm256_add_ps(weight_sum_vec_3, weight_vec_3);
+
+                    _mm256_storeu_ps(weight_sum+ xp * W + ( yp + 0 * 8), weight_sum_vec_0);
+                    _mm256_storeu_ps(weight_sum+ xp * W + ( yp + 1 * 8), weight_sum_vec_1);
+                    _mm256_storeu_ps(weight_sum+ xp * W + ( yp + 2 * 8), weight_sum_vec_2);
+                    _mm256_storeu_ps(weight_sum+ xp * W + ( yp + 3 * 8), weight_sum_vec_3);
+                    
+                    
+                    for (int i=0; i<3; i++){
+                        __m256 output_vec_0 = _mm256_loadu_ps(output[i][xp] + (yp + 0 * 8));
+                        __m256 input_vec_0 = _mm256_loadu_ps(input[i][xq] + (yq + 0 * 8));
+                        __m256 output_vec_1 = _mm256_loadu_ps(output[i][xp] + (yp + 1 * 8));
+                        __m256 input_vec_1 = _mm256_loadu_ps(input[i][xq] + (yq + 1 * 8));
+                        __m256 output_vec_2 = _mm256_loadu_ps(output[i][xp] + (yp + 2 * 8));
+                        __m256 input_vec_2 = _mm256_loadu_ps(input[i][xq] + (yq + 2 * 8));
+                        __m256 output_vec_3 = _mm256_loadu_ps(output[i][xp] + (yp + 3 * 8));
+                        __m256 input_vec_3 = _mm256_loadu_ps(input[i][xq] + (yq + 3 * 8));
+
+                        output_vec_0 = _mm256_fmadd_ps(weight_vec_0, input_vec_0, output_vec_0);
+                        output_vec_1 = _mm256_fmadd_ps(weight_vec_1, input_vec_1, output_vec_1);
+                        output_vec_2 = _mm256_fmadd_ps(weight_vec_2, input_vec_2, output_vec_2);
+                        output_vec_3 = _mm256_fmadd_ps(weight_vec_3, input_vec_3, output_vec_3);
+
+                        _mm256_storeu_ps(output[i][xp] + (yp + 0 * 8), output_vec_0);
+                        _mm256_storeu_ps(output[i][xp] + (yp + 1 * 8), output_vec_1);
+                        _mm256_storeu_ps(output[i][xp] + (yp + 2 * 8), output_vec_2);
+                        _mm256_storeu_ps(output[i][xp] + (yp + 3 * 8), output_vec_3);
+
+                    }
+                }
+
+                for(int yp = final_yp; yp < H - p.r - p.f; yp+=4) {
+                    
+                    int xq = xp + r_x;
+                    int yq = yp + r_y;
+
+                    scalar sum_0 = 0.f;
+                    scalar sum_1 = 0.f;
+                    scalar sum_2 = 0.f;
+                    scalar sum_3 = 0.f;
+
+                    // Unrolled summation => tailed to f=1 => 2*f+1 = 3
+                    sum_0 += temp2[(xp-1) * W + yp];
+                    sum_1 += temp2[(xp-1) * W + yp+1];
+                    sum_2 += temp2[(xp-1) * W + yp+2];
+                    sum_3 += temp2[(xp-1) * W + yp+3];
+
+                    sum_0 += temp2[(xp) * W + yp];
+                    sum_1 += temp2[(xp) * W + yp+1];
+                    sum_2 += temp2[(xp) * W + yp+2];
+                    sum_3 += temp2[(xp) * W + yp+3];
+
+                    sum_0 += temp2[(xp+1) * W + yp];
+                    sum_1 += temp2[(xp+1) * W + yp+1];
+                    sum_2 += temp2[(xp+1) * W + yp+2];
+                    sum_3 += temp2[(xp+1) * W + yp+3];
+                    
+                    
+                    weight_0 = exp(fmin(0.f, (sum_0 * NEIGH_INV_MIN)));
+                    weight_1 = exp(fmin(0.f, (sum_1 * NEIGH_INV_MIN)));
+                    weight_2 = exp(fmin(0.f, (sum_2 * NEIGH_INV_MIN)));
+                    weight_3 = exp(fmin(0.f, (sum_3 * NEIGH_INV_MIN)));
+                    
+                    weight_sum[xp * W + yp] += weight_0;
+                    weight_sum[xp * W + yp+1] += weight_1;
+                    weight_sum[xp * W + yp+2] += weight_2;
+                    weight_sum[xp * W + yp+3] += weight_3;
+                    
+                    for (int i=0; i<3; i++){
+                        output[i][xp][yp] += weight_0 * input[i][xq][yq];
+                        output[i][xp][yp+1] += weight_1 * input[i][xq][yq+1];
+                        output[i][xp][yp+2] += weight_2 * input[i][xq][yq+2];
+                        output[i][xp][yp+3] += weight_3 * input[i][xq][yq+3];
+                    }
+                }
+            }
+
+        }
+    }
+
+    // Final Weight Normalization
+    for(int xp = R + F; xp < W - R - F; ++xp) {
+        for(int yp = p.r + p.f ; yp < H - 32; yp+=32) {     
+
+            __m256 weight_sum_vec_0 = _mm256_loadu_ps(weight_sum + xp * W + (yp + 0 * 8));
+            __m256 weight_sum_vec_1 = _mm256_loadu_ps(weight_sum + xp * W + (yp + 1 * 8));
+            __m256 weight_sum_vec_2 = _mm256_loadu_ps(weight_sum + xp * W + (yp + 2 * 8));
+            __m256 weight_sum_vec_3 = _mm256_loadu_ps(weight_sum + xp * W + (yp + 3 * 8));
+
+
+            for (int i=0; i<3; i++){
+                __m256 output_vec_0 = _mm256_loadu_ps(output[i][xp] + (yp + 0 * 8));
+                __m256 output_vec_1 = _mm256_loadu_ps(output[i][xp] + (yp + 1 * 8));
+                __m256 output_vec_2 = _mm256_loadu_ps(output[i][xp] + (yp + 2 * 8));
+                __m256 output_vec_3 = _mm256_loadu_ps(output[i][xp] + (yp + 3 * 8));
+                
+                output_vec_0 = _mm256_div_ps(output_vec_0, weight_sum_vec_0);
+                output_vec_1 = _mm256_div_ps(output_vec_1, weight_sum_vec_1);
+                output_vec_2 = _mm256_div_ps(output_vec_2, weight_sum_vec_2);
+                output_vec_3 = _mm256_div_ps(output_vec_3, weight_sum_vec_3);
+
+                _mm256_storeu_ps(output[i][xp] + (yp + 0 * 8), output_vec_0);
+                _mm256_storeu_ps(output[i][xp] + (yp + 1 * 8), output_vec_1);
+                _mm256_storeu_ps(output[i][xp] + (yp + 2 * 8), output_vec_2);
+                _mm256_storeu_ps(output[i][xp] + (yp + 3 * 8), output_vec_3);
+            }
+        }
+
+        for(int yp = final_yp; yp < H - p.r - p.f; yp+=4) {     
+            
+            scalar w_0 = weight_sum[xp * W + yp];
+            scalar w_1 = weight_sum[xp * W + yp+1];
+            scalar w_2 = weight_sum[xp * W + yp+2];
+            scalar w_3 = weight_sum[xp * W + yp+3];
+
+            for (int i=0; i<3; i++){
+                output[i][xp][yp] /= w_0;
+                output[i][xp][yp+1] /= w_1;
+                output[i][xp][yp+2] /= w_2;
+                output[i][xp][yp+3] /= w_3;
+            }
+        }
+    }
+
+    // Handle Border Cases
+    // ---------------------
+    for (int i = 0; i < 3; i++){
+        for (int xp = 0; xp < W; xp++){
+            for(int yp = 0; yp < R + F; yp++){
+                output[i][xp][yp] = input[i][xp][yp];
+                output[i][xp][H - yp - 1] = input[i][xp][H - yp - 1];
+            }
+        }
+        for(int xp = 0; xp < R + F; xp++){
+            for (int yp = R + F ; yp < H - R - F; yp++){
+                output[i][xp][yp] = input[i][xp][yp];
+                output[i][W - xp - 1][yp] = input[i][W - xp - 1][yp];
+            }
+        }
+    }
+
+
+    free(weight_sum);
+    free(temp);
+    free(temp2); 
+}
+
+
+
 void feature_prefiltering_VEC(buffer output, buffer output_var, buffer features, buffer features_var, Flt_parameters p, int W, int H){
 
     const __m256 EPSILON_vec = _mm256_set1_ps(EPSILON);
