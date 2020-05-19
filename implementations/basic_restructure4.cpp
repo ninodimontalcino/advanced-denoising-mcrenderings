@@ -6,6 +6,8 @@
 #include "../memory_mgmt.hpp"
 
 #include "../denoise.h"
+#include <immintrin.h>
+// #include "../avx_mathfun.h"
 
 
 using namespace std;
@@ -71,7 +73,7 @@ using namespace std;
     allocate_buffer_zero(&r, img_width, img_height);
     allocate_buffer_zero(&g, img_width, img_height);
     allocate_buffer_zero(&b, img_width, img_height);
-    candidate_filtering_all_ILP(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, img_width, img_height);
+    candidate_filtering_all_VEC(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, img_width, img_height);
 
     
     // DEBUGGING PART
@@ -88,7 +90,7 @@ using namespace std;
 
     // (a) Compute SURE error estimates
     buffer sure;
-    allocate_buffer_zero(&sure, img_width, img_height);
+    allocate_buffer(&sure, img_width, img_height); // Zero allocation done in Sure
     sure_all_VEC(sure, c, c_var, r, g, b, img_width, img_height);
     
     // DEBUGGING PART
@@ -119,9 +121,30 @@ using namespace std;
     buffer sel;
     allocate_buffer(&sel, img_width, img_height);
     
+    __m256 e0, e1, e2, mask0, mask1, mask;
     // Compute selection maps
     for (int x = 0; x < img_width; x++){
         for (int y = 0; y < img_height; y++){
+
+                // e0 = _mm256_loadu_ps(e[0][x]+y);
+                // e1 = _mm256_loadu_ps(e[1][x]+y);
+                // e2 = _mm256_loadu_ps(e[2][x]+y);
+                
+                // mask0 = _mm256_cmp_ps(e0, e1, _CMP_LT_OQ);
+                // mask1 = _mm256_cmp_ps(e0, e2, _CMP_LT_OQ);
+                // mask = _mm256_and_ps(mask0, mask1);
+                // _mm256_storeu_ps(sel[0][x]+y, mask);
+
+                // mask0 = _mm256_cmp_ps(e1, e0, _CMP_LT_OQ);
+                // mask1 = _mm256_cmp_ps(e1, e2, _CMP_LT_OQ);
+                // mask = _mm256_and_ps(mask0, mask1);
+                // _mm256_storeu_ps(sel[1][x]+y, mask);
+
+                // mask0 = _mm256_cmp_ps(e2, e0, _CMP_LT_OQ);
+                // mask1 = _mm256_cmp_ps(e1, e2, _CMP_LT_OQ);
+                // mask = _mm256_and_ps(mask0, mask1);
+                // _mm256_storeu_ps(sel[2][x]+y, mask);                                
+                              
                 sel[0][x][y] = e[0][x][y] < e[1][x][y] && e[0][x][y] < e[2][x][y];
                 sel[1][x][y] = e[1][x][y] < e[0][x][y] && e[1][x][y] < e[2][x][y];
                 sel[2][x][y] = e[2][x][y] < e[0][x][y] && e[1][x][y] < e[2][x][y];
