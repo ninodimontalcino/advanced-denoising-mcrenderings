@@ -28,7 +28,7 @@ using namespace std;
 å
     \return void --> denoised image in buffer out_img
  */
- void basic_restructure4(buffer out_img, buffer c, buffer c_var, buffer f, buffer f_var, int R, int img_width, int img_height){
+ void basic_restructure3bis(buffer out_img, buffer c, buffer c_var, buffer f, buffer f_var, int R, int img_width, int img_height){
 
     if(DEBUG) {
         cout << "--------------------------------------------------" << endl;
@@ -99,7 +99,7 @@ using namespace std;
     Flt_parameters p_sure = { .kc = 1.0, .kf = INFINITY, .tau = 0.001, .f = 1, .r = 1};
     buffer e;
     allocate_buffer_zero(&e, img_width, img_height);
-    filtering_basic_ILP(e, sure, c, c_var, p_sure, img_width, img_height);
+    filtering_basic_f1_ILP(e, sure, c, c_var, p_sure, img_width, img_height);
     
     // DEBUG PART
     if(DEBUG) {
@@ -138,7 +138,7 @@ using namespace std;
     Flt_parameters p_sel = { .kc = 1.0, .kf = INFINITY, .tau = 0.0001, .f = 1, .r = 5};
     buffer sel_filtered;
     allocate_buffer_zero(&sel_filtered, img_width, img_height);
-    filtering_basic_ILP(sel_filtered, sel, c, c_var, p_sel, img_width, img_height);
+    filtering_basic_f1_ILP(sel_filtered, sel, c, c_var, p_sel, img_width, img_height);
 
     // DEBUG PART
     if(DEBUG) {

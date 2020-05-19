@@ -73,7 +73,7 @@ add_executable(main
               implementations/basic_restructure1.cpp
               implementations/basic_restructure2.cpp
               implementations/basic_restructure3.cpp
-              implementations/basic_restructure3_bis.cpp
+              implementations/basic_restructure3bis.cpp
               implementations/basic_restructure4.cpp
 
               )
