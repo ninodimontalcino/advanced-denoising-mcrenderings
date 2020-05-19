@@ -50,7 +50,7 @@ using namespace std;
     buffer f_var_filtered;
     allocate_buffer_zero(&f_filtered, img_width, img_height);
     allocate_buffer_zero(&f_var_filtered, img_width, img_height);
-    feature_prefiltering_ILP(f_filtered, f_var_filtered, f, f_var, p_pre, img_width, img_height);
+    feature_prefiltering_VEC(f_filtered, f_var_filtered, f, f_var, p_pre, img_width, img_height);
     
     // DEBUGGING PART
     if(DEBUG) {

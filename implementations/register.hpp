@@ -17,9 +17,9 @@ void register_functions()
 {
     //add_function(&basic_implementation, "Basic Implementation", 1);
     //add_function(&basic_restructure, "Restructure", 1);
-    //add_function(&basic_restructure1, "Restructure + ILP", 1);
+    //add_function(&basic_restructure1, "Restructure + ILP/SSA", 1);
     //add_function(&basic_restructure2, "Restructure + Precomputations", 1);
-    add_function(&basic_restructure3, "Restructure + Precomputations + ILP", 1);
+    add_function(&basic_restructure3, "Restructure + Precomputations + ILP/SSA", 1);
     add_function(&basic_restructure4, "Restructure + Precomputations + ILP + Vectorization", 1);
 }
 
