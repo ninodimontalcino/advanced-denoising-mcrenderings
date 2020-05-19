@@ -749,9 +749,9 @@ void candidate_filtering_all_VEC(buffer output_r, buffer output_g, buffer output
     const __m256 EPSILON_vec = _mm256_set1_ps(EPSILON);
 
     // Get parameters
-    int f_r = p[0].f;
-    int f_g = p[1].f;
-    int f_b = p[2].f;
+    int F_R = p[0].f;
+    int F_G = p[1].f;
+    int F_B = p[2].f;
     scalar tau_r = p[0].tau;
     scalar tau_g = p[1].tau;
     scalar tau_b = p[2].tau;
@@ -769,8 +769,8 @@ void candidate_filtering_all_VEC(buffer output_r, buffer output_g, buffer output
 
 
     // Determinte max f => R is fixed to the same for all
-    int f_max = fmax(f_r, fmax(f_g, f_b));
-    int f_min = fmin(f_r, fmin(f_g, f_b));
+    int f_max = fmax(F_R, fmax(F_G, F_B));
+    int f_min = fmin(F_R, fmin(F_G, F_B));
     int R = p[0].r;
 
 
@@ -800,6 +800,17 @@ void candidate_filtering_all_VEC(buffer output_r, buffer output_g, buffer output
     features_weights_r = (scalar*) malloc(W * H * sizeof(scalar));
     features_weights_b = (scalar*) malloc(W * H * sizeof(scalar));
 
+    // Precompute size of neighbourhood
+    // Precompute size of neighbourhood
+    scalar NEIGH_R_INV = 1. / (3*(2*F_R+1)*(2*F_R+1));
+    scalar neigh_g_inv = 1. / (3*(2*F_G+1)*(2*F_G+1));
+    int final_yp_r = H - 32 + R + F_R;
+    int final_yp_g = H - 32 + R + F_G;
+
+    const __m256 neigh_inv_r_vec = _mm256_set1_ps(NEIGH_R_INV);
+    const __m256 neigh_inv_min_r_vec = _mm256_set1_ps(-NEIGH_R_INV);
+    const __m256 neigh_inv_g_vec = _mm256_set1_ps(neigh_g_inv);
+    const __m256 neigh_inv_min_g_vec = _mm256_set1_ps(-neigh_g_inv);    
 
     // Precompute normalization constants
     /*
@@ -867,9 +878,6 @@ void candidate_filtering_all_VEC(buffer output_r, buffer output_g, buffer output
         }
     }
 
-    // Precompute size of neighbourhood
-    scalar neigh_r_inv = 1. / (3*(2*f_r+1)*(2*f_r+1));
-    scalar neigh_g_inv = 1. / (3*(2*f_g+1)*(2*f_g+1));
 
     // Covering the neighbourhood
     for (int r_x = -R; r_x <= R; r_x++){
@@ -974,40 +982,154 @@ void candidate_filtering_all_VEC(buffer output_r, buffer output_g, buffer output
             // ----------------------------------------------
             // (1) Convolve along height
             for(int xp = R; xp < W - R; ++xp) {
-                for(int yp = R + f_r; yp < H - R - f_r; yp+=8) {
-                    scalar sum_r_0 = 0.f;
-                    scalar sum_r_1 = 0.f;
-                    scalar sum_r_2 = 0.f;
-                    scalar sum_r_3 = 0.f;
-                    scalar sum_r_4 = 0.f;
-                    scalar sum_r_5 = 0.f;
-                    scalar sum_r_6 = 0.f;
-                    scalar sum_r_7 = 0.f;
+                for(int yp = R + F_R; yp < H - R - F_R; yp+=64) {
 
-                    for (int k=-f_r; k<=f_r; k++){
-                        sum_r_0 += temp[xp * W + yp+k];
-                        sum_r_1 += temp[xp * W + yp+k+1];
-                        sum_r_2 += temp[xp * W + yp+k+2];
-                        sum_r_3 += temp[xp * W + yp+k+3];
-                        sum_r_4 += temp[xp * W + yp+k+4];
-                        sum_r_5 += temp[xp * W + yp+k+5];
-                        sum_r_6 += temp[xp * W + yp+k+6];
-                        sum_r_7 += temp[xp * W + yp+k+7];
+                    __m256 sum_0_vec = _mm256_setzero_ps();
+                    __m256 sum_1_vec = _mm256_setzero_ps();
+                    __m256 sum_2_vec = _mm256_setzero_ps();
+                    __m256 sum_3_vec = _mm256_setzero_ps();
+                    __m256 sum_4_vec = _mm256_setzero_ps();
+                    __m256 sum_5_vec = _mm256_setzero_ps();
+                    __m256 sum_6_vec = _mm256_setzero_ps();
+                    __m256 sum_7_vec = _mm256_setzero_ps();
+
+                    for (int k=-F_R; k<=F_R; k++){
+
+                        __m256 temp_vec_0 = _mm256_loadu_ps(temp+xp * W + yp+k);
+                        __m256 temp_vec_1 = _mm256_loadu_ps(temp+xp * W + (yp+1*8)+k);
+                        __m256 temp_vec_2 = _mm256_loadu_ps(temp+xp * W + (yp+2*8)+k);
+                        __m256 temp_vec_3 = _mm256_loadu_ps(temp+xp * W + (yp+3*8)+k);
+                        __m256 temp_vec_4 = _mm256_loadu_ps(temp+xp * W + (yp+4*8)+k);
+                        __m256 temp_vec_5 = _mm256_loadu_ps(temp+xp * W + (yp+5*8)+k);
+                        __m256 temp_vec_6 = _mm256_loadu_ps(temp+xp * W + (yp+6*8)+k);
+                        __m256 temp_vec_7 = _mm256_loadu_ps(temp+xp * W + (yp+7*8)+k);
+
+                        sum_0_vec = _mm256_add_ps(sum_0_vec, temp_vec_0);
+                        sum_1_vec = _mm256_add_ps(sum_1_vec, temp_vec_1);
+                        sum_2_vec = _mm256_add_ps(sum_2_vec, temp_vec_2);
+                        sum_3_vec = _mm256_add_ps(sum_3_vec, temp_vec_3);
+                        sum_4_vec = _mm256_add_ps(sum_4_vec, temp_vec_4);
+                        sum_5_vec = _mm256_add_ps(sum_5_vec, temp_vec_5);
+                        sum_6_vec = _mm256_add_ps(sum_6_vec, temp_vec_6);
+                        sum_7_vec = _mm256_add_ps(sum_7_vec, temp_vec_7);
                     }
-                    temp2_r[xp * W + yp] = sum_r_0;
-                    temp2_r[xp * W + yp+1] = sum_r_1;
-                    temp2_r[xp * W + yp+2] = sum_r_2;
-                    temp2_r[xp * W + yp+3] = sum_r_3;
-                    temp2_r[xp * W + yp+4] = sum_r_4;
-                    temp2_r[xp * W + yp+5] = sum_r_5;
-                    temp2_r[xp * W + yp+6] = sum_r_6;
-                    temp2_r[xp * W + yp+7] = sum_r_7;
+
+                    _mm256_storeu_ps(temp2_r+ xp * W + (yp + 0 * 8), sum_0_vec);
+                    _mm256_storeu_ps(temp2_r+ xp * W + (yp + 1 * 8), sum_1_vec);
+                    _mm256_storeu_ps(temp2_r+ xp * W + (yp + 2 * 8), sum_2_vec);
+                    _mm256_storeu_ps(temp2_r+ xp * W + (yp + 3 * 8), sum_3_vec);
+                    _mm256_storeu_ps(temp2_r+ xp * W + (yp + 4 * 8), sum_4_vec);
+                    _mm256_storeu_ps(temp2_r+ xp * W + (yp + 5 * 8), sum_5_vec);
+                    _mm256_storeu_ps(temp2_r+ xp * W + (yp + 6 * 8), sum_6_vec);
+                    _mm256_storeu_ps(temp2_r+ xp * W + (yp + 7 * 8), sum_7_vec);
                 }
             }
 
             // (2) Convolve along width including weighted contribution
-            for(int xp = R + f_r; xp < W - R - f_r; ++xp) {
-                for(int yp = R + f_r; yp < H - R - f_r; yp+=4) {
+            for(int xp = R + F_R; xp < W - R - F_R; ++xp) {
+                for(int yp = R + F_R; yp < H - 32; yp+=32) {
+
+                    int xq = xp + r_x;
+                    int yq = yp + r_y;
+
+                    __m256 sum_0_vec = _mm256_setzero_ps();
+                    __m256 sum_1_vec = _mm256_setzero_ps();
+                    __m256 sum_2_vec = _mm256_setzero_ps();
+                    __m256 sum_3_vec = _mm256_setzero_ps();
+
+                     // Unrolled Summation => Fixed for F_R=1 => 2*f+1 = 3
+                    __m256 temp2_vec_0 = _mm256_loadu_ps(temp2_r+(xp-1) * W + (yp+0*8));
+                    __m256 temp2_r_vec_1 = _mm256_loadu_ps(temp2_r+(xp-1) * W + (yp+1*8));
+                    __m256 temp2_r_vec_2 = _mm256_loadu_ps(temp2_r+(xp-1) * W + (yp+2*8));
+                    __m256 temp2_r_vec_3 = _mm256_loadu_ps(temp2_r+(xp-1) * W + (yp+3*8));
+                    
+                    sum_0_vec = _mm256_add_ps(sum_0_vec, temp2_vec_0);
+                    sum_1_vec = _mm256_add_ps(sum_1_vec, temp2_r_vec_1);
+                    sum_2_vec = _mm256_add_ps(sum_2_vec, temp2_r_vec_2);
+                    sum_3_vec = _mm256_add_ps(sum_3_vec, temp2_r_vec_3);
+
+                    temp2_vec_0 = _mm256_loadu_ps(temp2_r+(xp) * W + (yp+0*8));
+                    temp2_r_vec_1 = _mm256_loadu_ps(temp2_r+(xp) * W + (yp+1*8));
+                    temp2_r_vec_2 = _mm256_loadu_ps(temp2_r+(xp) * W + (yp+2*8));
+                    temp2_r_vec_3 = _mm256_loadu_ps(temp2_r+(xp) * W + (yp+3*8));
+                    
+                    sum_0_vec = _mm256_add_ps(sum_0_vec, temp2_vec_0);
+                    sum_1_vec = _mm256_add_ps(sum_1_vec, temp2_r_vec_1);
+                    sum_2_vec = _mm256_add_ps(sum_2_vec, temp2_r_vec_2);
+                    sum_3_vec = _mm256_add_ps(sum_3_vec, temp2_r_vec_3);
+
+                    temp2_vec_0 = _mm256_loadu_ps(temp2_r+(xp+1) * W + (yp+0*8));
+                    temp2_r_vec_1 = _mm256_loadu_ps(temp2_r+(xp+1) * W + (yp+1*8));
+                    temp2_r_vec_2 = _mm256_loadu_ps(temp2_r+(xp+1) * W + (yp+2*8));
+                    temp2_r_vec_3 = _mm256_loadu_ps(temp2_r+(xp+1) * W + (yp+3*8));
+                    
+                    sum_0_vec = _mm256_add_ps(sum_0_vec, temp2_vec_0);
+                    sum_1_vec = _mm256_add_ps(sum_1_vec, temp2_r_vec_1);
+                    sum_2_vec = _mm256_add_ps(sum_2_vec, temp2_r_vec_2);
+                    sum_3_vec = _mm256_add_ps(sum_3_vec, temp2_r_vec_3);                    
+                    // end of unrolled summation 
+
+                    // Calculate Final Weights
+                    __m256 weight_vec_0 = _mm256_mul_ps(sum_0_vec, neigh_inv_r_vec);
+                    __m256 weight_vec_1 = _mm256_mul_ps(sum_1_vec, neigh_inv_r_vec);
+                    __m256 weight_vec_2 = _mm256_mul_ps(sum_2_vec, neigh_inv_r_vec);
+                    __m256 weight_vec_3 = _mm256_mul_ps(sum_3_vec, neigh_inv_r_vec);
+
+                    __m256 feat_weight_0 = _mm256_loadu_ps(features_weights_r+ xp * W + (yp + 0 * 8));
+                    __m256 feat_weight_1 = _mm256_loadu_ps(features_weights_r+ xp * W + (yp + 1 * 8));
+                    __m256 feat_weight_2 = _mm256_loadu_ps(features_weights_r+ xp * W + (yp + 2 * 8));
+                    __m256 feat_weight_3 = _mm256_loadu_ps(features_weights_r+ xp * W + (yp + 3 * 8));
+
+                    weight_vec_0 = _mm256_min_ps(feat_weight_0, weight_vec_0);
+                    weight_vec_1 = _mm256_min_ps(feat_weight_1, weight_vec_1);
+                    weight_vec_2 = _mm256_min_ps(feat_weight_2, weight_vec_2);
+                    weight_vec_3 = _mm256_min_ps(feat_weight_3, weight_vec_3);
+
+                    weight_vec_0 = exp256_ps(weight_vec_0);
+                    weight_vec_1 = exp256_ps(weight_vec_1);
+                    weight_vec_2 = exp256_ps(weight_vec_2);
+                    weight_vec_3 = exp256_ps(weight_vec_3);
+
+                    __m256 weight_sum_vec_0 = _mm256_loadu_ps(weight_sum_r+ xp * W + ( yp + 0 * 8));
+                    __m256 weight_sum_vec_1 = _mm256_loadu_ps(weight_sum_r+ xp * W + ( yp + 1 * 8));
+                    __m256 weight_sum_vec_2 = _mm256_loadu_ps(weight_sum_r+ xp * W + ( yp + 2 * 8));
+                    __m256 weight_sum_vec_3 = _mm256_loadu_ps(weight_sum_r+ xp * W + ( yp + 3 * 8));
+
+                    weight_sum_vec_0 = _mm256_add_ps(weight_sum_vec_0, weight_vec_0);
+                    weight_sum_vec_1 = _mm256_add_ps(weight_sum_vec_1, weight_vec_1);
+                    weight_sum_vec_2 = _mm256_add_ps(weight_sum_vec_2, weight_vec_2);
+                    weight_sum_vec_3 = _mm256_add_ps(weight_sum_vec_3, weight_vec_3);
+
+                    _mm256_storeu_ps(weight_sum_r+ xp * W + ( yp + 0 * 8), weight_sum_vec_0);
+                    _mm256_storeu_ps(weight_sum_r+ xp * W + ( yp + 1 * 8), weight_sum_vec_1);
+                    _mm256_storeu_ps(weight_sum_r+ xp * W + ( yp + 2 * 8), weight_sum_vec_2);
+                    _mm256_storeu_ps(weight_sum_r+ xp * W + ( yp + 3 * 8), weight_sum_vec_3);
+                    
+                    
+                    for (int i=0; i<3; i++){
+                        __m256 output_vec_0 = _mm256_loadu_ps(output_r[i][xp] + (yp + 0 * 8));
+                        __m256 input_vec_0 = _mm256_loadu_ps(color[i][xq] + (yq + 0 * 8));
+                        __m256 output_vec_1 = _mm256_loadu_ps(output_r[i][xp] + (yp + 1 * 8));
+                        __m256 input_vec_1 = _mm256_loadu_ps(color[i][xq] + (yq + 1 * 8));
+                        __m256 output_vec_2 = _mm256_loadu_ps(output_r[i][xp] + (yp + 2 * 8));
+                        __m256 input_vec_2 = _mm256_loadu_ps(color[i][xq] + (yq + 2 * 8));
+                        __m256 output_vec_3 = _mm256_loadu_ps(output_r[i][xp] + (yp + 3 * 8));
+                        __m256 input_vec_3 = _mm256_loadu_ps(color[i][xq] + (yq + 3 * 8));
+
+                        output_vec_0 = _mm256_fmadd_ps(weight_vec_0, input_vec_0, output_vec_0);
+                        output_vec_1 = _mm256_fmadd_ps(weight_vec_1, input_vec_1, output_vec_1);
+                        output_vec_2 = _mm256_fmadd_ps(weight_vec_2, input_vec_2, output_vec_2);
+                        output_vec_3 = _mm256_fmadd_ps(weight_vec_3, input_vec_3, output_vec_3);
+
+                        _mm256_storeu_ps(output_r[i][xp] + (yp + 0 * 8), output_vec_0);
+                        _mm256_storeu_ps(output_r[i][xp] + (yp + 1 * 8), output_vec_1);
+                        _mm256_storeu_ps(output_r[i][xp] + (yp + 2 * 8), output_vec_2);
+                        _mm256_storeu_ps(output_r[i][xp] + (yp + 3 * 8), output_vec_3);
+
+                    }
+                }
+
+                for(int yp = final_yp_r; yp < H - R - F_R; yp+=4) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -1018,47 +1140,41 @@ void candidate_filtering_all_VEC(buffer output_r, buffer output_g, buffer output
                     scalar sum_2 = 0.f;
                     scalar sum_3 = 0.f;
 
-                    // Unrolled Summation => Fixed for f_r=1 => 2*f+1 = 3
-                    sum_0 += temp2_r[(xp-1) * W + yp];    
-                    sum_0 += temp2_r[(xp) * W + yp];
-                    sum_0 += temp2_r[(xp+1) * W + yp];
-
-                    sum_1 += temp2_r[(xp-1) * W + yp+1];
-                    sum_1 += temp2_r[(xp) * W + yp+1];
-                    sum_1 += temp2_r[(xp+1) * W + yp+1];
-
-                    sum_2 += temp2_r[(xp-1) * W + yp+2];
-                    sum_2 += temp2_r[(xp) * W + yp+2];
-                    sum_2 += temp2_r[(xp+1) * W + yp+2];
-   
+                    // Unrolled Summation => Fixed for F_R=1 => 2*f+1 = 3
+                    sum_0 += temp2_r[(xp-1) * W + yp+0];
+                    sum_1 += temp2_r[(xp-1) * W + yp+1];    
+                    sum_2 += temp2_r[(xp-1) * W + yp+2];    
                     sum_3 += temp2_r[(xp-1) * W + yp+3];
+
+                    sum_0 += temp2_r[(xp) * W + yp+0];
+                    sum_1 += temp2_r[(xp) * W + yp+1];
+                    sum_2 += temp2_r[(xp) * W + yp+2];
                     sum_3 += temp2_r[(xp) * W + yp+3];
+
+                    sum_0 += temp2_r[(xp+1) * W + yp+0];
+                    sum_1 += temp2_r[(xp+1) * W + yp+1];
+                    sum_2 += temp2_r[(xp+1) * W + yp+2];
                     sum_3 += temp2_r[(xp+1) * W + yp+3];
 
 
-                    // Compute Color Weight
-                    scalar color_weight_0 = (sum_0 * neigh_r_inv);
-                    scalar color_weight_1 = (sum_1 * neigh_r_inv);
-                    scalar color_weight_2 = (sum_2 * neigh_r_inv);
-                    scalar color_weight_3 = (sum_3 * neigh_r_inv);
-
                     // Compute final weight
-                    scalar weight_0 = exp(fmin(color_weight_0, features_weights_r[xp * W + yp]));
-                    scalar weight_1 = exp(fmin(color_weight_1, features_weights_r[xp * W + yp+1]));
-                    scalar weight_2 = exp(fmin(color_weight_2, features_weights_r[xp * W + yp+2]));
-                    scalar weight_3 = exp(fmin(color_weight_3, features_weights_r[xp * W + yp+3]));
+                    scalar weight_0 = exp(fmin((sum_0 * NEIGH_R_INV), features_weights_r[xp * W + yp + 0]));
+                    scalar weight_1 = exp(fmin((sum_1 * NEIGH_R_INV), features_weights_r[xp * W + yp + 1]));
+                    scalar weight_2 = exp(fmin((sum_2 * NEIGH_R_INV), features_weights_r[xp * W + yp + 2]));
+                    scalar weight_3 = exp(fmin((sum_3 * NEIGH_R_INV), features_weights_r[xp * W + yp + 3]));
 
-                    weight_sum_r[xp * W + yp] += weight_0;
-                    weight_sum_r[xp * W + yp+1] += weight_1;
-                    weight_sum_r[xp * W + yp+2] += weight_2;
-                    weight_sum_r[xp * W + yp+3] += weight_3;
+                    weight_sum_r[xp * W + yp + 0] += weight_0;
+                    weight_sum_r[xp * W + yp + 1] += weight_1;
+                    weight_sum_r[xp * W + yp + 2] += weight_2;
+                    weight_sum_r[xp * W + yp + 3] += weight_3;
                     
                     for (int i=0; i<3; i++){
-                        output_r[i][xp][yp] += weight_0 * color[i][xq][yq];
+                        output_r[i][xp][yp+0] += weight_0 * color[i][xq][yq+0];
                         output_r[i][xp][yp+1] += weight_1 * color[i][xq][yq+1];
                         output_r[i][xp][yp+2] += weight_2 * color[i][xq][yq+2];
                         output_r[i][xp][yp+3] += weight_3 * color[i][xq][yq+3];
                     }
+                    
                 }
             }
 
@@ -1067,7 +1183,7 @@ void candidate_filtering_all_VEC(buffer output_r, buffer output_g, buffer output
             // ----------------------------------------------
             // (1) Convolve along height
             for(int xp = R; xp < W - R; ++xp) {
-                for(int yp = R + f_g; yp < H - R - f_g; yp+=8) {
+                for(int yp = R + F_G; yp < H - R - F_G; yp+=8) {
                     
                     scalar sum_g_0 = 0.f;
                     scalar sum_g_1 = 0.f;
@@ -1078,7 +1194,7 @@ void candidate_filtering_all_VEC(buffer output_r, buffer output_g, buffer output
                     scalar sum_g_6 = 0.f;
                     scalar sum_g_7 = 0.f;
 
-                    for (int k=-f_g; k<=f_g; k++){
+                    for (int k=-F_G; k<=F_G; k++){
                         sum_g_0 += temp[xp * W + yp+k];
                         sum_g_1 += temp[xp * W + yp+k+1];
                         sum_g_2 += temp[xp * W + yp+k+2];
@@ -1100,8 +1216,8 @@ void candidate_filtering_all_VEC(buffer output_r, buffer output_g, buffer output
             }
 
             // (2) Convolve along width including weighted contribution
-            for(int xp = R + f_g; xp < W - R - f_g; ++xp) {
-                for(int yp = R + f_g; yp < H - R - f_g; yp+=4) {
+            for(int xp = R + F_G; xp < W - R - F_G; ++xp) {
+                for(int yp = R + F_G; yp < H - R - F_G; yp+=4) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -1112,7 +1228,7 @@ void candidate_filtering_all_VEC(buffer output_r, buffer output_g, buffer output
                     scalar sum_2 = 0.f;
                     scalar sum_3 = 0.f;
 
-                    // Unrolled Summation => Fixed for f_g=3 => 2*f_g+1 = 7
+                    // Unrolled Summation => Fixed for F_G=3 => 2*F_G+1 = 7
                     sum_0 += temp2_g[(xp-3) * W + yp];
                     sum_0 += temp2_g[(xp-2) * W + yp];
                     sum_0 += temp2_g[(xp-1) * W + yp];
@@ -1177,8 +1293,8 @@ void candidate_filtering_all_VEC(buffer output_r, buffer output_g, buffer output
             // => no color weight computation due to kc = Inf
             // ----------------------------------------------
 
-            for(int xp = R + f_b; xp < W - R - f_b; ++xp) {
-                for(int yp = R + f_b; yp < H - R - f_b; yp+=4) {
+            for(int xp = R + F_B; xp < W - R - F_B; ++xp) {
+                for(int yp = R + F_B; yp < H - R - F_B; yp+=4) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -1208,8 +1324,8 @@ void candidate_filtering_all_VEC(buffer output_r, buffer output_g, buffer output
 
 
     // Final Weight Normalization R
-    for(int xp = R + f_r; xp < W - R - f_r; ++xp) {
-        for(int yp = R + f_r; yp < H - R - f_r; yp+=4) {
+    for(int xp = R + F_R; xp < W - R - F_R; ++xp) {
+        for(int yp = R + F_R; yp < H - R - F_R; yp+=4) {
         
             scalar w_0 = weight_sum_r[xp * W + yp];
             scalar w_1 = weight_sum_r[xp * W + yp+1];
@@ -1226,8 +1342,8 @@ void candidate_filtering_all_VEC(buffer output_r, buffer output_g, buffer output
     }
 
     // Final Weight Normalization G
-   for(int xp = R + f_g; xp < W - R - f_g; ++xp) {
-        for(int yp = R + f_g; yp < H - R - f_g; yp+=4) {
+   for(int xp = R + F_G; xp < W - R - F_G; ++xp) {
+        for(int yp = R + F_G; yp < H - R - F_G; yp+=4) {
         
             scalar w_0 = weight_sum_g[xp * W + yp];
             scalar w_1 = weight_sum_g[xp * W + yp+1];
@@ -1244,8 +1360,8 @@ void candidate_filtering_all_VEC(buffer output_r, buffer output_g, buffer output
     }
 
     // Final Weight Normalization B
-   for(int xp = R + f_b; xp < W - R - f_b; ++xp) {
-        for(int yp = R + f_b; yp < H - R - f_b; yp+=4) {
+   for(int xp = R + F_B; xp < W - R - F_B; ++xp) {
+        for(int yp = R + F_B; yp < H - R - F_B; yp+=4) {
         
             scalar w_0 = weight_sum_b[xp * W + yp];
             scalar w_1 = weight_sum_b[xp * W + yp+1];
@@ -1264,18 +1380,18 @@ void candidate_filtering_all_VEC(buffer output_r, buffer output_g, buffer output
 
     // Handline Border Cases 
     // ----------------------------------
-    // Candidate FIRST and THIRD (due to f_r = f_b)
+    // Candidate FIRST and THIRD (due to F_R = F_B)
     for (int i = 0; i < 3; i++){
         for (int xp = 0; xp < W; xp++){
-            for(int yp = 0; yp < R + f_r; yp++){
+            for(int yp = 0; yp < R + F_R; yp++){
                 output_r[i][xp][yp] = color[i][xp][yp];
                 output_r[i][xp][H - yp - 1] = color[i][xp][H - yp - 1];
                 output_b[i][xp][yp] = color[i][xp][yp];
                 output_b[i][xp][H - yp - 1] = color[i][xp][H - yp - 1];
             }
         }
-        for(int xp = 0; xp < R + f_r; xp++){
-            for (int yp = R + f_r ; yp < H - R - f_r; yp++){
+        for(int xp = 0; xp < R + F_R; xp++){
+            for (int yp = R + F_R ; yp < H - R - F_R; yp++){
             
                 output_r[i][xp][yp] = color[i][xp][yp];
                 output_r[i][W - xp - 1][yp] = color[i][W - xp - 1][yp];
@@ -1285,16 +1401,16 @@ void candidate_filtering_all_VEC(buffer output_r, buffer output_g, buffer output
         }
     }
 
-    // Candidate SECOND since f_g != f_r
+    // Candidate SECOND since F_G != F_R
     for (int i = 0; i < 3; i++){
         for (int xp = 0; xp < W; xp++){
-            for(int yp = 0; yp < R + f_g; yp++){
+            for(int yp = 0; yp < R + F_G; yp++){
                 output_g[i][xp][yp] = color[i][xp][yp];
                 output_g[i][xp][H - yp - 1] = color[i][xp][H - yp - 1];
             }
         }
-        for(int xp = 0; xp < R + f_g; xp++){
-            for (int yp = R + f_g ; yp < H - R - f_g; yp++){
+        for(int xp = 0; xp < R + F_G; xp++){
+            for (int yp = R + F_G ; yp < H - R - F_G; yp++){
                 output_g[i][xp][yp] = color[i][xp][yp];
                 output_g[i][W - xp - 1][yp] = color[i][W - xp - 1][yp];
             }
