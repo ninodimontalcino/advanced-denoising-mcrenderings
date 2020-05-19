@@ -32,6 +32,8 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
 // VECTORIZED VERSION (using AVX2)
 void sure_all_VEC(buffer sure, buffer c, buffer c_var, buffer cand_r, buffer cand_g, buffer cand_b, int W, int H);
 void filtering_basic_VEC(buffer output, buffer input, buffer c, buffer c_var, Flt_parameters p, int W, int H);
+void filtering_basic_f3_VEC(buffer output, buffer input, buffer c, buffer c_var, Flt_parameters p, int W, int H);   // Unrolled for specific f=3 and k_f = Inf
+void filtering_basic_f1_VEC(buffer output, buffer input, buffer c, buffer c_var, Flt_parameters p, int W, int H);   // Unrolled for specific f=1 and k_f = Inf
 void feature_prefiltering_VEC(buffer output, buffer output_var, buffer features, buffer features_var, Flt_parameters p, int W, int H);
 void candidate_filtering_VEC(buffer output, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters p, int W, int H);
 void candidate_filtering_FIRST_VEC(buffer output, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters p, int W, int H);  

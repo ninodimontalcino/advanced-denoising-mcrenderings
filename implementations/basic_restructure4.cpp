@@ -105,7 +105,7 @@ using namespace std;
     Flt_parameters p_sure = { .kc = 1.0, .kf = INFINITY, .tau = 0.001, .f = 1, .r = 1};
     buffer e;
     allocate_buffer_zero(&e, img_width, img_height);
-    filtering_basic_VEC(e, sure, c, c_var, p_sure, img_width, img_height);
+    filtering_basic_f1_VEC(e, sure, c, c_var, p_sure, img_width, img_height);
     
     // DEBUG PART
     if(DEBUG) {
@@ -165,7 +165,7 @@ using namespace std;
     Flt_parameters p_sel = { .kc = 1.0, .kf = INFINITY, .tau = 0.0001, .f = 1, .r = 5};
     buffer sel_filtered;
     allocate_buffer_zero(&sel_filtered, img_width, img_height);
-    filtering_basic_VEC(sel_filtered, sel, c, c_var, p_sel, img_width, img_height);
+    filtering_basic_f1_VEC(sel_filtered, sel, c, c_var, p_sel, img_width, img_height);
 
     // DEBUG PART
     if(DEBUG) {
