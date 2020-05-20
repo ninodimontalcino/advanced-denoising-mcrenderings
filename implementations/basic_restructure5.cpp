@@ -9,6 +9,7 @@
 #include <immintrin.h>
 // #include "../avx_mathfun.h"
 
+#define BLOCK_SIZE 64
 
 using namespace std;
 
@@ -82,8 +83,10 @@ using namespace std;
     // ----------------------------------------------
 
     // (a) Candidate Filters
-    candidate_filtering_all_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, img_width, img_height);    
-
+    for(int X0 = 0; X0 < img_width / BLOCK_SIZE; X0 += BLOCK_SIZE) {
+        for(int Y0 = 0; Y0 < img_height / BLOCK_SIZE; Y0 += BLOCK_SIZE)
+            candidate_filtering_all_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, X0, Y0, BLOCK_SIZE, BLOCK_SIZE);
+    }
 
     // ----------------------------------------------
     // (4) Filtering SURE error estimates

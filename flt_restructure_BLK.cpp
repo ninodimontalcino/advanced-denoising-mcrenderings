@@ -2771,7 +2771,7 @@ void candidate_filtering_THIRD_BLK(buffer output, buffer color, buffer color_var
 }
 
 
-void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output_b, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters* p, int W, int H){
+void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output_b, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters* p, int X0, int Y0, int W, int H){
 
     int WH = W*H;
 
@@ -2832,8 +2832,8 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
     // Precompute size of neighbourhood
     scalar NEIGH_R_INV = 1. / (3*(2*F_R+1)*(2*F_R+1));
     scalar NEIGH_G_INV = 1. / (3*(2*F_G+1)*(2*F_G+1));
-    int final_yp_r = H - 32 + R + F_R;
-    int final_yp_g = H - 32 + R + F_G;
+    int final_yp_r = Y0+H - 32 + R + F_R;
+    int final_yp_g = Y0+H - 32 + R + F_G;
 
     const __m256 neigh_inv_r_vec = _mm256_set1_ps(NEIGH_R_INV);
     const __m256 neigh_inv_min_r_vec = _mm256_set1_ps(-NEIGH_R_INV);
@@ -2846,8 +2846,8 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
     gradients = (scalar*) malloc(3 * W * H * sizeof(scalar));
 
     for(int i=0; i<NB_FEATURES;++i) {
-        for(int x =  R+f_min; x < W - R - f_min; ++x) {
-            for(int y =  R+f_min; y < H -  R - f_min; y+=8) {
+        for(int x =  X0+R+f_min; x < X0+W - R - f_min; ++x) {
+            for(int y =  Y0+R+f_min; y < Y0+H -  R - f_min; y+=8) {
                 
                 // Loading
                 features_vec  = _mm256_loadu_ps(features[i][x] + y);
@@ -2898,8 +2898,8 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
             
             
             for (int i=0; i<3; i++){  
-                for(int xp = R; xp < W - R; ++xp) {
-                    for(int yp = R; yp < H - R; yp+=8) {
+                for(int xp = X0+R; xp < X0+W - R; ++xp) {
+                    for(int yp = Y0+R; yp < Y0+H - R; yp+=8) {
 
                         int xq = xp + r_x;
                         int yq = yp + r_y;
@@ -2937,8 +2937,8 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
             memset(features_weights_r, 0, W*H*sizeof(scalar));
             memset(features_weights_b, 0, W*H*sizeof(scalar));
             for(int j=0; j<NB_FEATURES;++j){
-                for(int xp = R + f_min; xp < W - R - f_min; ++xp) {
-                    for(int yp = R + f_min; yp < H - R - f_min; yp+=8) {
+                for(int xp = X0+R + f_min; xp < X0+W - R - f_min; ++xp) {
+                    for(int yp = Y0+R + f_min; yp < Y0+H - R - f_min; yp+=8) {
                         
                         int xq = xp + r_x;
                         int yq = yp + r_y;
@@ -2982,8 +2982,8 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
             // Candidate R
             // ----------------------------------------------
             // (1) Convolve along height
-            for(int xp = R; xp < W - R; ++xp) {
-                for(int yp = R + F_R; yp < H - R - F_R; yp+=64) {
+            for(int xp = X0+R; xp < X0+W - R; ++xp) {
+                for(int yp = Y0+R + F_R; yp < Y0+H - R - F_R; yp+=64) {
 
                     __m256 sum_0_vec = _mm256_setzero_ps();
                     __m256 sum_1_vec = _mm256_setzero_ps();
@@ -3027,8 +3027,8 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
             }
 
             // (2) Convolve along width including weighted contribution
-            for(int xp = R + F_R; xp < W - R - F_R; ++xp) {
-                for(int yp = R + F_R; yp < H - 32; yp+=32) {
+            for(int xp = X0+R + F_R; xp < X0+W - R - F_R; ++xp) {
+                for(int yp = Y0+R + F_R; yp < Y0+H - 32; yp+=32) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -3130,7 +3130,7 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
                     }
                 }
 
-                for(int yp = final_yp_r; yp < H - R - F_R; yp+=4) {
+                for(int yp = final_yp_r; yp < Y0+H - R - F_R; yp+=4) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -3182,8 +3182,8 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
             // ----------------------------------------------
             // Candidate G
             // ----------------------------------------------
-            for(int xp = R; xp < W - R; ++xp) {
-                for(int yp = R + F_G; yp < H - R - F_G; yp+=64) {
+            for(int xp = X0+R; xp < X0+W - R; ++xp) {
+                for(int yp = Y0+R + F_G; yp < Y0+H - R - F_G; yp+=64) {
 
                     __m256 sum_0_vec = _mm256_setzero_ps();
                     __m256 sum_1_vec = _mm256_setzero_ps();
@@ -3227,8 +3227,8 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
             }
 
             // (2) Convolve along width including weighted contribution
-            for(int xp = R + F_G; xp < W - R - F_G; ++xp) {
-                for(int yp = R + F_G; yp < H - 32; yp+=32) {
+            for(int xp = X0+R + F_G; xp < X0+W - R - F_G; ++xp) {
+                for(int yp = Y0+R + F_G; yp < Y0+H - 32; yp+=32) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -3370,7 +3370,7 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
                     }
                 }
 
-                for(int yp = final_yp_g; yp < H - R - F_R; yp+=4) {
+                for(int yp = final_yp_g; yp < Y0+H - R - F_R; yp+=4) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -3444,8 +3444,8 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
             // => no color weight computation due to kc = Inf
             // ----------------------------------------------
 
-            for(int xp = R + F_B; xp < W - R - F_B; ++xp) {
-                for(int yp = R + F_B; yp < H - 32; yp+=32) {
+            for(int xp = X0+R + F_B; xp < X0+W - R - F_B; ++xp) {
+                for(int yp = Y0+R + F_B; yp < Y0+H - 32; yp+=32) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -3499,7 +3499,7 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
 
                     }                    
                 }
-                for(int yp = final_yp_r; yp < H - R - F_B; yp+=4) {
+                for(int yp = final_yp_r; yp < Y0+H - R - F_B; yp+=4) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -3528,8 +3528,8 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
     }
 
     // Final Weight Normalization R
-    for(int xp = R + F_R; xp < W - R - F_R; ++xp) {
-        for(int yp = R + F_R ; yp < H - 32; yp+=32) {     
+    for(int xp = X0+R + F_R; xp < X0+W - R - F_R; ++xp) {
+        for(int yp = Y0+R + F_R ; yp < Y0+H - 32; yp+=32) {     
 
             __m256 weight_sum_vec_0 = _mm256_loadu_ps(weight_sum_r + xp * W + (yp + 0 * 8));
             __m256 weight_sum_vec_1 = _mm256_loadu_ps(weight_sum_r + xp * W + (yp + 1 * 8));
@@ -3555,7 +3555,7 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
             }
         }
 
-        for(int yp = final_yp_r; yp < H - R - F_R; yp+=4) {     
+        for(int yp = final_yp_r; yp < Y0+H - R - F_R; yp+=4) {     
             
             scalar w_0 = weight_sum_r[xp * W + yp];
             scalar w_1 = weight_sum_r[xp * W + yp+1];
@@ -3573,8 +3573,8 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
 
 
     // Final Weight Normalization G
-    for(int xp = R + F_G; xp < W - R - F_G; ++xp) {
-        for(int yp = R + F_G ; yp < H - 32; yp+=32) {     
+    for(int xp = X0+R + F_G; xp < X0+W - R - F_G; ++xp) {
+        for(int yp = Y0+R + F_G ; yp < Y0+H - 32; yp+=32) {     
 
             __m256 weight_sum_vec_0 = _mm256_loadu_ps(weight_sum_g + xp * W + (yp + 0 * 8));
             __m256 weight_sum_vec_1 = _mm256_loadu_ps(weight_sum_g + xp * W + (yp + 1 * 8));
@@ -3600,7 +3600,7 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
             }
         }
 
-        for(int yp = final_yp_g; yp < H - R - F_G; yp+=4) {     
+        for(int yp = final_yp_g; yp < Y0+H - R - F_G; yp+=4) {     
             
             scalar w_0 = weight_sum_g[xp * W + yp];
             scalar w_1 = weight_sum_g[xp * W + yp+1];
@@ -3618,8 +3618,8 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
 
     // Final Weight Normalization B
     // Final Weight Normalization
-    for(int xp = R + F_B; xp < W - R - F_B; ++xp) {
-        for(int yp = R + F_B ; yp < H - 32; yp+=32) {     
+    for(int xp = X0+R + F_B; xp < X0+W - R - F_B; ++xp) {
+        for(int yp = Y0+R + F_B ; yp < Y0+H - 32; yp+=32) {     
 
             __m256 weight_sum_vec_0 = _mm256_loadu_ps(weight_sum_b + xp * W + (yp + 0 * 8));
             __m256 weight_sum_vec_1 = _mm256_loadu_ps(weight_sum_b + xp * W + (yp + 1 * 8));
@@ -3645,7 +3645,7 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
             }
         }
 
-        for(int yp = final_yp_r; yp < H - R - F_B; yp+=4) {     
+        for(int yp = final_yp_r; yp < Y0+H - R - F_B; yp+=4) {     
             
             scalar w_0 = weight_sum_b[xp * W + yp];
             scalar w_1 = weight_sum_b[xp * W + yp+1];
@@ -3666,16 +3666,16 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
     // ----------------------------------
     // Candidate FIRST and THIRD (due to F_R = F_B)
     for (int i = 0; i < 3; i++){
-        for (int xp = 0; xp < W; xp++){
-            for(int yp = 0; yp < R + F_R; yp++){
+        for (int xp = X0; xp < X0+W; xp++){
+            for(int yp = Y0; yp < Y0+R + F_R; yp++){
                 output_r[i][xp][yp] = color[i][xp][yp];
                 output_r[i][xp][H - yp - 1] = color[i][xp][H - yp - 1];
                 output_b[i][xp][yp] = color[i][xp][yp];
                 output_b[i][xp][H - yp - 1] = color[i][xp][H - yp - 1];
             }
         }
-        for(int xp = 0; xp < R + F_R; xp++){
-            for (int yp = R + F_R ; yp < H - R - F_R; yp++){
+        for(int xp = X0; xp < X0+R + F_R; xp++){
+            for (int yp = Y0+R + F_R ; yp < Y0+H - R - F_R; yp++){
             
                 output_r[i][xp][yp] = color[i][xp][yp];
                 output_r[i][W - xp - 1][yp] = color[i][W - xp - 1][yp];
@@ -3687,14 +3687,14 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
 
     // Candidate SECOND since F_G != F_R
     for (int i = 0; i < 3; i++){
-        for (int xp = 0; xp < W; xp++){
-            for(int yp = 0; yp < R + F_G; yp++){
+        for (int xp = X0; xp < X0+W; xp++){
+            for(int yp = Y0; yp < Y0+R + F_G; yp++){
                 output_g[i][xp][yp] = color[i][xp][yp];
                 output_g[i][xp][H - yp - 1] = color[i][xp][H - yp - 1];
             }
         }
-        for(int xp = 0; xp < R + F_G; xp++){
-            for (int yp = R + F_G ; yp < H - R - F_G; yp++){
+        for(int xp = X0; xp < X0+R + F_G; xp++){
+            for (int yp = Y0+R + F_G ; yp < Y0+H - R - F_G; yp++){
                 output_g[i][xp][yp] = color[i][xp][yp];
                 output_g[i][W - xp - 1][yp] = color[i][W - xp - 1][yp];
             }
