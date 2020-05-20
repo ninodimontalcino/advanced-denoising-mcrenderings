@@ -2181,7 +2181,7 @@ void candidate_filtering_all_VEC(buffer output_r, buffer output_g, buffer output
                     }
                 }
 
-                for(int yp = final_yp_r; yp < H - R - F_R; yp+=4) {
+                for(int yp = final_yp_g; yp < H - R - F_R; yp+=4) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -2256,7 +2256,61 @@ void candidate_filtering_all_VEC(buffer output_r, buffer output_g, buffer output
             // ----------------------------------------------
 
             for(int xp = R + F_B; xp < W - R - F_B; ++xp) {
-                for(int yp = R + F_B; yp < H - R - F_B; yp+=4) {
+                for(int yp = R + F_B; yp < H - 32; yp+=32) {
+
+                    int xq = xp + r_x;
+                    int yq = yp + r_y;
+
+                    __m256 weight_vec_0 = _mm256_loadu_ps(features_weights_b+ xp * W + (yp + 0 * 8));
+                    __m256 weight_vec_1 = _mm256_loadu_ps(features_weights_b+ xp * W + (yp + 1 * 8));
+                    __m256 weight_vec_2 = _mm256_loadu_ps(features_weights_b+ xp * W + (yp + 2 * 8));
+                    __m256 weight_vec_3 = _mm256_loadu_ps(features_weights_b+ xp * W + (yp + 3 * 8));
+
+                    weight_vec_0 = exp256_ps(weight_vec_0);
+                    weight_vec_1 = exp256_ps(weight_vec_1);
+                    weight_vec_2 = exp256_ps(weight_vec_2);
+                    weight_vec_3 = exp256_ps(weight_vec_3);
+
+                    __m256 weight_sum_vec_0 = _mm256_loadu_ps(weight_sum_b+ xp * W + ( yp + 0 * 8));
+                    __m256 weight_sum_vec_1 = _mm256_loadu_ps(weight_sum_b+ xp * W + ( yp + 1 * 8));
+                    __m256 weight_sum_vec_2 = _mm256_loadu_ps(weight_sum_b+ xp * W + ( yp + 2 * 8));
+                    __m256 weight_sum_vec_3 = _mm256_loadu_ps(weight_sum_b+ xp * W + ( yp + 3 * 8));
+
+                    weight_sum_vec_0 = _mm256_add_ps(weight_sum_vec_0, weight_vec_0);
+                    weight_sum_vec_1 = _mm256_add_ps(weight_sum_vec_1, weight_vec_1);
+                    weight_sum_vec_2 = _mm256_add_ps(weight_sum_vec_2, weight_vec_2);
+                    weight_sum_vec_3 = _mm256_add_ps(weight_sum_vec_3, weight_vec_3);
+
+                    _mm256_storeu_ps(weight_sum_b+ xp * W + ( yp + 0 * 8), weight_sum_vec_0);
+                    _mm256_storeu_ps(weight_sum_b+ xp * W + ( yp + 1 * 8), weight_sum_vec_1);
+                    _mm256_storeu_ps(weight_sum_b+ xp * W + ( yp + 2 * 8), weight_sum_vec_2);
+                    _mm256_storeu_ps(weight_sum_b+ xp * W + ( yp + 3 * 8), weight_sum_vec_3);
+                    
+                    
+
+                    for (int i=0; i<3; i++){
+                        __m256 output_vec_0 = _mm256_loadu_ps(output_b[i][xp] + (yp + 0 * 8));
+                        __m256 input_vec_0 = _mm256_loadu_ps(color[i][xq] + (yq + 0 * 8));
+                        __m256 output_vec_1 = _mm256_loadu_ps(output_b[i][xp] + (yp + 1 * 8));
+                        __m256 input_vec_1 = _mm256_loadu_ps(color[i][xq] + (yq + 1 * 8));
+                        __m256 output_vec_2 = _mm256_loadu_ps(output_b[i][xp] + (yp + 2 * 8));
+                        __m256 input_vec_2 = _mm256_loadu_ps(color[i][xq] + (yq + 2 * 8));
+                        __m256 output_vec_3 = _mm256_loadu_ps(output_b[i][xp] + (yp + 3 * 8));
+                        __m256 input_vec_3 = _mm256_loadu_ps(color[i][xq] + (yq + 3 * 8));
+
+                        output_vec_0 = _mm256_fmadd_ps(weight_vec_0, input_vec_0, output_vec_0);
+                        output_vec_1 = _mm256_fmadd_ps(weight_vec_1, input_vec_1, output_vec_1);
+                        output_vec_2 = _mm256_fmadd_ps(weight_vec_2, input_vec_2, output_vec_2);
+                        output_vec_3 = _mm256_fmadd_ps(weight_vec_3, input_vec_3, output_vec_3);
+
+                        _mm256_storeu_ps(output_b[i][xp] + (yp + 0 * 8), output_vec_0);
+                        _mm256_storeu_ps(output_b[i][xp] + (yp + 1 * 8), output_vec_1);
+                        _mm256_storeu_ps(output_b[i][xp] + (yp + 2 * 8), output_vec_2);
+                        _mm256_storeu_ps(output_b[i][xp] + (yp + 3 * 8), output_vec_3);
+
+                    }                    
+                }
+                for(int yp = final_yp_r; yp < H - R - F_B; yp+=4) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -2278,9 +2332,9 @@ void candidate_filtering_all_VEC(buffer output_r, buffer output_g, buffer output
                         output_b[i][xp][yp+2] += weight_2 * color[i][xq][yq+2];
                         output_b[i][xp][yp+3] += weight_3 * color[i][xq][yq+3];
                     }
-                }
+                }            
             }
-
+            
         }
     }
 
