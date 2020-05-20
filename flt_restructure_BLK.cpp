@@ -2905,7 +2905,7 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
             
             for (int i=0; i<3; i++){  
                 for(int xp = X0-f_max; xp < X0+W+f_max; ++xp) {
-                    for(int yp = Y0-f_max; yp < Y0+H+f_max; yp+=8) {
+                    for(int yp = Y0-f_max; yp < Y0+H+f_max-8; yp+=8) {
 
                         int xq = xp + r_x;
                         int yq = yp + r_y;
@@ -2932,6 +2932,32 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
                         temp_vec = _mm256_add_ps(temp_vec, sqdist_vec);
                         _mm256_storeu_ps(temp+(xp-X0)*tempW+(yp-Y0), temp_vec);
                     }
+                    for(int yp = Y0+H+f_max-8; yp < Y0+H+f_max; ++yp) {
+                        int xq = xp + r_x;
+                        int yq = yp + r_y;
+
+                        scalar temp_sca = temp[(xp-X0)*tempW+(yp-Y0)];
+                        scalar c_var_p = color_var[i][xp][yp];
+                        scalar c_var_q = color_var[i][xq][yq];
+                        scalar c_p = color[i][xp][yp];
+                        scalar c_q = color[i][xq][yq];
+
+                        scalar normalization = c_var_p + c_var_q;
+                        scalar sqdist = c_p - c_q;
+                        scalar var_cancel = fmin(c_var_p, c_var_q);
+
+                        normalization = k_c_squared_r * normalization;
+                        sqdist *= sqdist;
+                        var_cancel = c_var_p + var_cancel;
+
+                        normalization += EPSILON;
+
+                        sqdist = var_cancel - sqdist;
+                        sqdist /= normalization;
+
+                        temp_sca += sqdist;
+                        temp[(xp-X0)*tempW+(yp-Y0)] = temp_sca;
+                    }
                 }
             }
 
@@ -2946,7 +2972,7 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
             memset(features_weights_b, 0, W*H*sizeof(scalar));
             for(int j=0; j<NB_FEATURES;++j){
                 for(int xp = X0; xp < X0+W; ++xp) {
-                    for(int yp = Y0; yp < Y0+H; yp+=8) {
+                    for(int yp = Y0; yp < Y0+H-8; yp+=8) {
                         
                         int xq = xp + r_x;
                         int yq = yp + r_y;
@@ -2978,6 +3004,39 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
 
                         _mm256_storeu_ps(features_weights_r + (xp-X0) * W + (yp-Y0), feat_weight_r);
                         _mm256_storeu_ps(features_weights_b + (xp-X0) * W + (yp-Y0), feat_weight_b);
+                    } 
+                    for(int yp = Y0+H-8; yp < Y0+H; yp++) {
+                        
+                        int xq = xp + r_x;
+                        int yq = yp + r_y;
+
+                        scalar features_p = features[j][xp][yp];
+                        scalar features_q = features[j][xq][yq];
+                        scalar features_var_p = features_var[j][xp][yp];
+                        scalar features_var_q = features_var[j][xq][yq];
+                        scalar grad = *(gradients+j * WH + (xp-X0) * W + (yp-Y0));
+                        scalar feat_weight_r = *(features_weights_r+ (xp-X0) * W + (yp-Y0));
+                        scalar feat_weight_b = *(features_weights_b+ (xp-X0) * W + (yp-Y0));
+
+                        scalar sqdist = (features_p - features_q);
+                        sqdist = (sqdist * sqdist);
+                        scalar var_cancel = fmin(features_var_q, features_var_p);
+                        var_cancel = (features_var_p + var_cancel);
+                        scalar dist_var = (var_cancel - sqdist);                        
+
+                        scalar var_max = fmax(features_var_p, grad);
+                        scalar normalization_r = fmax(tau_r, var_max);
+                        scalar normalization_b = fmax(tau_b, var_max);
+                        normalization_r = (k_f_squared_r * normalization_r);
+                        normalization_b = (k_f_squared_b * normalization_b);
+
+                        normalization_r = (dist_var / normalization_r);
+                        normalization_b = (dist_var / normalization_b);
+                        feat_weight_r = fmin(feat_weight_r, normalization_r);
+                        feat_weight_b = fmin(feat_weight_b, normalization_b);
+
+                        *(features_weights_r + (xp-X0) * W + (yp-Y0)) = feat_weight_r;
+                        *(features_weights_b + (xp-X0) * W + (yp-Y0)) = feat_weight_b;
                     } 
                 }
             }
