@@ -134,7 +134,7 @@ void filtering_basic_f3_ILP(buffer output, buffer input, buffer c, buffer c_var,
             for(int xp = R; xp < W - R; ++xp) {
                 for(int yp = R + F; yp < H - R - F; yp+=$n) {
 
-                    scalar sum1_$i = 0.f;
+                    sum1_$i = 0.f;
 
                     for (int k=-F; k<=F; k++){
                         sum1_$i += temp[xp * W + yp+k+$i];
@@ -319,7 +319,7 @@ void filtering_basic_f1_ILP(buffer output, buffer input, buffer c, buffer c_var,
             for(int xp = R; xp < W - R; ++xp) {
                 for(int yp = R + F; yp < H - R - F; yp+=$n) {
 
-                    scalar sum1_$i = 0.f;
+                    sum1_$i = 0.f;
 
                     for (int k=-F; k<=F; k++){
                         sum1_$i += temp[xp * W + yp+k+$i];
@@ -496,7 +496,7 @@ void feature_prefiltering_ILP(buffer output, buffer output_var, buffer features,
             for(int xp = R; xp < W - R; ++xp) {
                 for(int yp = R + F; yp < H - R - F; yp+=$n) {
 
-                    scalar sum1_$i = 0.f;
+                    sum1_$i = 0.f;
 
                     for (int k=-F; k<=F; k++){
                         sum1_$i += temp[xp * W + yp+k+$i];
@@ -679,7 +679,7 @@ void candidate_filtering_FIRST_ILP(buffer output, buffer color, buffer color_var
             memset(temp, 0, W*H*sizeof(scalar));
             for (int i=0; i<3; i++){  
                 for(int xp = R; xp < W - R; ++xp) {
-                    for(int yp = R; yp < H - R; ++yp) {
+                    for(int yp = R; yp < H - R; yp+=$n) {
 
                         xq = xp + r_x;
                         yq = yp + r_y;
@@ -917,7 +917,7 @@ void candidate_filtering_SECOND_ILP(buffer output, buffer color, buffer color_va
             memset(temp, 0, W*H*sizeof(scalar));
             for (int i=0; i<3; i++){  
                 for(int xp = R; xp < W - R; ++xp) {
-                    for(int yp = R; yp < H - R; ++yp) {
+                    for(int yp = R; yp < H - R; yp+=$n) {
 
                         xq = xp + r_x;
                         yq = yp + r_y;
@@ -1445,7 +1445,7 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
             for(int xp = R; xp < W - R; ++xp) {
                 for(int yp = R + F_R; yp < H - R - F_R; yp+=$n) {
 
-                    scalar sum_r_$i = 0.f;
+                    sum_r_$i = 0.f;
 
                     for (int k=-F_R; k<=F_R; k++){
                         sum_r_$i += temp[xp * W + yp+k+$i];
@@ -1499,7 +1499,7 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
             for(int xp = R; xp < W - R; ++xp) {
                 for(int yp = R + F_G; yp < H - R - F_G; yp+=$n) {
 
-                    scalar sum_g_$i = 0.f;
+                    sum_g_$i = 0.f;
 
                     for (int k=-F_G; k<=F_G; k++){
                         sum_g_$i += temp[xp * W + yp+k+$i];
