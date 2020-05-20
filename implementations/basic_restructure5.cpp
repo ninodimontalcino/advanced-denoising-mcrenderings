@@ -85,7 +85,6 @@ using namespace std;
     // (a) Candidate Filters
     for(int X0 = R+3; X0 < img_width - R - 4 - BLOCK_SIZE; X0 += BLOCK_SIZE) {
         for(int Y0 = R+3; Y0 < img_height - R - 4 - BLOCK_SIZE; Y0 += BLOCK_SIZE) {
-            std::cout << "Filtering " << X0 << " " << Y0 << std::endl;
             candidate_filtering_all_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, X0, Y0, BLOCK_SIZE, BLOCK_SIZE);
         }
     }
