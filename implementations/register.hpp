@@ -23,7 +23,6 @@ void register_functions()
     add_function(&basic_restructure3, "Restructure + Precomputations + ILP/SSA", 1);
     add_function(&basic_restructure4, "Restructure + Precomputations + ILP + Vectorization", 1);
     add_function(&basic_restructure5, "Restructure + Precomputations + ILP + Vectorization + Blocking", 1);
-
 }
 
 #endif

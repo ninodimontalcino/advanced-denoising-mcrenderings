@@ -83,9 +83,50 @@ using namespace std;
     // ----------------------------------------------
 
     // (a) Candidate Filters
-    for(int X0 = 0; X0 < img_width / BLOCK_SIZE; X0 += BLOCK_SIZE) {
-        for(int Y0 = 0; Y0 < img_height / BLOCK_SIZE; Y0 += BLOCK_SIZE)
+    for(int X0 = R+3; X0 < img_width - R - 4 - BLOCK_SIZE; X0 += BLOCK_SIZE) {
+        for(int Y0 = R+3; Y0 < img_height - R - 4 - BLOCK_SIZE; Y0 += BLOCK_SIZE) {
+            std::cout << "Filtering " << X0 << " " << Y0 << std::endl;
             candidate_filtering_all_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, X0, Y0, BLOCK_SIZE, BLOCK_SIZE);
+        }
+    }
+
+    // Handline Border Cases 
+    // ----------------------------------
+    // Candidate FIRST and THIRD (due to F_R = F_B)
+    for (int i = 0; i < 3; i++){
+        for (int xp = 0; xp < 0+img_width; xp++){
+            for(int yp = 0; yp < 0+R + 3; yp++){
+                r[i][xp][yp] = c[i][xp][yp];
+                r[i][xp][img_height - yp - 1] = c[i][xp][img_height - yp - 1];
+                b[i][xp][yp] = c[i][xp][yp];
+                b[i][xp][img_height - yp - 1] = c[i][xp][img_height - yp - 1];
+            }
+        }
+        for(int xp = 0; xp < 0+R + 3; xp++){
+            for (int yp = 0+R + 3 ; yp < 0+img_height - R - 3; yp++){
+            
+                r[i][xp][yp] = c[i][xp][yp];
+                r[i][img_width - xp - 1][yp] = c[i][img_width - xp - 1][yp];
+                b[i][xp][yp] = c[i][xp][yp];
+                b[i][img_width - xp - 1][yp] = c[i][img_width - xp - 1][yp];
+             }
+        }
+    }
+
+    // Candidate SECOND since F_G != F_R
+    for (int i = 0; i < 3; i++){
+        for (int xp = 0; xp < 0+img_width; xp++){
+            for(int yp = 0; yp < 0+R + 3; yp++){
+                g[i][xp][yp] = c[i][xp][yp];
+                g[i][xp][img_height - yp - 1] = c[i][xp][img_height - yp - 1];
+            }
+        }
+        for(int xp = 0; xp < 0+R + 3; xp++){
+            for (int yp = 0+R + 3 ; yp < 0+img_height - R - 3; yp++){
+                g[i][xp][yp] = c[i][xp][yp];
+                g[i][img_width - xp - 1][yp] = c[i][img_width - xp - 1][yp];
+            }
+        }
     }
 
     // ----------------------------------------------
