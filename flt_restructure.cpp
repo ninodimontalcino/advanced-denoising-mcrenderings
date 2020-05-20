@@ -226,8 +226,6 @@ void feature_prefiltering(buffer output, buffer output_var, buffer features, buf
                     }
                 }
             }
-
-
         }
     }
 
@@ -693,16 +691,10 @@ void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, 
                         sqdist *= sqdist;
                         scalar dist_var = var_cancel - sqdist;
 
-                        // ============ !!!!!!! =================================================================
-                        // ToDo: Precompute normalization constants => always the same independet of R
-                        // @Comment from Nino: Not successfull so far => same runtime but less flops => yet less performance
                         scalar var_max = fmax(features_var[j][xp][yp], gradients[j * WH + xp * W + yp]);
                         scalar normalization_r = k_f_squared_r*fmax(tau_r, var_max);
                         scalar normalization_b = k_f_squared_b*fmax(tau_b, var_max);
-                        // ============ !!!!!!! =================================================================
 
-                        //df_r = fmin(df_r, dist_var/norm_r[j * WH + xp * W + yp]);
-                        //df_b = fmin(df_b, dist_var/norm_b[j * WH + xp * W + yp]);
                         df_r = fmin(df_r, (dist_var)/normalization_r);
                         df_b = fmin(df_b, (dist_var)/normalization_b);
                         
@@ -892,7 +884,6 @@ void candidate_filtering_all(buffer output_r, buffer output_g, buffer output_b, 
     free(weight_sum_r);
     free(weight_sum_g);
     free(weight_sum_b);
-    //free(temp);
     free(temp2_r);
     free(temp2_g);
     free(features_weights_r);

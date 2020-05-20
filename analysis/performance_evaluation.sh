@@ -7,7 +7,8 @@
 cd ../build
 #cmake .. -DCMAKE_CXX_FLAGS_RELEASE="-O0" -DCMAKE_C_FLAGS_RELEASE="-00" 
 #cmake .. -DCMAKE_CXX_FLAGS_RELEASE="-O3 -fno-vectorize" -DCMAKE_C_FLAGS_RELEASE="-03 -fno-vectorize" 
-cmake .. -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math -march=native" -DCMAKE_C_FLAGS_RELEASE="-03  -ffast-math -march=native" 
+#cmake .. -DCMAKE_CXX_FLAGS_RELEASE="-O3 -ffast-math -march=native" -DCMAKE_C_FLAGS_RELEASE="-03  -ffast-math -march=native" 
+cmake ..
 make -j4
 
 clear
@@ -20,8 +21,8 @@ echo "----------------------------------------------"
 # -------------------------------------------------------
 output="["
 
-for img_size in {64,80,96,112,128,256,512,1024}                     # ENABLE LINE FOR SPECIFIC EVALUATION
-#for img_size in `ls ../renderings/100spp/ | sort -V`;              # ENABLE LINE FOR EVALUATION OF ALL RESOLUTIONS
+for img_size in {64,80,96,112,128,256,512,1024}                               # ENABLE LINE FOR SPECIFIC EVALUATION
+#for img_size in `ls ../renderings/100spp/ | sort -V`;                        # ENABLE LINE FOR EVALUATION OF ALL RESOLUTIONS
 do
     printf $img_size
     printf "x"
