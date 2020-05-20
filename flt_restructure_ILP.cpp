@@ -1211,10 +1211,12 @@ void candidate_filtering_THIRD_ILP(buffer output, buffer color, buffer color_var
     // ------------------------
     // VARIABLE DEFINITION
     // ------------------------
-    int xq, yq;
+    int xq, yq, yq1;
     scalar diffL, diffR, diff, diffU, diffD;
-    scalar sqdist, var_cancel, dist_var, var_max, normalization, df;
-    scalar weight_0, weight_1, weight_2, weight_3;
+    scalar sqdist0, var_cancel0, dist_var0, var_max, normalization, df0;
+    scalar sqdist1, var_cancel1, dist_var1, var_max1, normalization1, df1;
+    scalar weight_00, weight_01, weight_02, weight_03;
+    scalar weight_10, weight_11, weight_12, weight_13;
     scalar w_0, w_1, w_2, w_3;
 
     // ------------------------
@@ -1225,15 +1227,11 @@ void candidate_filtering_THIRD_ILP(buffer output, buffer color, buffer color_var
     scalar* weight_sum;
     weight_sum = (scalar*) calloc(W * H, sizeof(scalar));
 
-    // Init temp channel
-    scalar* temp;
-    scalar* temp2;
-    temp = (scalar*) malloc(W * H * sizeof(scalar));
-    temp2 = (scalar*) malloc(W * H * sizeof(scalar));
-
     // Init feature weights channel
-    scalar* feature_weights;
-    feature_weights = (scalar*) malloc(W * H * sizeof(scalar));
+    scalar* feature_weights0;
+    scalar* feature_weights1;
+    feature_weights0 = (scalar*) malloc(W * H * sizeof(scalar));
+    feature_weights1 = (scalar*) malloc(W * H * sizeof(scalar));
 
     // Compute gradients
     scalar *gradients;
@@ -1257,11 +1255,92 @@ void candidate_filtering_THIRD_ILP(buffer output, buffer color, buffer color_var
 
     // Covering the neighbourhood
     for (int r_x = -R; r_x <= R; r_x++){
-        for (int r_y = -R; r_y <= R; r_y++){
+        int r_y;
+        for (r_y = -R; r_y < R; r_y+=2){
         
 
             // Compute features
-            memset(feature_weights, 0, W*H*sizeof(scalar));
+            memset(feature_weights0, 0, W*H*sizeof(scalar));
+            memset(feature_weights1, 0, W*H*sizeof(scalar));
+            for(int j=0; j<NB_FEATURES;++j){
+                for(int xp = R + F; xp < W - R - F; ++xp) {
+                    for(int yp = R + F; yp < H - R + F; ++yp) {
+
+                        xq = xp + r_x;
+                        yq = yp + r_y;
+                        yq1 = yq+1;
+
+                        df0 = feature_weights0[xp * W + yp];
+                        df1 = feature_weights1[xp * W + yp];
+
+                        sqdist0 = features[j][xp][yp] - features[j][xq][yq];
+                        sqdist1 = features[j][xp][yp] - features[j][xq][yq1];
+
+                        var_cancel0 = features_var[j][xp][yp] + fmin(features_var[j][xp][yp], features_var[j][xq][yq]);
+                        var_cancel1 = features_var[j][xp][yp] + fmin(features_var[j][xp][yp], features_var[j][xq][yq1]);
+
+                        
+                        sqdist0 *= sqdist0;
+                        sqdist1 *= sqdist1;
+                        dist_var0 = var_cancel0 - sqdist0;
+                        dist_var1 = var_cancel1 - sqdist1;
+
+                        var_max = fmax(features_var[j][xp][yp], gradients[j * WH + xp * W + yp]);
+
+                        normalization = K_F_SQUARED*fmax(p.tau, var_max);
+
+                        df0 = fmin(df0, (dist_var0)/normalization);
+                        df1 = fmin(df1, (dist_var1)/normalization);
+
+                        feature_weights0[xp * W + yp] = df0;
+                        feature_weights1[xp * W + yp] = df1;
+                    }
+                }
+            }
+
+
+            // (2) Convolve along width including weighted contribution
+            for(int xp = R + F; xp < W - R - F; ++xp) {
+                for(int yp = R + F; yp < H - R - F; yp+=4) {
+
+                    xq = xp + r_x;
+                    yq = yp + r_y;
+                    yq1 = yq+1;
+
+                    weight_00 = exp(feature_weights0[xp * W + yp]);
+                    weight_01 = exp(feature_weights0[xp * W + yp+1]);
+                    weight_02 = exp(feature_weights0[xp * W + yp+2]);
+                    weight_03 = exp(feature_weights0[xp * W + yp+3]);
+
+                    weight_10 = exp(feature_weights1[xp * W + yp]);
+                    weight_11 = exp(feature_weights1[xp * W + yp+1]);
+                    weight_12 = exp(feature_weights1[xp * W + yp+2]);
+                    weight_13 = exp(feature_weights1[xp * W + yp+3]);
+
+                    weight_sum[xp * W + yp]   += weight_00 + weight_10;
+                    weight_sum[xp * W + yp+1] += weight_01 + weight_11;
+                    weight_sum[xp * W + yp+2] += weight_02 + weight_12;
+                    weight_sum[xp * W + yp+3] += weight_03 + weight_13;
+
+                    for (int i=0; i<3; i++){
+                        output[i][xp][yp]   += weight_00 * color[i][xq][yq];
+                        output[i][xp][yp]   += weight_10 * color[i][xq][yq1];
+                        output[i][xp][yp+1] += weight_01 * color[i][xq][yq+1];
+                        output[i][xp][yp+1] += weight_11 * color[i][xq][yq1+1];
+                        output[i][xp][yp+2] += weight_02 * color[i][xq][yq+2];
+                        output[i][xp][yp+2] += weight_12 * color[i][xq][yq1+2];
+                        output[i][xp][yp+3] += weight_03 * color[i][xq][yq+3];
+                        output[i][xp][yp+3] += weight_13 * color[i][xq][yq1+3];
+                    }
+                }
+            }
+        }
+
+        for (; r_y <= R; r_y++){
+        
+
+            // Compute features
+            memset(feature_weights0, 0, W*H*sizeof(scalar));
             for(int j=0; j<NB_FEATURES;++j){
                 for(int xp = R + F; xp < W - R - F; ++xp) {
                     for(int yp = R + F; yp < H - R + F; ++yp) {
@@ -1269,18 +1348,18 @@ void candidate_filtering_THIRD_ILP(buffer output, buffer color, buffer color_var
                         xq = xp + r_x;
                         yq = yp + r_y;
 
-                        df = feature_weights[xp * W + yp];
+                        df0 = feature_weights0[xp * W + yp];
 
-                        sqdist = features[j][xp][yp] - features[j][xq][yq];
-                        var_cancel = features_var[j][xp][yp] + fmin(features_var[j][xp][yp], features_var[j][xq][yq]);
-                        sqdist *= sqdist;
-                        dist_var = var_cancel - sqdist;
+                        sqdist0 = features[j][xp][yp] - features[j][xq][yq];
+                        var_cancel0 = features_var[j][xp][yp] + fmin(features_var[j][xp][yp], features_var[j][xq][yq]);
+                        sqdist0 *= sqdist0;
+                        dist_var0 = var_cancel0 - sqdist0;
 
                         var_max = fmax(features_var[j][xp][yp], gradients[j * WH + xp * W + yp]);
                         normalization = K_F_SQUARED*fmax(p.tau, var_max);
 
-                        df = fmin(df, (dist_var)/normalization);
-                        feature_weights[xp * W + yp] = df;
+                        df0 = fmin(df0, (dist_var0)/normalization);
+                        feature_weights0[xp * W + yp] = df0;
                     }
                 }
             }
@@ -1293,21 +1372,21 @@ void candidate_filtering_THIRD_ILP(buffer output, buffer color, buffer color_var
                     xq = xp + r_x;
                     yq = yp + r_y;
 
-                    weight_0 = exp(feature_weights[xp * W + yp]);
-                    weight_1 = exp(feature_weights[xp * W + yp+1]);
-                    weight_2 = exp(feature_weights[xp * W + yp+2]);
-                    weight_3 = exp(feature_weights[xp * W + yp+3]);
+                    weight_00 = exp(feature_weights0[xp * W + yp]);
+                    weight_01 = exp(feature_weights0[xp * W + yp+1]);
+                    weight_02 = exp(feature_weights0[xp * W + yp+2]);
+                    weight_03 = exp(feature_weights0[xp * W + yp+3]);
 
-                    weight_sum[xp * W + yp] += weight_0;
-                    weight_sum[xp * W + yp+1] += weight_1;
-                    weight_sum[xp * W + yp+2] += weight_2;
-                    weight_sum[xp * W + yp+3] += weight_3;
+                    weight_sum[xp * W + yp]   += weight_00;
+                    weight_sum[xp * W + yp+1] += weight_01;
+                    weight_sum[xp * W + yp+2] += weight_02;
+                    weight_sum[xp * W + yp+3] += weight_03;
 
                     for (int i=0; i<3; i++){
-                        output[i][xp][yp] += weight_0 * color[i][xq][yq];
-                        output[i][xp][yp+1] += weight_1 * color[i][xq][yq+1];
-                        output[i][xp][yp+2] += weight_2 * color[i][xq][yq+2];
-                        output[i][xp][yp+3] += weight_3 * color[i][xq][yq+3];
+                        output[i][xp][yp]   += weight_00 * color[i][xq][yq];
+                        output[i][xp][yp+1] += weight_01 * color[i][xq][yq+1];
+                        output[i][xp][yp+2] += weight_02 * color[i][xq][yq+2];
+                        output[i][xp][yp+3] += weight_03 * color[i][xq][yq+3];
                     }
                 }
             }
@@ -1351,9 +1430,8 @@ void candidate_filtering_THIRD_ILP(buffer output, buffer color, buffer color_var
 
     // Free memory
     free(weight_sum);
-    free(temp);
-    free(temp2);
-    free(feature_weights);
+    free(feature_weights0);
+    free(feature_weights1);
     free(gradients);
 }
 
