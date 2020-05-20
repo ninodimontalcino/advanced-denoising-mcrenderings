@@ -1363,7 +1363,7 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
             memset(temp, 0, W*H*sizeof(scalar));
             for (int i=0; i<3; i++){  
                 for(int xp = R; xp < W - R; ++xp) {
-                    for(int yp = R; yp < H - R; ++yp) {
+                    for(int yp = R; yp < H - R; yp+=$n) {
 
                         xq = xp + r_x;
                         yq = yp + r_y;
@@ -1460,7 +1460,7 @@ void candidate_filtering_all_ILP(buffer output_r, buffer output_g, buffer output
             // $unroll 4
             scalar sum2_$i, weight2_$i;
             for(int xp = R + F_R; xp < W - R - F_R; ++xp) {
-                for(int yp = R + F_R; yp < H - R - F_R; yp+=4) {
+                for(int yp = R + F_R; yp < H - R - F_R; yp+=$n) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
