@@ -309,7 +309,7 @@ void filtering_basic_VEC(buffer output, buffer input, buffer color, buffer color
                     __m256 output_vec, color_vec;
                     for (int i=0; i<3; i++){
                         output_vec = _mm256_loadu_ps(output[i][xp] + yp);
-                        color_vec = _mm256_loadu_ps(color[i][xq] + yq);
+                        color_vec = _mm256_loadu_ps(input[i][xq] + yq);
 
                         output_vec = _mm256_fmadd_ps(weight_vec, color_vec, output_vec);
 
@@ -1409,7 +1409,7 @@ void feature_prefiltering_VEC(buffer output, buffer output_var, buffer features,
                     }
                 }
 
-                for(int yp = final_yp; yp < H - p.r - p.f; yp+=4) {
+                for(int yp = final_yp; yp < H - p.r - p.f; yp+=8) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -1434,15 +1434,17 @@ void feature_prefiltering_VEC(buffer output, buffer output_var, buffer features,
                     __m256 output_vec, output_var_vec, feature_vec, feature_var_vec;
                     for (int i=0; i<3; i++){
                         output_vec = _mm256_loadu_ps(output[i][xp] + yp);
+                        output_var_vec = _mm256_loadu_ps(output_var[i][xp] + yp);
                         feature_vec = _mm256_loadu_ps(features[i][xq] + yq);
                         feature_var_vec = _mm256_loadu_ps(features_var[i][xq] + yq);
 
                         output_vec = _mm256_fmadd_ps(weight_vec, feature_vec, output_vec);
                         _mm256_storeu_ps(output[i][xp] + yp, output_vec);
-                        output_var_vec = _mm256_fmadd_ps(weight_vec, feature_var_vec, output_vec);
-                        _mm256_storeu_ps(output[i][xp] + yp, output_var_vec);                        
+                        output_var_vec = _mm256_fmadd_ps(weight_vec, feature_var_vec, output_var_vec);
+                        _mm256_storeu_ps(output_var[i][xp] + yp, output_var_vec);                        
                     }
                 }
+
             }
         }
     }
@@ -1535,6 +1537,7 @@ void feature_prefiltering_VEC(buffer output, buffer output_var, buffer features,
     free(temp2); 
 
 }
+
 
 
 void candidate_filtering_FIRST_VEC(buffer output, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters p, int W, int H){
