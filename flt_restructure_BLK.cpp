@@ -3047,16 +3047,12 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
             // ----------------------------------------------
             // (1) Convolve along height
             for(int xp = X0-F_R; xp < X0+W+F_R; ++xp) {
-                for(int yp = Y0; yp < Y0+H; yp+=64) {
+                for(int yp = Y0; yp < Y0+H; yp+=32) {
 
                     __m256 sum_0_vec = _mm256_setzero_ps();
                     __m256 sum_1_vec = _mm256_setzero_ps();
                     __m256 sum_2_vec = _mm256_setzero_ps();
                     __m256 sum_3_vec = _mm256_setzero_ps();
-                    __m256 sum_4_vec = _mm256_setzero_ps();
-                    __m256 sum_5_vec = _mm256_setzero_ps();
-                    __m256 sum_6_vec = _mm256_setzero_ps();
-                    __m256 sum_7_vec = _mm256_setzero_ps();
 
                     for (int k=-F_R; k<=F_R; k++){
 
@@ -3064,29 +3060,17 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
                         __m256 temp_vec_1 = _mm256_loadu_ps(temp+(xp-X0+f_max) * tempW + ((yp-Y0+f_max)+1*8)+k);
                         __m256 temp_vec_2 = _mm256_loadu_ps(temp+(xp-X0+f_max) * tempW + ((yp-Y0+f_max)+2*8)+k);
                         __m256 temp_vec_3 = _mm256_loadu_ps(temp+(xp-X0+f_max) * tempW + ((yp-Y0+f_max)+3*8)+k);
-                        __m256 temp_vec_4 = _mm256_loadu_ps(temp+(xp-X0+f_max) * tempW + ((yp-Y0+f_max)+4*8)+k);
-                        __m256 temp_vec_5 = _mm256_loadu_ps(temp+(xp-X0+f_max) * tempW + ((yp-Y0+f_max)+5*8)+k);
-                        __m256 temp_vec_6 = _mm256_loadu_ps(temp+(xp-X0+f_max) * tempW + ((yp-Y0+f_max)+6*8)+k);
-                        __m256 temp_vec_7 = _mm256_loadu_ps(temp+(xp-X0+f_max) * tempW + ((yp-Y0+f_max)+7*8)+k);
 
                         sum_0_vec = _mm256_add_ps(sum_0_vec, temp_vec_0);
                         sum_1_vec = _mm256_add_ps(sum_1_vec, temp_vec_1);
                         sum_2_vec = _mm256_add_ps(sum_2_vec, temp_vec_2);
                         sum_3_vec = _mm256_add_ps(sum_3_vec, temp_vec_3);
-                        sum_4_vec = _mm256_add_ps(sum_4_vec, temp_vec_4);
-                        sum_5_vec = _mm256_add_ps(sum_5_vec, temp_vec_5);
-                        sum_6_vec = _mm256_add_ps(sum_6_vec, temp_vec_6);
-                        sum_7_vec = _mm256_add_ps(sum_7_vec, temp_vec_7);
                     }
 
                     _mm256_storeu_ps(temp2_r+ (xp-X0+f_max) * tempW + ((yp-Y0+f_max) + 0 * 8), sum_0_vec);
                     _mm256_storeu_ps(temp2_r+ (xp-X0+f_max) * tempW + ((yp-Y0+f_max) + 1 * 8), sum_1_vec);
                     _mm256_storeu_ps(temp2_r+ (xp-X0+f_max) * tempW + ((yp-Y0+f_max) + 2 * 8), sum_2_vec);
                     _mm256_storeu_ps(temp2_r+ (xp-X0+f_max) * tempW + ((yp-Y0+f_max) + 3 * 8), sum_3_vec);
-                    _mm256_storeu_ps(temp2_r+ (xp-X0+f_max) * tempW + ((yp-Y0+f_max) + 4 * 8), sum_4_vec);
-                    _mm256_storeu_ps(temp2_r+ (xp-X0+f_max) * tempW + ((yp-Y0+f_max) + 5 * 8), sum_5_vec);
-                    _mm256_storeu_ps(temp2_r+ (xp-X0+f_max) * tempW + ((yp-Y0+f_max) + 6 * 8), sum_6_vec);
-                    _mm256_storeu_ps(temp2_r+ (xp-X0+f_max) * tempW + ((yp-Y0+f_max) + 7 * 8), sum_7_vec);
                 }
                 // assert(H % 64 == 0);
             }
@@ -3228,16 +3212,12 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
             // Candidate G
             // ----------------------------------------------
             for(int xp = X0-F_G; xp < X0+W+F_G; ++xp) {
-                for(int yp = Y0; yp < Y0+H; yp+=64) {
+                for(int yp = Y0; yp < Y0+H; yp+=32) {
 
                     __m256 sum_0_vec = _mm256_setzero_ps();
                     __m256 sum_1_vec = _mm256_setzero_ps();
                     __m256 sum_2_vec = _mm256_setzero_ps();
                     __m256 sum_3_vec = _mm256_setzero_ps();
-                    __m256 sum_4_vec = _mm256_setzero_ps();
-                    __m256 sum_5_vec = _mm256_setzero_ps();
-                    __m256 sum_6_vec = _mm256_setzero_ps();
-                    __m256 sum_7_vec = _mm256_setzero_ps();
 
                     for (int k=-F_G; k<=F_G; k++){
 
@@ -3245,29 +3225,17 @@ void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output
                         __m256 temp_vec_1 = _mm256_loadu_ps(temp+(xp-X0+f_max) * tempW + ((yp-Y0+f_max)+1*8)+k);
                         __m256 temp_vec_2 = _mm256_loadu_ps(temp+(xp-X0+f_max) * tempW + ((yp-Y0+f_max)+2*8)+k);
                         __m256 temp_vec_3 = _mm256_loadu_ps(temp+(xp-X0+f_max) * tempW + ((yp-Y0+f_max)+3*8)+k);
-                        __m256 temp_vec_4 = _mm256_loadu_ps(temp+(xp-X0+f_max) * tempW + ((yp-Y0+f_max)+4*8)+k);
-                        __m256 temp_vec_5 = _mm256_loadu_ps(temp+(xp-X0+f_max) * tempW + ((yp-Y0+f_max)+5*8)+k);
-                        __m256 temp_vec_6 = _mm256_loadu_ps(temp+(xp-X0+f_max) * tempW + ((yp-Y0+f_max)+6*8)+k);
-                        __m256 temp_vec_7 = _mm256_loadu_ps(temp+(xp-X0+f_max) * tempW + ((yp-Y0+f_max)+7*8)+k);
 
                         sum_0_vec = _mm256_add_ps(sum_0_vec, temp_vec_0);
                         sum_1_vec = _mm256_add_ps(sum_1_vec, temp_vec_1);
                         sum_2_vec = _mm256_add_ps(sum_2_vec, temp_vec_2);
                         sum_3_vec = _mm256_add_ps(sum_3_vec, temp_vec_3);
-                        sum_4_vec = _mm256_add_ps(sum_4_vec, temp_vec_4);
-                        sum_5_vec = _mm256_add_ps(sum_5_vec, temp_vec_5);
-                        sum_6_vec = _mm256_add_ps(sum_6_vec, temp_vec_6);
-                        sum_7_vec = _mm256_add_ps(sum_7_vec, temp_vec_7);
                     }
 
                     _mm256_storeu_ps(temp2_g+ (xp-X0+f_max) * tempW + ((yp-Y0+f_max) + 0 * 8), sum_0_vec);
                     _mm256_storeu_ps(temp2_g+ (xp-X0+f_max) * tempW + ((yp-Y0+f_max) + 1 * 8), sum_1_vec);
                     _mm256_storeu_ps(temp2_g+ (xp-X0+f_max) * tempW + ((yp-Y0+f_max) + 2 * 8), sum_2_vec);
                     _mm256_storeu_ps(temp2_g+ (xp-X0+f_max) * tempW + ((yp-Y0+f_max) + 3 * 8), sum_3_vec);
-                    _mm256_storeu_ps(temp2_g+ (xp-X0+f_max) * tempW + ((yp-Y0+f_max) + 4 * 8), sum_4_vec);
-                    _mm256_storeu_ps(temp2_g+ (xp-X0+f_max) * tempW + ((yp-Y0+f_max) + 5 * 8), sum_5_vec);
-                    _mm256_storeu_ps(temp2_g+ (xp-X0+f_max) * tempW + ((yp-Y0+f_max) + 6 * 8), sum_6_vec);
-                    _mm256_storeu_ps(temp2_g+ (xp-X0+f_max) * tempW + ((yp-Y0+f_max) + 7 * 8), sum_7_vec);
                 }
             }
 
