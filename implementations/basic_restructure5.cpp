@@ -9,7 +9,7 @@
 #include <immintrin.h>
 // #include "../avx_mathfun.h"
 
-#define BLOCK_SIZE 32
+#define BLOCK_SIZE 64
 
 using namespace std;
 
@@ -75,48 +75,81 @@ using namespace std;
     // (2) Feature Prefiltering
     // ----------------------------------------------
     
-    feature_prefiltering_BLK(f_filtered, f_var_filtered, f, f_var, p_pre, img_width, img_height);
+    // feature_prefiltering_VEC(f_filtered, f_var_filtered, f, f_var, p_pre, img_width, img_height);
+    for(int X0 = R+3; X0 < img_width - R - 4 - BLOCK_SIZE; X0 += BLOCK_SIZE) {
+        for(int Y0 = R+3; Y0 < img_height - R - 4 - BLOCK_SIZE; Y0 += BLOCK_SIZE) {
+            feature_prefiltering_BLK(f_filtered, f_var_filtered, f, f_var, p_pre, X0, Y0, BLOCK_SIZE, BLOCK_SIZE);
+        }
+        feature_prefiltering_BLK(f_filtered, f_var_filtered, f, f_var, p_pre, X0, img_height - R - 4 - BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+    }
+    for(int Y0 = R+3; Y0 < img_height - R - 4 - BLOCK_SIZE; Y0 += BLOCK_SIZE)
+        feature_prefiltering_BLK(f_filtered, f_var_filtered, f, f_var, p_pre, img_width - R - 4 - BLOCK_SIZE, Y0, BLOCK_SIZE, BLOCK_SIZE);
+    feature_prefiltering_BLK(f_filtered, f_var_filtered, f, f_var, p_pre, img_width - R - 4 - BLOCK_SIZE, img_height - R - 4 - BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
     
+
+    // Handline Border Cases
+    // ---------------------
+    for (int i = 0; i < 3; i++){
+        for (int xp = 0; xp < img_width; xp++){
+            for(int yp = 0; yp < p_pre.r+p_pre.f; yp++){
+                f_filtered[i][xp][yp] = f[i][xp][yp];
+                f_filtered[i][xp][img_height - yp - 1] = f[i][xp][img_height - yp - 1];
+                f_var_filtered[i][xp][yp] = f_var[i][xp][yp];
+                f_var_filtered[i][xp][img_height - yp - 1] = f_var[i][xp][img_height - yp - 1];
+            }
+        }
+        for(int xp = 0; xp < p_pre.r+p_pre.f; xp++){
+             for (int yp = p_pre.r+p_pre.f ; yp < img_height - p_pre.r - p_pre.f; yp++){
+                f_filtered[i][xp][yp] = f[i][xp][yp];
+                f_filtered[i][img_width - xp - 1][yp] = f[i][img_width - xp - 1][yp];
+                f_var_filtered[i][xp][yp] = f_var[i][xp][yp];
+                f_var_filtered[i][img_width - xp - 1][yp] = f_var[i][img_width - xp - 1][yp];
+            }
+        }
+
+    }
 
     // ----------------------------------------------   
     // (3) Computation of Candidate Filters
     // ----------------------------------------------
 
     // (a) Candidate Filters
-    for(int X0 = R+3; X0 < img_width - R - 4 - BLOCK_SIZE; X0 += BLOCK_SIZE) {
-        for(int Y0 = R+3; Y0 < img_height - R - 4 - BLOCK_SIZE; Y0 += BLOCK_SIZE) {
-            candidate_filtering_all_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, X0, Y0, BLOCK_SIZE, BLOCK_SIZE);
-        }
-        candidate_filtering_all_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, X0, img_height - R - 4 - BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-    }
-    for(int Y0 = R+3; Y0 < img_height - R - 4 - BLOCK_SIZE; Y0 += BLOCK_SIZE)
-        candidate_filtering_all_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, img_width - R - 4 - BLOCK_SIZE, Y0, BLOCK_SIZE, BLOCK_SIZE);
+    // for(int X0 = R+3; X0 < img_width - R - 4 - BLOCK_SIZE; X0 += BLOCK_SIZE) {
+    //     for(int Y0 = R+3; Y0 < img_height - R - 4 - BLOCK_SIZE; Y0 += BLOCK_SIZE) {
+    //         candidate_filtering_all_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, X0, Y0, BLOCK_SIZE, BLOCK_SIZE);
+    //     }
+    //     candidate_filtering_all_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, X0, img_height - R - 4 - BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+    // }
+    // for(int Y0 = R+3; Y0 < img_height - R - 4 - BLOCK_SIZE; Y0 += BLOCK_SIZE)
+    //     candidate_filtering_all_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, img_width - R - 4 - BLOCK_SIZE, Y0, BLOCK_SIZE, BLOCK_SIZE);
+    candidate_filtering_all_VEC(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, img_width, img_height);
+
 
     // Handline Border Cases 
     // ----------------------------------
-    for (int i = 0; i < 3; i++){
-        for (int xp = 0; xp < 0+img_width; xp++){
-            for(int yp = 0; yp < R + 3; yp++){
-                r[i][xp][yp] = c[i][xp][yp];
-                r[i][xp][img_height - yp - 1] = c[i][xp][img_height - yp - 1];
-                b[i][xp][yp] = c[i][xp][yp];
-                b[i][xp][img_height - yp - 1] = c[i][xp][img_height - yp - 1];
-                g[i][xp][yp] = c[i][xp][yp];
-                g[i][xp][img_height - yp - 1] = c[i][xp][img_height - yp - 1];
-            }
-        }
-        for(int xp = 0; xp < R + 3; xp++){
-            for (int yp = R + 3 ; yp < img_height - R - 3; yp++){
+    // for (int i = 0; i < 3; i++){
+    //     for (int xp = 0; xp < 0+img_width; xp++){
+    //         for(int yp = 0; yp < R + 3; yp++){
+    //             r[i][xp][yp] = c[i][xp][yp];
+    //             r[i][xp][img_height - yp - 1] = c[i][xp][img_height - yp - 1];
+    //             b[i][xp][yp] = c[i][xp][yp];
+    //             b[i][xp][img_height - yp - 1] = c[i][xp][img_height - yp - 1];
+    //             g[i][xp][yp] = c[i][xp][yp];
+    //             g[i][xp][img_height - yp - 1] = c[i][xp][img_height - yp - 1];
+    //         }
+    //     }
+    //     for(int xp = 0; xp < R + 3; xp++){
+    //         for (int yp = R + 3 ; yp < img_height - R - 3; yp++){
             
-                r[i][xp][yp] = c[i][xp][yp];
-                r[i][img_width - xp - 1][yp] = c[i][img_width - xp - 1][yp];
-                b[i][xp][yp] = c[i][xp][yp];
-                b[i][img_width - xp - 1][yp] = c[i][img_width - xp - 1][yp];
-                g[i][xp][yp] = c[i][xp][yp];
-                g[i][img_width - xp - 1][yp] = c[i][img_width - xp - 1][yp];
-             }
-        }
-    }
+    //             r[i][xp][yp] = c[i][xp][yp];
+    //             r[i][img_width - xp - 1][yp] = c[i][img_width - xp - 1][yp];
+    //             b[i][xp][yp] = c[i][xp][yp];
+    //             b[i][img_width - xp - 1][yp] = c[i][img_width - xp - 1][yp];
+    //             g[i][xp][yp] = c[i][xp][yp];
+    //             g[i][img_width - xp - 1][yp] = c[i][img_width - xp - 1][yp];
+    //          }
+    //     }
+    // }
 
     // ----------------------------------------------
     // (4) Filtering SURE error estimates
