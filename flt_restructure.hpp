@@ -54,7 +54,7 @@ void candidate_filtering_BLK(buffer output, buffer color, buffer color_var, buff
 void candidate_filtering_FIRST_BLK(buffer output, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters p, int W, int H);  
 void candidate_filtering_SECOND_BLK(buffer output, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters p, int W, int H);
 void candidate_filtering_THIRD_BLK(buffer output, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters p, int W, int H);
-void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output_b, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters* p, int W, int H);
+void candidate_filtering_all_BLK(buffer output_r, buffer output_g, buffer output_b, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters* p, int X0, int Y0, int W, int H);
 
 
 #endif //FLT_2_H
