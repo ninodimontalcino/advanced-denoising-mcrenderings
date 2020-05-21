@@ -143,12 +143,11 @@ void filtering_basic_VEC(buffer output, buffer input, buffer color, buffer color
                         var_cancel_vec = _mm256_min_ps(c_var_p_vec, c_var_q_vec);
 
                         normalization_vec = _mm256_mul_ps(k_c_squared_vec, normalization_vec);
-                        sqdist_vec = _mm256_mul_ps(sqdist_vec, sqdist_vec);
                         var_cancel_vec = _mm256_add_ps(c_var_p_vec, var_cancel_vec);
 
                         normalization_vec = _mm256_add_ps(EPSILON_vec, normalization_vec);
 
-                        sqdist_vec = _mm256_sub_ps(sqdist_vec, var_cancel_vec);
+                        sqdist_vec = _mm256_fmsub_ps(sqdist_vec, sqdist_vec, var_cancel_vec);
                         sqdist_vec = _mm256_div_ps(sqdist_vec, normalization_vec);
 
                         temp_vec = _mm256_add_ps(temp_vec, sqdist_vec);
@@ -471,19 +470,16 @@ void filtering_basic_f3_VEC(buffer output, buffer input, buffer c, buffer c_var,
                     normalization_vec_0 = _mm256_mul_ps(k_c_squared_vec, normalization_vec_0);
                     normalization_vec_1 = _mm256_mul_ps(k_c_squared_vec, normalization_vec_1);
                     normalization_vec_2 = _mm256_mul_ps(k_c_squared_vec, normalization_vec_2);
-                    sqdist_vec_0 = _mm256_mul_ps(sqdist_vec_0, sqdist_vec_0);
-                    sqdist_vec_1 = _mm256_mul_ps(sqdist_vec_1, sqdist_vec_1);
-                    sqdist_vec_2 = _mm256_mul_ps(sqdist_vec_2, sqdist_vec_2);
                     var_cancel_vec_0 = _mm256_add_ps(c_var_p_vec_0, var_cancel_vec_0);
                     var_cancel_vec_1 = _mm256_add_ps(c_var_p_vec_1, var_cancel_vec_1);
                     var_cancel_vec_2 = _mm256_add_ps(c_var_p_vec_2, var_cancel_vec_2);
 
                     normalization_vec_0 = _mm256_add_ps(EPSILON_vec, normalization_vec_0);
-                    sqdist_vec_0 = _mm256_sub_ps(sqdist_vec_0, var_cancel_vec_0);
+                    sqdist_vec_0 = _mm256_fmsub_ps(sqdist_vec_0, sqdist_vec_0, var_cancel_vec_0);
                     normalization_vec_1 = _mm256_add_ps(EPSILON_vec, normalization_vec_1);
-                    sqdist_vec_1 = _mm256_sub_ps(sqdist_vec_1, var_cancel_vec_1);
+                    sqdist_vec_1 = _mm256_fmsub_ps(sqdist_vec_1, sqdist_vec_1, var_cancel_vec_1);
                     normalization_vec_2 = _mm256_add_ps(EPSILON_vec, normalization_vec_2);
-                    sqdist_vec_2 = _mm256_sub_ps(sqdist_vec_2, var_cancel_vec_2);
+                    sqdist_vec_2 = _mm256_fmsub_ps(sqdist_vec_2, sqdist_vec_2, var_cancel_vec_2);
 
                     sqdist_vec_0 = _mm256_div_ps(sqdist_vec_0, normalization_vec_0);
                     sqdist_vec_1 = _mm256_div_ps(sqdist_vec_1, normalization_vec_1);
@@ -886,19 +882,16 @@ void filtering_basic_f1_VEC(buffer output, buffer input, buffer c, buffer c_var,
                     normalization_vec_0 = _mm256_mul_ps(k_c_squared_vec, normalization_vec_0);
                     normalization_vec_1 = _mm256_mul_ps(k_c_squared_vec, normalization_vec_1);
                     normalization_vec_2 = _mm256_mul_ps(k_c_squared_vec, normalization_vec_2);
-                    sqdist_vec_0 = _mm256_mul_ps(sqdist_vec_0, sqdist_vec_0);
-                    sqdist_vec_1 = _mm256_mul_ps(sqdist_vec_1, sqdist_vec_1);
-                    sqdist_vec_2 = _mm256_mul_ps(sqdist_vec_2, sqdist_vec_2);
                     var_cancel_vec_0 = _mm256_add_ps(c_var_p_vec_0, var_cancel_vec_0);
                     var_cancel_vec_1 = _mm256_add_ps(c_var_p_vec_1, var_cancel_vec_1);
                     var_cancel_vec_2 = _mm256_add_ps(c_var_p_vec_2, var_cancel_vec_2);
 
                     normalization_vec_0 = _mm256_add_ps(EPSILON_vec, normalization_vec_0);
-                    sqdist_vec_0 = _mm256_sub_ps(sqdist_vec_0, var_cancel_vec_0);
+                    sqdist_vec_0 = _mm256_fmsub_ps(sqdist_vec_0, sqdist_vec_0, var_cancel_vec_0);
                     normalization_vec_1 = _mm256_add_ps(EPSILON_vec, normalization_vec_1);
-                    sqdist_vec_1 = _mm256_sub_ps(sqdist_vec_1, var_cancel_vec_1);
+                    sqdist_vec_1 = _mm256_fmsub_ps(sqdist_vec_1, sqdist_vec_1, var_cancel_vec_1);
                     normalization_vec_2 = _mm256_add_ps(EPSILON_vec, normalization_vec_2);
-                    sqdist_vec_2 = _mm256_sub_ps(sqdist_vec_2, var_cancel_vec_2);
+                    sqdist_vec_2 = _mm256_fmsub_ps(sqdist_vec_2, sqdist_vec_2, var_cancel_vec_2);
 
                     sqdist_vec_0 = _mm256_div_ps(sqdist_vec_0, normalization_vec_0);
                     sqdist_vec_1 = _mm256_div_ps(sqdist_vec_1, normalization_vec_1);
@@ -1206,12 +1199,11 @@ void feature_prefiltering_VEC(buffer output, buffer output_var, buffer features,
                         var_cancel_vec = _mm256_min_ps(features_var_p_vec, features_var_q_vec);
 
                         normalization_vec = _mm256_mul_ps(k_c_squared_vec, normalization_vec);
-                        sqdist_vec = _mm256_mul_ps(sqdist_vec, sqdist_vec);
                         var_cancel_vec = _mm256_add_ps(features_var_p_vec, var_cancel_vec);
 
                         normalization_vec = _mm256_add_ps(EPSILON_vec, normalization_vec);
 
-                        sqdist_vec = _mm256_sub_ps(sqdist_vec, var_cancel_vec);
+                        sqdist_vec = _mm256_fmsub_ps(sqdist_vec, sqdist_vec, var_cancel_vec);
                         sqdist_vec = _mm256_div_ps(sqdist_vec, normalization_vec);
 
                         temp_vec = _mm256_add_ps(temp_vec, sqdist_vec);
@@ -1614,12 +1606,9 @@ void candidate_filtering_FIRST_VEC(buffer output, buffer color, buffer color_var
                         var_cancel_vec = _mm256_min_ps(c_var_p_vec, c_var_q_vec);
 
                         normalization_vec = _mm256_mul_ps(k_c_squared_vec, normalization_vec);
-                        sqdist_vec = _mm256_mul_ps(sqdist_vec, sqdist_vec);
                         var_cancel_vec = _mm256_add_ps(c_var_p_vec, var_cancel_vec);
-
+                        sqdist_vec = _mm256_fnmadd_ps(sqdist_vec, sqdist_vec, var_cancel_vec);
                         normalization_vec = _mm256_add_ps(EPSILON_vec, normalization_vec);
-
-                        sqdist_vec = _mm256_sub_ps(var_cancel_vec, sqdist_vec);
                         sqdist_vec = _mm256_div_ps(sqdist_vec, normalization_vec);
 
                         temp_vec = _mm256_add_ps(temp_vec, sqdist_vec);
@@ -1645,10 +1634,9 @@ void candidate_filtering_FIRST_VEC(buffer output, buffer color, buffer color_var
                         feat_weight = _mm256_loadu_ps(feature_weights+ xp * W + yp);
 
                         sqdist_vec = _mm256_sub_ps(features_p_vec, features_q_vec);
-                        sqdist_vec = _mm256_mul_ps(sqdist_vec, sqdist_vec);
                         var_cancel_vec = _mm256_min_ps(features_var_q_vec, features_var_p_vec);
                         var_cancel_vec = _mm256_add_ps(features_var_p_vec, var_cancel_vec);
-                        dist_var_vec = _mm256_sub_ps(var_cancel_vec, sqdist_vec);                        
+                        dist_var_vec = _mm256_fnmadd_ps(sqdist_vec, sqdist_vec, var_cancel_vec);                        
 
                         var_max_vec = _mm256_max_ps(features_var_p_vec, grad_vec);
                         normalization_vec = _mm256_max_ps(tau_vec, var_max_vec);
@@ -2040,12 +2028,11 @@ void candidate_filtering_SECOND_VEC(buffer output, buffer color, buffer color_va
                         var_cancel_vec = _mm256_min_ps(c_var_p_vec, c_var_q_vec);
 
                         normalization_vec = _mm256_mul_ps(k_c_squared_vec, normalization_vec);
-                        sqdist_vec = _mm256_mul_ps(sqdist_vec, sqdist_vec);
                         var_cancel_vec = _mm256_add_ps(c_var_p_vec, var_cancel_vec);
 
                         normalization_vec = _mm256_add_ps(EPSILON_vec, normalization_vec);
 
-                        sqdist_vec = _mm256_sub_ps(var_cancel_vec, sqdist_vec);
+                        sqdist_vec = _mm256_fnmadd_ps(sqdist_vec, sqdist_vec, var_cancel_vec);
                         sqdist_vec = _mm256_div_ps(sqdist_vec, normalization_vec);
 
                         temp_vec = _mm256_add_ps(temp_vec, sqdist_vec);
@@ -2071,10 +2058,9 @@ void candidate_filtering_SECOND_VEC(buffer output, buffer color, buffer color_va
                         feat_weight = _mm256_loadu_ps(feature_weights+ xp * W + yp);
 
                         sqdist_vec = _mm256_sub_ps(features_p_vec, features_q_vec);
-                        sqdist_vec = _mm256_mul_ps(sqdist_vec, sqdist_vec);
                         var_cancel_vec = _mm256_min_ps(features_var_q_vec, features_var_p_vec);
                         var_cancel_vec = _mm256_add_ps(features_var_p_vec, var_cancel_vec);
-                        dist_var_vec = _mm256_sub_ps(var_cancel_vec, sqdist_vec);                        
+                        dist_var_vec = _mm256_fnmadd_ps(sqdist_vec, sqdist_vec, var_cancel_vec);                        
 
                         var_max_vec = _mm256_max_ps(features_var_p_vec, grad_vec);
                         normalization_vec = _mm256_max_ps(tau_vec, var_max_vec);
@@ -2499,10 +2485,9 @@ void candidate_filtering_THIRD_VEC(buffer output, buffer color, buffer color_var
                         feat_weight = _mm256_loadu_ps(feature_weights+ xp * W + yp);
 
                         sqdist_vec = _mm256_sub_ps(features_p_vec, features_q_vec);
-                        sqdist_vec = _mm256_mul_ps(sqdist_vec, sqdist_vec);
                         var_cancel_vec = _mm256_min_ps(features_var_q_vec, features_var_p_vec);
                         var_cancel_vec = _mm256_add_ps(features_var_p_vec, var_cancel_vec);
-                        dist_var_vec = _mm256_sub_ps(var_cancel_vec, sqdist_vec);                        
+                        dist_var_vec = _mm256_fnmadd_ps(sqdist_vec, sqdist_vec, var_cancel_vec);                        
 
                         var_max_vec = _mm256_max_ps(features_var_p_vec, grad_vec);
                         normalization_vec = _mm256_max_ps(tau_vec, var_max_vec);
@@ -2810,12 +2795,11 @@ void candidate_filtering_all_VEC(buffer output_r, buffer output_g, buffer output
                         var_cancel_vec = _mm256_min_ps(c_var_p_vec, c_var_q_vec);
 
                         normalization_vec = _mm256_mul_ps(k_c_squared_r_vec, normalization_vec);
-                        sqdist_vec = _mm256_mul_ps(sqdist_vec, sqdist_vec);
                         var_cancel_vec = _mm256_add_ps(c_var_p_vec, var_cancel_vec);
 
                         normalization_vec = _mm256_add_ps(EPSILON_vec, normalization_vec);
 
-                        sqdist_vec = _mm256_sub_ps(var_cancel_vec, sqdist_vec);
+                        sqdist_vec = _mm256_fnmadd_ps(sqdist_vec, sqdist_vec, var_cancel_vec);
                         sqdist_vec = _mm256_div_ps(sqdist_vec, normalization_vec);
 
                         temp_vec = _mm256_add_ps(temp_vec, sqdist_vec);
@@ -2847,10 +2831,9 @@ void candidate_filtering_all_VEC(buffer output_r, buffer output_g, buffer output
                         feat_weight_b = _mm256_loadu_ps(features_weights_b+ xp * W + yp);
 
                         sqdist_vec = _mm256_sub_ps(features_p_vec, features_q_vec);
-                        sqdist_vec = _mm256_mul_ps(sqdist_vec, sqdist_vec);
                         var_cancel_vec = _mm256_min_ps(features_var_q_vec, features_var_p_vec);
                         var_cancel_vec = _mm256_add_ps(features_var_p_vec, var_cancel_vec);
-                        dist_var_vec = _mm256_sub_ps(var_cancel_vec, sqdist_vec);                        
+                        dist_var_vec = _mm256_fnmadd_ps(sqdist_vec, sqdist_vec, var_cancel_vec);                        
 
                         var_max_vec = _mm256_max_ps(features_var_p_vec, grad_vec);
                         normalization_r_vec = _mm256_max_ps(tau_r_vec, var_max_vec);
@@ -3548,8 +3531,6 @@ void candidate_filtering_all_VEC(buffer output_r, buffer output_g, buffer output
     free(temp2_g);
     free(features_weights_r);
     free(features_weights_b);
-    //free(norm_r);
-    //free(norm_b);
     free(gradients);
 
 }
