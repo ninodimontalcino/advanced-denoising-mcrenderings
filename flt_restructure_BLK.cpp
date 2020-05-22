@@ -168,7 +168,7 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
 
     // G CONVOLUTION
     G_CONV_H_START_X = B_START_X - F_G;
-    G_CONV_H_END_X = B_END_X + F_R;
+    G_CONV_H_END_X = B_END_X + F_G;
     G_CONV_H_START_Y = B_START_Y;
     G_CONV_H_END_Y = B_END_Y;
 
