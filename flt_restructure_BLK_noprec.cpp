@@ -349,6 +349,8 @@ void candidate_filtering_all_VEC_BLK_noprec(buffer output_r, buffer output_g, bu
 
            
             // Precompute feature weights
+            memset(features_weights_r, 0, B_SIZE * B_SIZE*sizeof(scalar));
+            memset(features_weights_b, 0, B_SIZE * B_SIZE*sizeof(scalar));
             for(int j=0; j<NB_FEATURES;++j){
                 for(int xp = FEATURE_WEIGHT_START_X; xp < FEATURE_WEIGHT_END_X; ++xp) {
                     for(int yp = FEATURE_WEIGHT_START_Y; yp < FEATURE_WEIGHT_END_Y; yp+=8) {
@@ -927,9 +929,9 @@ void candidate_filtering_all_VEC_BLK_noprec(buffer output_r, buffer output_g, bu
             // => no color weight computation due to kc = Inf
             // ----------------------------------------------
 
-            for(int xp = B_START_X; xp < B_END_X; ++xp) {
-                int yp = B_START_Y;
-                for(; yp < B_END_Y - 31; yp+=32) {
+            for(int xp = B_CONV_START_X; xp < B_CONV_END_X; ++xp) {
+                int yp = B_CONV_START_Y;
+                for(; yp < B_CONV_END_Y - 31; yp+=32) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -959,7 +961,6 @@ void candidate_filtering_all_VEC_BLK_noprec(buffer output_r, buffer output_g, bu
                     _mm256_storeu_ps(weight_sum_b+ (xp-B_START_X) * B_SIZE + ( yp + 2*8 - B_START_Y), weight_sum_vec_2);
                     _mm256_storeu_ps(weight_sum_b+ (xp-B_START_X) * B_SIZE + ( yp + 3*8 - B_START_Y), weight_sum_vec_3);
                     
-                    
 
                     for (int i=0; i<3; i++){
                         __m256 output_vec_0 = _mm256_loadu_ps(output_b[i][xp] + (yp + 0 * 8));
@@ -983,7 +984,7 @@ void candidate_filtering_all_VEC_BLK_noprec(buffer output_r, buffer output_g, bu
 
                     }                    
                 }
-                for(; yp < B_END_Y-7; yp+=8) {
+                for(; yp < B_CONV_END_Y-7; yp+=8) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -1008,7 +1009,7 @@ void candidate_filtering_all_VEC_BLK_noprec(buffer output_r, buffer output_g, bu
                     }
 
                 } 
-                for(; yp < B_END_Y; yp++) {
+                for(; yp < B_CONV_END_Y; yp++) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -1147,9 +1148,9 @@ void candidate_filtering_all_VEC_BLK_noprec(buffer output_r, buffer output_g, bu
     }
 
     // Final Weight Normalization B
-    for(int xp = B_START_X; xp < B_END_X; ++xp) {
-        int yp = B_START_Y;
-        for(; yp < B_END_Y - 31; yp+=32) {     
+    for(int xp = B_CONV_START_X; xp < B_CONV_END_X; ++xp) {
+        int yp = B_CONV_START_Y;
+        for(; yp < B_CONV_END_Y - 31; yp+=32) {     
 
             __m256 weight_sum_vec_0 = _mm256_loadu_ps(weight_sum_b + (xp-B_START_X) * B_SIZE + ( yp + 0*8 - B_START_Y));
             __m256 weight_sum_vec_1 = _mm256_loadu_ps(weight_sum_b + (xp-B_START_X) * B_SIZE + ( yp + 1*8 - B_START_Y));
@@ -1175,7 +1176,7 @@ void candidate_filtering_all_VEC_BLK_noprec(buffer output_r, buffer output_g, bu
             }
         }
 
-        for(; yp < B_END_Y-7; yp+=8) {
+        for(; yp < B_CONV_END_Y-7; yp+=8) {
             __m256 weight_sum_vec = _mm256_loadu_ps(weight_sum_b +(xp-B_START_X) * B_SIZE + ( yp - B_START_Y));
             __m256 output_vec;
             for (int i=0; i<3; i++){
@@ -1186,7 +1187,7 @@ void candidate_filtering_all_VEC_BLK_noprec(buffer output_r, buffer output_g, bu
 
         }
 
-        for(; yp < B_END_Y; yp++) {     
+        for(; yp < B_CONV_END_Y; yp++) {     
             scalar weight_sum_sca = *(weight_sum_b +(xp-B_START_X) * B_SIZE + ( yp - B_START_Y));
             scalar output_sca;
             for (int i=0; i<3; i++){
