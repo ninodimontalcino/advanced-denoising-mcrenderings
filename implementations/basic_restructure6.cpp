@@ -136,8 +136,8 @@ using namespace std;
         scalar* features_weights_b;
         features_weights_r = (scalar*) malloc(NEIGH_SIZE * W * H * sizeof(scalar));
         features_weights_b = (scalar*) malloc(NEIGH_SIZE * W * H * sizeof(scalar));
-        memset(features_weights_r, 0, NEIGH_SIZE*W*H*sizeof(scalar));
-        memset(features_weights_b, 0, NEIGH_SIZE*W*H*sizeof(scalar));
+        //memset(features_weights_r, 0, NEIGH_SIZE*W*H*sizeof(scalar));
+        //memset(features_weights_b, 0, NEIGH_SIZE*W*H*sizeof(scalar));
 
         // (b) Temp Arrays for Convolution
         scalar* temp;
@@ -146,7 +146,7 @@ using namespace std;
         temp = (scalar*) malloc(NEIGH_SIZE * W * H * sizeof(scalar));
         temp2_r = (scalar*) malloc(NEIGH_SIZE * W * H * sizeof(scalar));
         temp2_g = (scalar*) malloc(NEIGH_SIZE * W * H * sizeof(scalar));
-        memset(temp, 0, NEIGH_SIZE*W*H*sizeof(scalar));
+        //memset(temp, 0, NEIGH_SIZE*W*H*sizeof(scalar));
 
 
         // (..) MAIN FILTERING
@@ -266,6 +266,7 @@ using namespace std;
         free(temp);
         free(temp2_r);
         free(temp2_g);
+        free(gradients);
     
     } else { // DO NORMAL FILTERING IF BLOCK SIZE IS >= IMG_SIZE
         candidate_filtering_all_VEC(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, W, H);
@@ -356,7 +357,7 @@ using namespace std;
         }
     }
     
-    //write_buffer_exr("temp/pass1.exr", &out_img, W, H);
+    write_buffer_exr("temp/pass1.exr", &out_img, W, H);
   
 
     // ----------------------------------------------
