@@ -86,6 +86,7 @@ using namespace std;
 
 
     // (A) GRADIENT COMPUTATION
+    // ---------------------------------
     __m256 features_vec, diffL_sqr_vec, diffR_sqr_vec, diffU_sqr_vec, diffD_sqr_vec, tmp_1, tmp_2;
     scalar *gradients;
     gradients = (scalar*) malloc(3 * W * H * sizeof(scalar));
@@ -93,7 +94,7 @@ using namespace std;
 
     for(int i=0; i<NB_FEATURES;++i) {
         for(int x =  R + F_MIN; x < W - R - F_MIN; ++x) {
-            for(int y =  R+F_MIN; y < H -  R - F_MIN; y+=8) {
+            for(int y =  R+F_MIN; y < H - R - F_MIN; y+=8) {
                 
                 // (1) Loading
                 features_vec  = _mm256_loadu_ps(f[i][x] + y);
@@ -126,6 +127,7 @@ using namespace std;
     }
 
     // (B) GLOBAL MEMORY ALLOCATION
+    // ---------------------------------
     int NEIGH_SIZE = (2*R + 1) * (2*R + 1);
 
     // (a) Feature Weights
@@ -142,7 +144,8 @@ using namespace std;
     memset(temp, 0, NEIGH_SIZE*W*H*sizeof(scalar));
 
 
-    // (..) Main Filtering
+    // (..) MAIN FILTERING
+    // ---------------------------------
     candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, p_all, W, H);
 
     // (a) Candidate Filters
@@ -157,31 +160,52 @@ using namespace std;
         candidate_filtering_all_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, W - R - 4 - BLOCK_SIZE, Y0, BLOCK_SIZE, BLOCK_SIZE);
     */
 
-    // Handline Border Cases 
+    // (..) BORDER CASE HANDLING
     // ----------------------------------
+    // Candidate FIRST and THIRD (due to F_R = F_B)
+    int F_R = 1; 
     for (int i = 0; i < 3; i++){
-        for (int xp = 0; xp < 0+W; xp++){
-            for(int yp = 0; yp < R + 3; yp++){
+        for (int xp = 0; xp < W; xp++){
+            for(int yp = 0; yp < R + F_R; yp++){
                 r[i][xp][yp] = c[i][xp][yp];
                 r[i][xp][H - yp - 1] = c[i][xp][H - yp - 1];
                 b[i][xp][yp] = c[i][xp][yp];
                 b[i][xp][H - yp - 1] = c[i][xp][H - yp - 1];
-                g[i][xp][yp] = c[i][xp][yp];
-                g[i][xp][H - yp - 1] = c[i][xp][H - yp - 1];
             }
         }
-        for(int xp = 0; xp < R + 3; xp++){
-            for (int yp = R + 3 ; yp < H - R - 3; yp++){
+        for(int xp = 0; xp < R + F_R; xp++){
+            for (int yp = R + F_R ; yp < H - R - F_R; yp++){
             
                 r[i][xp][yp] = c[i][xp][yp];
                 r[i][W - xp - 1][yp] = c[i][W - xp - 1][yp];
                 b[i][xp][yp] = c[i][xp][yp];
                 b[i][W - xp - 1][yp] = c[i][W - xp - 1][yp];
-                g[i][xp][yp] = c[i][xp][yp];
-                g[i][W - xp - 1][yp] = c[i][W - xp - 1][yp];
              }
         }
     }
+
+    // Candidate SECOND since F_G != F_R
+    int F_G = 3; 
+    for (int i = 0; i < 3; i++){
+        for (int xp = 0; xp < W; xp++){
+            for(int yp = 0; yp < R + F_G; yp++){
+                g[i][xp][yp] = c[i][xp][yp];
+                g[i][xp][H - yp - 1] = c[i][xp][H - yp - 1];
+            }
+        }
+        for(int xp = 0; xp < R + F_G; xp++){
+            for (int yp = R + F_G ; yp < H - R - F_G; yp++){
+                g[i][xp][yp] = c[i][xp][yp];
+                g[i][W - xp - 1][yp] = c[i][W - xp - 1][yp];
+            }
+        }
+    }
+
+    // (..) FREE MEMORY
+    // ----------------------------------
+    free(features_weights_r);
+    free(features_weights_b);
+    free(temp);
 
     // ----------------------------------------------
     // (4) Filtering SURE error estimates

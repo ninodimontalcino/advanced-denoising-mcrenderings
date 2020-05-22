@@ -13,7 +13,10 @@
 void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer output_b, buffer color, buffer color_var, buffer features, buffer features_var, scalar* gradients, scalar* features_weights_r, scalar* features_weights_b, scalar* temp, Flt_parameters* p, int W, int H){
 
     int WH = W*H;
+    int R = p[0].r;
+    int NEIGH_SIZE = (2*R+1) * (2*R+1);
 
+    // LOAD EPSILON => USED TO AVOID DIV BY 0
     const __m256 EPSILON_vec = _mm256_set1_ps(EPSILON);
 
     // Get parameters
@@ -35,18 +38,12 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
     const __m256 k_f_squared_r_vec = _mm256_set1_ps(k_f_squared_r);
     const __m256 k_f_squared_b_vec = _mm256_set1_ps(k_f_squared_b);
 
-
-    // Determinte max f => R is fixed to the same for all
     int f_max = fmax(F_R, fmax(F_G, F_B));
     int f_min = fmin(F_R, fmin(F_G, F_B));
-    int R = p[0].r;
 
-
-    int neigh = (2*R + 1) * (2*R + 1);
-
-
-    // Handling Inner Part   
-    // -------------------
+    // -----------------------
+    // MEMORY ALLOCATION  
+    // ------------------------
 
     // Allocate buffer weights_sum for normalizing
     scalar* weight_sum_r;
@@ -62,7 +59,6 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
     scalar* temp2_g;
     temp2_r = (scalar*) malloc(W * H * sizeof(scalar));
     temp2_g = (scalar*) malloc(W * H * sizeof(scalar));
-
 
     // Precompute size of neighbourhood
     scalar NEIGH_R_INV = 1. / (3*(2*F_R+1)*(2*F_R+1));
@@ -144,7 +140,7 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
                         features_var_q_vec = _mm256_loadu_ps(features_var[j][xq] + yq);
                         grad_vec = _mm256_loadu_ps(gradients + j * WH + xp * W + yp);
                         feat_weight_r = _mm256_loadu_ps(features_weights_r + N_MAPPING * WH + xp * W + yp);
-                        feat_weight_b = _mm256_loadu_ps(features_weights_b + N_MAPPING * WH + + xp * W + yp);
+                        feat_weight_b = _mm256_loadu_ps(features_weights_b + N_MAPPING * WH + xp * W + yp);
 
                         sqdist_vec = _mm256_sub_ps(features_p_vec, features_q_vec);
                         sqdist_vec = _mm256_mul_ps(sqdist_vec, sqdist_vec);
@@ -812,7 +808,6 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
     }
 
     // Final Weight Normalization B
-    // Final Weight Normalization
     for(int xp = R + F_B; xp < W - R - F_B; ++xp) {
         for(int yp = R + F_B ; yp < H - 32; yp+=32) {     
 
@@ -862,11 +857,8 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
     free(weight_sum_r);
     free(weight_sum_g);
     free(weight_sum_b);
-    free(temp);
     free(temp2_r);
     free(temp2_g);
-    free(features_weights_r);
-    free(features_weights_b);
     free(gradients);
 
 }
