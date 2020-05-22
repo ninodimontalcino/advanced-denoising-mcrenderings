@@ -9,8 +9,6 @@
 #include <immintrin.h>
 // #include "../avx_mathfun.h"
 
-#define BLOCK_SIZE 32
-
 using namespace std;
 
 /*! -------------------------------------------------------

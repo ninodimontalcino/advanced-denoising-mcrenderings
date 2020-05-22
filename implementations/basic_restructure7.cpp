@@ -30,7 +30,7 @@ using namespace std;
 å
     \return void --> denoised image in buffer out_img
  */
- void basic_restructure6(buffer out_img, buffer c, buffer c_var, buffer f, buffer f_var, int R, int W, int H){
+ void basic_restructure7(buffer out_img, buffer c, buffer c_var, buffer f, buffer f_var, int R, int W, int H){
 
     int WH = W*H;
 
@@ -158,20 +158,20 @@ using namespace std;
         Y0 = 0;
         BLOCK_TYPE = LT;
         // std::cout << "Computing Block LT: (" << X0 << "," << Y0 << ")" << std::endl;
-        candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
+        candidate_filtering_all_VEC_BLK_noprec(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
 
         // --> Issue L Blocks
         for (Y0 = BLOCK_SIZE; Y0 < H - BLOCK_SIZE; Y0+= BLOCK_SIZE){
             BLOCK_TYPE = LL;
             // std::cout << "Computing Block L: (" << X0 << "," << Y0 << ")" << std::endl;
-            candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
+            candidate_filtering_all_VEC_BLK_noprec(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
         }
 
         // --> Issue LB Block
         Y0 = H - BLOCK_SIZE;
         BLOCK_TYPE = LB;
         // std::cout << "Computing Block LB: (" << X0 << "," << Y0 << ")" << std::endl;
-        candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
+        candidate_filtering_all_VEC_BLK_noprec(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
 
         // (B) INNER COLUMN's OF BLOCKS
         for (int X0 = BLOCK_SIZE; X0 < W - BLOCK_SIZE; X0 += BLOCK_SIZE){
@@ -179,18 +179,18 @@ using namespace std;
             Y0 = 0;
             BLOCK_TYPE = TT;
             // std::cout << "Computing Block TT: (" << X0 << "," << Y0 << ")" << std::endl;
-            candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
+            candidate_filtering_all_VEC_BLK_noprec(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
 
             for (Y0 = BLOCK_SIZE; Y0 < H - BLOCK_SIZE; Y0+= BLOCK_SIZE){
                 BLOCK_TYPE = II;
                 // std::cout << "Computing Block II: (" << X0 << "," << Y0 << ")" << std::endl;
-                candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
+                candidate_filtering_all_VEC_BLK_noprec(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
             }
 
             Y0 = H - BLOCK_SIZE;
             BLOCK_TYPE = BB;
             // std::cout << "Computing Block BB: (" << X0 << "," << Y0 << ")" << std::endl;
-            candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
+            candidate_filtering_all_VEC_BLK_noprec(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
 
         }
 
@@ -201,20 +201,20 @@ using namespace std;
         Y0 = 0;
         BLOCK_TYPE = RT;
         // std::cout << "Computing Block RT: (" << X0 << "," << Y0 << ")" << std::endl;
-        candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
+        candidate_filtering_all_VEC_BLK_noprec(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
 
         // --> Issue R Blocks
         for (Y0 = BLOCK_SIZE; Y0 < H - BLOCK_SIZE; Y0+= BLOCK_SIZE){
             // std::cout << "Computing Block R: (" << X0 << "," << Y0 << ")" << std::endl;
             BLOCK_TYPE = RR;
-            candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
+            candidate_filtering_all_VEC_BLK_noprec(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
         }
 
         // --> Issue RB Block
         Y0 = H - BLOCK_SIZE;
         BLOCK_TYPE = RB;
         // std::cout << "Computing Block RB: (" << X0 << "," << Y0 << ")" << std::endl;
-        candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
+        candidate_filtering_all_VEC_BLK_noprec(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
 
 
         // (..) BORDER CASE HANDLING

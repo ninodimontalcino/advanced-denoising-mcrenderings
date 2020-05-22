@@ -65,6 +65,7 @@ add_executable(main
               flt_restructure_ILP.cpp
               flt_restructure_VEC.cpp 
               flt_restructure_BLK.cpp 
+              flt_restructure_BLK_noprec.cpp 
 
               # Implementations (BASIC and OPTIMIZED)
               implementations/register.hpp
@@ -76,6 +77,7 @@ add_executable(main
               implementations/basic_restructure4.cpp
               implementations/basic_restructure5.cpp
               implementations/basic_restructure6.cpp
+              implementations/basic_restructure7.cpp
 
               )
 
