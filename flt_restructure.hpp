@@ -42,6 +42,26 @@ void candidate_filtering_SECOND_VEC(buffer output, buffer color, buffer color_va
 void candidate_filtering_THIRD_VEC(buffer output, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters p, int W, int H);
 void candidate_filtering_all_VEC(buffer output_r, buffer output_g, buffer output_b, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters* p, int W, int H);
 
+// ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// CLEAN BLOCKING ATTEMPT
+void candidate_filtering_all_VEC_BLK(buffer output_r, 
+                                    buffer output_g, 
+                                    buffer output_b, 
+                                    buffer color, 
+                                    buffer color_var, 
+                                    buffer features, 
+                                    buffer features_var, 
+                                    scalar* gradients, 
+                                    scalar* features_weights_r,
+                                    scalar* features_weights_b,
+                                    scalar* temp,
+                                    Flt_parameters* p, 
+                                    int W, 
+                                    int H);
+
+
+
+
 
 // ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 // BLOCKED VERSION (using AVX2)
