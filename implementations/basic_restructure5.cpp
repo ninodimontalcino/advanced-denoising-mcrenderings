@@ -140,13 +140,17 @@ using namespace std;
 
     // (b) Temp Arrays for Convolution
     scalar* temp;
+    scalar* temp2_r;
+    scalar* temp2_g;
     temp = (scalar*) malloc(NEIGH_SIZE * W * H * sizeof(scalar));
+    temp2_r = (scalar*) malloc(NEIGH_SIZE * W * H * sizeof(scalar));
+    temp2_g = (scalar*) malloc(NEIGH_SIZE * W * H * sizeof(scalar));
     memset(temp, 0, NEIGH_SIZE*W*H*sizeof(scalar));
 
 
     // (..) MAIN FILTERING
     // ---------------------------------
-    candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, p_all, W, H);
+    candidate_filtering_all_VEC_BLK_PREP(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, W, H);
 
     // (a) Candidate Filters
     /*
