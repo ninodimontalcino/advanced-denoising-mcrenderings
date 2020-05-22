@@ -98,7 +98,7 @@ void candidate_filtering_all_VEC_BLK_PREP(buffer output_r,
                                          int H);
 
 
-void candidate_filtering_all_VEC_BLK_noprec(buffer output_r, buffer output_g, buffer output_b, buffer color, buffer color_var, buffer features, buffer features_var, scalar* gradients, scalar* features_weights_r, scalar* features_weights_b, scalar* temp, scalar* temp2_r, scalar* temp2_g, Flt_parameters* p, int X0, int Y0, int B_TYPE, int B_SIZE, int W, int H);
+void candidate_filtering_all_VEC_BLK_noprec(buffer output_r, buffer output_g, buffer output_b, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters* p, int X0, int Y0, int B_TYPE, int B_SIZE);
 
 
 // ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
