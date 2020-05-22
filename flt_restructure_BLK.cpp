@@ -59,397 +59,82 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
     int G_CONV_H_START_Y, G_CONV_H_END_Y;
     int G_CONV_W_START_X, G_CONV_W_END_X;
     int G_CONV_W_START_Y, G_CONV_W_END_Y;
+    int B_CONV_START_X, B_CONV_END_X;
+    int B_CONV_START_Y, B_CONV_END_Y;
     int B_START_X, B_END_X;
     int B_START_Y, B_END_Y;
     
     switch(B_TYPE)
     {
         case LT:
-            // COLOR WEIGHT LOOP
-            COLOR_WEIGHT_START_X = R;
-            COLOR_WEIGHT_END_X = COLOR_WEIGHT_START_X + B_SIZE;
-            COLOR_WEIGHT_START_Y = R;
-            COLOR_WEIGHT_END_Y = COLOR_WEIGHT_START_Y + B_SIZE;
- 
-            // FEATURE WEIGHT LOOP
-            FEATURE_WEIGHT_START_X = R + f_min;
-            FEATURE_WEIGHT_END_X = FEATURE_WEIGHT_START_X + B_SIZE;
-            FEATURE_WEIGHT_START_Y = R + f_min;
-            FEATURE_WEIGHT_END_Y = FEATURE_WEIGHT_START_Y + B_SIZE;
-
-            // R CONVOLUTION
-            R_CONV_H_START_X = R;
-            R_CONV_H_END_X = R_CONV_H_START_X + B_SIZE;
-            R_CONV_H_START_Y = R + F_R;
-            R_CONV_H_END_Y = R_CONV_H_START_Y + B_SIZE;
-
-            R_CONV_W_START_X = R + F_R;
-            R_CONV_W_END_X = R_CONV_W_START_X + B_SIZE;
-            R_CONV_W_START_Y = R + F_R;
-            R_CONV_W_END_Y = R_CONV_W_START_Y + B_SIZE;
-
-            // G CONVOLUTION
-            G_CONV_H_START_X = R;
-            G_CONV_H_END_X = G_CONV_H_START_X + B_SIZE;
-            G_CONV_H_START_Y = R + F_G;
-            G_CONV_H_END_Y = G_CONV_H_START_Y + B_SIZE;
-
-            G_CONV_W_START_X = R + F_G;
-            G_CONV_W_END_X = G_CONV_W_START_X + B_SIZE;
-            G_CONV_W_START_Y = R + F_G;
-            G_CONV_W_END_Y = G_CONV_W_START_Y + B_SIZE;
-
-            // B 
-            B_START_X = R + F_B;
-            B_END_X = B_START_X + B_SIZE;
-            B_START_Y = R + F_B;
-            B_END_Y = B_START_Y + B_SIZE;
+            B_START_X = X0 + R + f_max;
+            B_END_X = X0 + B_SIZE;
+            B_START_Y = Y0 + R + f_max;
+            B_END_Y = Y0 + B_SIZE;
             
             break;
 
         case LL:
-            // COLOR WEIGHT LOOP
-            COLOR_WEIGHT_START_X = R;
-            COLOR_WEIGHT_END_X = COLOR_WEIGHT_START_X + B_SIZE;
-            COLOR_WEIGHT_START_Y = Y0 + R;
-            COLOR_WEIGHT_END_Y = COLOR_WEIGHT_START_Y + B_SIZE;
-
-            // FEATURE WEIGHT LOOP
-            FEATURE_WEIGHT_START_X = R + f_min;
-            FEATURE_WEIGHT_END_X = FEATURE_WEIGHT_START_X + B_SIZE;
-            FEATURE_WEIGHT_START_Y = Y0 + R + f_min;
-            FEATURE_WEIGHT_END_Y = FEATURE_WEIGHT_START_Y + B_SIZE;
-
-            // R CONVOLUTION
-            R_CONV_H_START_X = R;
-            R_CONV_H_END_X = R_CONV_H_START_X + B_SIZE;
-            R_CONV_H_START_Y = Y0 + R + F_R;
-            R_CONV_H_END_Y = R_CONV_H_START_Y + B_SIZE;
-
-            R_CONV_W_START_X = R + F_R;
-            R_CONV_W_END_X = R_CONV_W_START_X + B_SIZE;
-            R_CONV_W_START_Y = Y0 + R + F_R;
-            R_CONV_W_END_Y = R_CONV_W_START_Y + B_SIZE;
-
-            // G CONVOLUTION
-            G_CONV_H_START_X = R;
-            G_CONV_H_END_X = G_CONV_H_START_X + B_SIZE;
-            G_CONV_H_START_Y = Y0 + R + F_G;
-            G_CONV_H_END_Y = G_CONV_H_START_Y + B_SIZE;
-
-            G_CONV_W_START_X = R + F_G;
-            G_CONV_W_END_X = G_CONV_W_START_X + B_SIZE;
-            G_CONV_W_START_Y = Y0 + R + F_G;
-            G_CONV_W_END_Y = G_CONV_W_START_Y + B_SIZE;
-
-            // B 
-            B_START_X = R + F_B;
-            B_END_X = B_START_X + B_SIZE;
-            B_START_Y = Y0 + R + F_B;
-            B_END_Y = B_START_Y + B_SIZE;
+            B_START_X = X0 + R + f_max;
+            B_END_X = X0 + B_SIZE;
+            B_START_Y = Y0;
+            B_END_Y = Y0 + B_SIZE;
 
             break;
 
         case LB:
-
-            // COLOR WEIGHT LOOP
-            COLOR_WEIGHT_START_X = R;
-            COLOR_WEIGHT_END_X = COLOR_WEIGHT_START_X + B_SIZE;
-            COLOR_WEIGHT_START_Y = H - B_SIZE + R;
-            COLOR_WEIGHT_END_Y = H - R;
-
-            // FEATURE WEIGHT LOOP
-            FEATURE_WEIGHT_START_X = R + f_min;
-            FEATURE_WEIGHT_END_X = FEATURE_WEIGHT_START_X + B_SIZE;
-            FEATURE_WEIGHT_START_Y = H - B_SIZE + R + f_min;
-            FEATURE_WEIGHT_END_Y = H - R - f_min;
-
-            // R CONVOLUTION
-            R_CONV_H_START_X = R;
-            R_CONV_H_END_X = R_CONV_H_START_X + B_SIZE;
-            R_CONV_H_START_Y = H - B_SIZE + R + F_R;
-            R_CONV_H_END_Y = H - R - F_R;
-
-            R_CONV_W_START_X = R + F_R;
-            R_CONV_W_END_X = R_CONV_W_START_X + B_SIZE;
-            R_CONV_W_START_Y = H - B_SIZE + R + F_R;
-            R_CONV_W_END_Y = H - R - F_R;
-
-            // G CONVOLUTION
-            G_CONV_H_START_X = R;
-            G_CONV_H_END_X = G_CONV_H_START_X + B_SIZE;
-            G_CONV_H_START_Y = H - B_SIZE + R + F_G;
-            G_CONV_H_END_Y = H - R - F_G;
-
-            G_CONV_W_START_X = R + F_G;
-            G_CONV_W_END_X = G_CONV_W_START_X + B_SIZE;
-            G_CONV_W_START_Y = H - B_SIZE + R + F_G;
-            G_CONV_W_END_Y = H - R - F_G;
-
-            // B 
-            B_START_X = R + F_B;
-            B_END_X = B_START_X + B_SIZE;
-            B_START_Y = H - B_SIZE + R + F_B;
-            B_END_Y = H - R - F_B;
+            B_START_X = X0 + R + f_max;
+            B_END_X = X0 + B_SIZE;
+            B_START_Y = Y0;
+            B_END_Y = Y0 + B_SIZE - R - f_max;
 
             break;
         
         case TT:
-            // COLOR WEIGHT LOOP
-            COLOR_WEIGHT_START_X = X0 + R;
-            COLOR_WEIGHT_END_X = COLOR_WEIGHT_START_X + B_SIZE;
-            COLOR_WEIGHT_START_Y = R;
-            COLOR_WEIGHT_END_Y = COLOR_WEIGHT_START_Y + B_SIZE;
-
-            // FEATURE WEIGHT LOOP
-            FEATURE_WEIGHT_START_X = X0 + R + f_min;
-            FEATURE_WEIGHT_END_X = FEATURE_WEIGHT_START_X + B_SIZE;
-            FEATURE_WEIGHT_START_Y = R + f_min;
-            FEATURE_WEIGHT_END_Y = FEATURE_WEIGHT_START_Y + B_SIZE;
-
-            // R CONVOLUTION
-            R_CONV_H_START_X = X0 + R;
-            R_CONV_H_END_X = R_CONV_H_START_X + B_SIZE;
-            R_CONV_H_START_Y = R + F_R;
-            R_CONV_H_END_Y = R_CONV_H_START_Y + B_SIZE;
-
-            R_CONV_W_START_X = X0 + R + F_R;
-            R_CONV_W_END_X = R_CONV_W_START_X + B_SIZE;
-            R_CONV_W_START_Y = R + F_R;
-            R_CONV_W_END_Y = R_CONV_W_START_Y + B_SIZE;
-
-            // G CONVOLUTION
-            G_CONV_H_START_X = X0 + R;
-            G_CONV_H_END_X = G_CONV_H_START_X + B_SIZE;
-            G_CONV_H_START_Y = R + F_G;
-            G_CONV_H_END_Y = G_CONV_H_START_Y + B_SIZE;
-
-            G_CONV_W_START_X = X0 + R + F_G;
-            G_CONV_W_END_X = G_CONV_W_START_X + B_SIZE;
-            G_CONV_W_START_Y = R + F_G;
-            G_CONV_W_END_Y = G_CONV_W_START_Y + B_SIZE;
-
-             // B 
-            B_START_X = X0 + R + F_B;
-            B_END_X = B_START_X + B_SIZE;
-            B_START_Y = R + F_B;
-            B_END_Y = B_START_Y + B_SIZE;
+            B_START_X = X0;
+            B_END_X = X0 + B_SIZE;
+            B_START_Y = Y0 + R + f_max;
+            B_END_Y = Y0 + B_SIZE;
             
             break;
 
         case II:
-
-            // COLOR WEIGHT LOOP
-            COLOR_WEIGHT_START_X = X0 + R;
-            COLOR_WEIGHT_END_X = COLOR_WEIGHT_START_X + B_SIZE;
-            COLOR_WEIGHT_START_Y = Y0 + R;
-            COLOR_WEIGHT_END_Y = COLOR_WEIGHT_START_Y + B_SIZE;
-
-            // FEATURE WEIGHT LOOP
-            FEATURE_WEIGHT_START_X = X0 + R + f_min;
-            FEATURE_WEIGHT_END_X = FEATURE_WEIGHT_START_X + B_SIZE;
-            FEATURE_WEIGHT_START_Y = Y0 + R + f_min;
-            FEATURE_WEIGHT_END_Y = FEATURE_WEIGHT_START_Y + B_SIZE;
-
-            // R CONVOLUTION
-            R_CONV_H_START_X = X0 + R;
-            R_CONV_H_END_X = R_CONV_H_START_X + B_SIZE;
-            R_CONV_H_START_Y = Y0 + R + F_R;
-            R_CONV_H_END_Y = R_CONV_H_START_Y + B_SIZE;
-
-            R_CONV_W_START_X = X0 + R + F_R;
-            R_CONV_W_END_X = R_CONV_W_START_X + B_SIZE;
-            R_CONV_W_START_Y = Y0 + R + F_R;
-            R_CONV_W_END_Y = R_CONV_W_START_Y + B_SIZE;
-
-            // G CONVOLUTION
-            G_CONV_H_START_X = X0 + R;
-            G_CONV_H_END_X = G_CONV_H_START_X + B_SIZE;
-            G_CONV_H_START_Y = Y0 + R + F_G;
-            G_CONV_H_END_Y = G_CONV_H_START_Y + B_SIZE;
-
-            G_CONV_W_START_X = X0 + R + F_G;
-            G_CONV_W_END_X = G_CONV_W_START_X + B_SIZE;
-            G_CONV_W_START_Y = Y0 + R + F_G;
-            G_CONV_W_END_Y = G_CONV_W_START_Y + B_SIZE;
-
-            // B 
-            B_START_X = X0 + R + F_B;
-            B_END_X = B_START_X + B_SIZE;
-            B_START_Y = Y0 + R + F_B;
-            B_END_Y = B_START_Y + B_SIZE;
+            B_START_X = X0;
+            B_END_X = X0 + B_SIZE;
+            B_START_Y = Y0;
+            B_END_Y = Y0 + B_SIZE;
             
             break;
 
         case BB:
-            // COLOR WEIGHT LOOP
-            COLOR_WEIGHT_START_X = X0 + R;
-            COLOR_WEIGHT_END_X = COLOR_WEIGHT_START_X + B_SIZE;
-            COLOR_WEIGHT_START_Y = H - B_SIZE + R;
-            COLOR_WEIGHT_END_Y = H - R;
-
-            // FEATURE WEIGHT LOOP
-            FEATURE_WEIGHT_START_X = X0 + R + f_min;
-            FEATURE_WEIGHT_END_X = FEATURE_WEIGHT_START_X + B_SIZE;
-            FEATURE_WEIGHT_START_Y = H - B_SIZE + R + f_min;
-            FEATURE_WEIGHT_END_Y = H - R - f_min;
-
-            // R CONVOLUTION
-            R_CONV_H_START_X = X0 + R;
-            R_CONV_H_END_X = R_CONV_H_START_X + B_SIZE;
-            R_CONV_H_START_Y = H - B_SIZE + R + F_R;
-            R_CONV_H_END_Y = H - R - F_R;
-
-            R_CONV_W_START_X = X0 + R + F_R;
-            R_CONV_W_END_X = R_CONV_W_START_X + B_SIZE;
-            R_CONV_W_START_Y = H - B_SIZE + R + F_R;
-            R_CONV_W_END_Y = H - R - F_R;
-
-            // G CONVOLUTION
-            G_CONV_H_START_X = X0 + R;
-            G_CONV_H_END_X = G_CONV_H_START_X + B_SIZE;
-            G_CONV_H_START_Y = H - B_SIZE + R + F_G;
-            G_CONV_H_END_Y = H - R - F_G;
-
-            G_CONV_W_START_X = X0 + R + F_G;
-            G_CONV_W_END_X = G_CONV_W_START_X + B_SIZE;
-            G_CONV_W_START_Y = H - B_SIZE + R + F_G;
-            G_CONV_W_END_Y = H - R - F_G;
-
-            // B 
-            B_START_X = X0 + R + F_B;
-            B_END_X = B_START_X + B_SIZE;
-            B_START_Y = H - B_SIZE + R + F_B;
-            B_END_Y = H - R - F_B;
+            B_START_X = X0;
+            B_END_X = X0 + B_SIZE;
+            B_START_Y = Y0;
+            B_END_Y = Y0 + B_SIZE - R - f_max;
 
             break;
 
         case RT:
-            // COLOR WEIGHT LOOP
-            COLOR_WEIGHT_START_X = W - B_SIZE + R;
-            COLOR_WEIGHT_END_X = H - R;
-            COLOR_WEIGHT_START_Y = R;
-            COLOR_WEIGHT_END_Y = COLOR_WEIGHT_START_Y + B_SIZE;
-
-            // FEATURE WEIGHT LOOP
-            FEATURE_WEIGHT_START_X = W - B_SIZE + R + f_min;
-            FEATURE_WEIGHT_END_X = W - R - f_min;
-            FEATURE_WEIGHT_START_Y = R + f_min;
-            FEATURE_WEIGHT_END_Y = FEATURE_WEIGHT_START_Y + B_SIZE;
-
-            // R CONVOLUTION
-            R_CONV_H_START_X = W - B_SIZE + R;
-            R_CONV_H_END_X = W - R;
-            R_CONV_H_START_Y = R + F_R;
-            R_CONV_H_END_Y = R_CONV_H_START_Y + B_SIZE;
-
-            R_CONV_W_START_X = W - B_SIZE + R + F_R;
-            R_CONV_W_END_X = W - R - F_R;
-            R_CONV_W_START_Y = R + F_R;
-            R_CONV_W_END_Y = R_CONV_W_START_Y + B_SIZE;
-
-            // G CONVOLUTION
-            G_CONV_H_START_X = W - B_SIZE + R;
-            G_CONV_H_END_X = W - R;
-            G_CONV_H_START_Y = R + F_G;
-            G_CONV_H_END_Y = G_CONV_H_START_Y + B_SIZE;
-
-            G_CONV_W_START_X = W - B_SIZE + R + F_G;
-            G_CONV_W_END_X = W - R - F_G;
-            G_CONV_W_START_Y = R + F_G;
-            G_CONV_W_END_Y = G_CONV_W_START_Y + B_SIZE;
-
-            // B 
-            B_START_X = W - B_SIZE + R + F_B;
-            B_END_X = W - R - F_B;
-            B_START_Y = R + F_B;
-            B_END_Y = B_START_Y + B_SIZE;
+            B_START_X = X0;
+            B_END_X = X0 + B_SIZE - R - f_max;
+            B_START_Y = Y0 + R + f_max;
+            B_END_Y = Y0 + B_SIZE;
 
             break;
 
         case RR:
-            // COLOR WEIGHT LOOP
-            COLOR_WEIGHT_START_X = W - B_SIZE + R;
-            COLOR_WEIGHT_END_X = H - R;
-            COLOR_WEIGHT_START_Y = Y0 + R;
-            COLOR_WEIGHT_END_Y = COLOR_WEIGHT_START_Y + B_SIZE;
-
-            // FEATURE WEIGHT LOOP
-            FEATURE_WEIGHT_START_X = W - B_SIZE + R + f_min;
-            FEATURE_WEIGHT_END_X = W - R - f_min;
-            FEATURE_WEIGHT_START_Y = Y0 + R + f_min;
-            FEATURE_WEIGHT_END_Y = FEATURE_WEIGHT_START_Y + B_SIZE;
-
-            // R CONVOLUTION
-            R_CONV_H_START_X = W - B_SIZE + R;
-            R_CONV_H_END_X = W - R;
-            R_CONV_H_START_Y = Y0 + R + F_R;
-            R_CONV_H_END_Y = R_CONV_H_START_Y + B_SIZE;
-
-            R_CONV_W_START_X = W - B_SIZE + R + F_R;
-            R_CONV_W_END_X = W - R - F_R;
-            R_CONV_W_START_Y = Y0 + R + F_R;
-            R_CONV_W_END_Y = R_CONV_W_START_Y + B_SIZE;
-
-            // G CONVOLUTION
-            G_CONV_H_START_X = W - B_SIZE + R;
-            G_CONV_H_END_X = W - R;
-            G_CONV_H_START_Y = Y0 + R + F_G;
-            G_CONV_H_END_Y = G_CONV_H_START_Y + B_SIZE;
-
-            G_CONV_W_START_X = W - B_SIZE + R + F_G;
-            G_CONV_W_END_X = W - R - F_G;
-            G_CONV_W_START_Y = Y0 + R + F_G;
-            G_CONV_W_END_Y = G_CONV_W_START_Y + B_SIZE;
-
-            // B 
-            B_START_X = W - B_SIZE + R + F_B;
-            B_END_X = W - R - F_B;
-            B_START_Y = Y0 + R + F_B;
-            B_END_Y = B_START_Y + B_SIZE;
+            B_START_X = X0;
+            B_END_X = X0 + B_SIZE - R - f_max;
+            B_START_Y = Y0;
+            B_END_Y = Y0 + B_SIZE;
 
             break;
 
         case RB:
-            // COLOR WEIGHT LOOP
-            COLOR_WEIGHT_START_X = W - B_SIZE + R;
-            COLOR_WEIGHT_END_X = H - R;
-            COLOR_WEIGHT_START_Y = H - B_SIZE + R;
-            COLOR_WEIGHT_END_Y = H - R;
-
-            // FEATURE WEIGHT LOOP
-            FEATURE_WEIGHT_START_X = W - B_SIZE + R + f_min;
-            FEATURE_WEIGHT_END_X = W - R - f_min;
-            FEATURE_WEIGHT_START_Y = H - B_SIZE + R + f_min;
-            FEATURE_WEIGHT_END_Y = H - R - f_min;
-
-            // R CONVOLUTION
-            R_CONV_H_START_X = W - B_SIZE + R;
-            R_CONV_H_END_X = W - R;
-            R_CONV_H_START_Y = H - B_SIZE + R + F_R;
-            R_CONV_H_END_Y = H - R - F_R;
-
-            R_CONV_W_START_X = W - B_SIZE + R + F_R;
-            R_CONV_W_END_X = W - R - F_R;
-            R_CONV_W_START_Y = H - B_SIZE + R + F_R;
-            R_CONV_W_END_Y = H - R - F_R;
-
-            // G CONVOLUTION
-            G_CONV_H_START_X = W - B_SIZE + R;
-            G_CONV_H_END_X = W - R;
-            G_CONV_H_START_Y = H - B_SIZE + R + F_G;
-            G_CONV_H_END_Y = H - R - F_G;
-
-            G_CONV_W_START_X = W - B_SIZE + R + F_G;
-            G_CONV_W_END_X = W - R - F_G;
-            G_CONV_W_START_Y = H - B_SIZE + R + F_G;
-            G_CONV_W_END_Y = H - R - F_G;
-
-            // B 
-            B_START_X = W - B_SIZE + R + F_B;
-            B_END_X = W - R - F_B;
-            B_START_Y = H - B_START_X + R + F_B;
-            B_END_Y = H - R - F_B;
+            B_START_X = X0;
+            B_END_X = X0 + B_SIZE - R - f_max;
+            B_START_Y = Y0;
+            B_END_Y = Y0 + B_SIZE - R - f_max;
 
             break;
 
@@ -457,6 +142,46 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
         default:
             printf("Error! operator is not correct");
     }
+
+    // COLOR WEIGHT LOOP
+    COLOR_WEIGHT_START_X = B_START_X - f_max;
+    COLOR_WEIGHT_END_X = B_END_X + f_max;
+    COLOR_WEIGHT_START_Y = B_START_Y - f_max;
+    COLOR_WEIGHT_END_Y = B_END_Y + f_max;
+
+    // FEATURE WEIGHT LOOP
+    FEATURE_WEIGHT_START_X = B_START_X;
+    FEATURE_WEIGHT_END_X = B_END_X;
+    FEATURE_WEIGHT_START_Y = B_START_Y;
+    FEATURE_WEIGHT_END_Y = B_END_Y;
+
+    // R CONVOLUTION
+    R_CONV_H_START_X = B_START_X - F_R;
+    R_CONV_H_END_X = B_END_X + F_R;
+    R_CONV_H_START_Y = B_START_Y;
+    R_CONV_H_END_Y = B_END_Y;
+
+    R_CONV_W_START_X = B_START_X;
+    R_CONV_W_END_X = B_END_X;
+    R_CONV_W_START_Y = B_START_Y;
+    R_CONV_W_END_Y = B_END_Y;
+
+    // G CONVOLUTION
+    G_CONV_H_START_X = B_START_X - F_G;
+    G_CONV_H_END_X = B_END_X + F_R;
+    G_CONV_H_START_Y = B_START_Y;
+    G_CONV_H_END_Y = B_END_Y;
+
+    G_CONV_W_START_X = B_START_X;
+    G_CONV_W_END_X = B_END_X;
+    G_CONV_W_START_Y = B_START_Y;
+    G_CONV_W_END_Y = B_END_Y;
+
+    // B 
+    B_CONV_START_X = B_START_X;
+    B_CONV_END_X = B_END_X;
+    B_CONV_START_Y = B_START_Y;
+    B_CONV_END_Y = B_END_Y;
 
 
     // =====================================================================================================================================

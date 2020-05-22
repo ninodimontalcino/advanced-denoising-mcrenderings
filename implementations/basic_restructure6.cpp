@@ -158,20 +158,20 @@ using namespace std;
         // --> Issue LT Block
         Y0 = 0;
         BLOCK_TYPE = LT;
-        //std::cout << "Computing Block: (" << X0 << "," << Y0 << ")" << std::endl;
+        // std::cout << "Computing Block LT: (" << X0 << "," << Y0 << ")" << std::endl;
         candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
 
         // --> Issue L Blocks
         for (Y0 = BLOCK_SIZE; Y0 < H - BLOCK_SIZE; Y0+= BLOCK_SIZE){
             BLOCK_TYPE = LL;
-            //std::cout << "Computing Block: (" << X0 << "," << Y0 << ")" << std::endl;
+            // std::cout << "Computing Block L: (" << X0 << "," << Y0 << ")" << std::endl;
             candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
         }
 
         // --> Issue LB Block
         Y0 = H - BLOCK_SIZE;
         BLOCK_TYPE = LB;
-        //std::cout << "Computing Block: (" << X0 << "," << Y0 << ")" << std::endl;
+        // std::cout << "Computing Block LB: (" << X0 << "," << Y0 << ")" << std::endl;
         candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
 
         // (B) INNER COLUMN's OF BLOCKS
@@ -179,18 +179,18 @@ using namespace std;
             
             Y0 = 0;
             BLOCK_TYPE = TT;
-            //std::cout << "Computing Block: (" << X0 << "," << Y0 << ")" << std::endl;
+            // std::cout << "Computing Block TT: (" << X0 << "," << Y0 << ")" << std::endl;
             candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
 
             for (Y0 = BLOCK_SIZE; Y0 < H - BLOCK_SIZE; Y0+= BLOCK_SIZE){
                 BLOCK_TYPE = II;
-                //std::cout << "Computing Block: (" << X0 << "," << Y0 << ")" << std::endl;
+                // std::cout << "Computing Block II: (" << X0 << "," << Y0 << ")" << std::endl;
                 candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
             }
 
             Y0 = H - BLOCK_SIZE;
             BLOCK_TYPE = BB;
-            //std::cout << "Computing Block: (" << X0 << "," << Y0 << ")" << std::endl;
+            // std::cout << "Computing Block BB: (" << X0 << "," << Y0 << ")" << std::endl;
             candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
 
         }
@@ -201,12 +201,12 @@ using namespace std;
         // --> Issue RT Block
         Y0 = 0;
         BLOCK_TYPE = RT;
-        //std::cout << "Computing Block: (" << X0 << "," << Y0 << ")" << std::endl;
+        // std::cout << "Computing Block RT: (" << X0 << "," << Y0 << ")" << std::endl;
         candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
 
         // --> Issue R Blocks
         for (Y0 = BLOCK_SIZE; Y0 < H - BLOCK_SIZE; Y0+= BLOCK_SIZE){
-            //std::cout << "Computing Block: (" << X0 << "," << Y0 << ")" << std::endl;
+            // std::cout << "Computing Block R: (" << X0 << "," << Y0 << ")" << std::endl;
             BLOCK_TYPE = RR;
             candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
         }
@@ -214,45 +214,31 @@ using namespace std;
         // --> Issue RB Block
         Y0 = H - BLOCK_SIZE;
         BLOCK_TYPE = RB;
-        //std::cout << "Computing Block: (" << X0 << "," << Y0 << ")" << std::endl;
+        // std::cout << "Computing Block RB: (" << X0 << "," << Y0 << ")" << std::endl;
         candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
 
 
         // (..) BORDER CASE HANDLING
         // ----------------------------------
-        // Candidate FIRST and THIRD (due to F_R = F_B)
-        int F_R = 1; 
+        // Sorry I just included whole fmax for border
         for (int i = 0; i < 3; i++){
             for (int xp = 0; xp < W; xp++){
-                for(int yp = 0; yp < R + F_R; yp++){
+                for(int yp = 0; yp < R + 3; yp++){
                     r[i][xp][yp] = c[i][xp][yp];
                     r[i][xp][H - yp - 1] = c[i][xp][H - yp - 1];
                     b[i][xp][yp] = c[i][xp][yp];
                     b[i][xp][H - yp - 1] = c[i][xp][H - yp - 1];
+                    g[i][xp][yp] = c[i][xp][yp];
+                    g[i][xp][H - yp - 1] = c[i][xp][H - yp - 1];
                 }
             }
-            for(int xp = 0; xp < R + F_R; xp++){
-                for (int yp = R + F_R ; yp < H - R - F_R; yp++){
+            for(int xp = 0; xp < R + 3; xp++){
+                for (int yp = R + 3 ; yp < H - R - 3; yp++){
                 
                     r[i][xp][yp] = c[i][xp][yp];
                     r[i][W - xp - 1][yp] = c[i][W - xp - 1][yp];
                     b[i][xp][yp] = c[i][xp][yp];
                     b[i][W - xp - 1][yp] = c[i][W - xp - 1][yp];
-                }
-            }
-        }
-
-        // Candidate SECOND since F_G != F_R
-        int F_G = 3; 
-        for (int i = 0; i < 3; i++){
-            for (int xp = 0; xp < W; xp++){
-                for(int yp = 0; yp < R + F_G; yp++){
-                    g[i][xp][yp] = c[i][xp][yp];
-                    g[i][xp][H - yp - 1] = c[i][xp][H - yp - 1];
-                }
-            }
-            for(int xp = 0; xp < R + F_G; xp++){
-                for (int yp = R + F_G ; yp < H - R - F_G; yp++){
                     g[i][xp][yp] = c[i][xp][yp];
                     g[i][W - xp - 1][yp] = c[i][W - xp - 1][yp];
                 }
