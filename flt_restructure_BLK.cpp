@@ -105,8 +105,6 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
             B_START_Y = R + F_B;
             B_END_Y = B_START_Y + B_SIZE;
             
-
-
             break;
 
         case LL:
@@ -541,11 +539,10 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
 
            
             // Precompute feature weights
-            // @Comment from Nino: Old loop order is faster, but this one is easier for vectorization => Still room for improvements
-
+        
             for(int j=0; j<NB_FEATURES;++j){
-                for(int xp = FEATURE_WEIGHT_START_X; xp < FEATURE_WEIGHT_END_X; ++xp) {
-                    for(int yp = FEATURE_WEIGHT_START_Y; yp < FEATURE_WEIGHT_END_Y; yp+=8) {
+                for(int xp = FEATURE_WEIGHT_START_X; xp <= FEATURE_WEIGHT_END_X; ++xp) {
+                    for(int yp = FEATURE_WEIGHT_START_Y; yp <= FEATURE_WEIGHT_END_Y; yp+=8) {
                         
                         int xq = xp + r_x;
                         int yq = yp + r_y;
@@ -633,19 +630,32 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
                     _mm256_storeu_ps(temp2_r + N_MAPPING * WH + xp * W + (yp + 7 * 8), sum_7_vec);
                 }
 
-                for(; yp < R_CONV_H_END_Y; yp+=8) {
+                for(; yp < R_CONV_H_END_Y; yp+=32) {
 
                     __m256 sum_0_vec = _mm256_setzero_ps();
+                    __m256 sum_1_vec = _mm256_setzero_ps();
+                    __m256 sum_2_vec = _mm256_setzero_ps();
+                    __m256 sum_3_vec = _mm256_setzero_ps();
 
                     for (int k=-F_R; k<=F_R; k++){
 
                         __m256 temp_vec_0 = _mm256_loadu_ps(temp + N_MAPPING * WH + xp * W + yp+k);
+                        __m256 temp_vec_1 = _mm256_loadu_ps(temp + N_MAPPING * WH + xp * W + (yp+1*8)+k);
+                        __m256 temp_vec_2 = _mm256_loadu_ps(temp + N_MAPPING * WH + xp * W + (yp+2*8)+k);
+                        __m256 temp_vec_3 = _mm256_loadu_ps(temp + N_MAPPING * WH + xp * W + (yp+3*8)+k);
 
                         sum_0_vec = _mm256_add_ps(sum_0_vec, temp_vec_0);
+                        sum_1_vec = _mm256_add_ps(sum_1_vec, temp_vec_1);
+                        sum_2_vec = _mm256_add_ps(sum_2_vec, temp_vec_2);
+                        sum_3_vec = _mm256_add_ps(sum_3_vec, temp_vec_3);
                     }
 
                     _mm256_storeu_ps(temp2_r + N_MAPPING * WH + xp * W + (yp + 0 * 8), sum_0_vec);
+                    _mm256_storeu_ps(temp2_r + N_MAPPING * WH + xp * W + (yp + 1 * 8), sum_1_vec);
+                    _mm256_storeu_ps(temp2_r + N_MAPPING * WH + xp * W + (yp + 2 * 8), sum_2_vec);
+                    _mm256_storeu_ps(temp2_r + N_MAPPING * WH + xp * W + (yp + 3 * 8), sum_3_vec);
                 }
+
 
             }
 
@@ -754,52 +764,42 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
                     }
                 }
 
-                for(; yp < R_CONV_W_END_Y; yp+=4) {
-
+                for(; yp < R_CONV_W_END_Y; yp+=8) {
+                    
                     int xq = xp + r_x;
                     int yq = yp + r_y;
 
                     // Compute final color weight
-                    scalar sum_0 = 0.f;
-                    scalar sum_1 = 0.f;
-                    scalar sum_2 = 0.f;
-                    scalar sum_3 = 0.f;
-
-                    // Unrolled Summation => Fixed for F_R=1 => 2*f+1 = 3
-                    sum_0 += temp2_r[N_MAPPING * WH +(xp-1) * W + yp+0];
-                    sum_1 += temp2_r[N_MAPPING * WH +(xp-1) * W + yp+1];    
-                    sum_2 += temp2_r[N_MAPPING * WH +(xp-1) * W + yp+2];    
-                    sum_3 += temp2_r[N_MAPPING * WH +(xp-1) * W+ yp+3];
-
-                    sum_0 += temp2_r[N_MAPPING * WH +(xp) * W + yp+0];
-                    sum_1 += temp2_r[N_MAPPING * WH +(xp) * W + yp+1];
-                    sum_2 += temp2_r[N_MAPPING * WH +(xp) * W + yp+2];
-                    sum_3 += temp2_r[N_MAPPING * WH +(xp) * W + yp+3];
-
-                    sum_0 += temp2_r[N_MAPPING * WH +(xp+1) * W + yp+0];
-                    sum_1 += temp2_r[N_MAPPING * WH +(xp+1) * W + yp+1];
-                    sum_2 += temp2_r[N_MAPPING * WH +(xp+1) * W + yp+2];
-                    sum_3 += temp2_r[N_MAPPING * WH +(xp+1) * W + yp+3];
-
+                    __m256 sum_vec = _mm256_setzero_ps();
+                    __m256 tmp_vec, color_weight_vec, weight_vec, weight_sum_vec;
+                    for (int k=-F_R; k<=F_R; k++){
+                        tmp_vec = _mm256_loadu_ps(temp2_r + N_MAPPING * WH + (xp + k) * W + yp);
+                        sum_vec = _mm256_add_ps(sum_vec, tmp_vec);
+                    }
+                    color_weight_vec = _mm256_mul_ps(sum_vec, neigh_inv_r_vec);
+                    
 
                     // Compute final weight
-                    scalar weight_0 = exp(fmin((sum_0 * NEIGH_R_INV), features_weights_r[N_MAPPING * WH + xp * W + yp + 0]));
-                    scalar weight_1 = exp(fmin((sum_1 * NEIGH_R_INV), features_weights_r[N_MAPPING * WH + xp * W + yp + 1]));
-                    scalar weight_2 = exp(fmin((sum_2 * NEIGH_R_INV), features_weights_r[N_MAPPING * WH + xp * W + yp + 2]));
-                    scalar weight_3 = exp(fmin((sum_3 * NEIGH_R_INV), features_weights_r[N_MAPPING * WH + xp * W + yp + 3]));
+                    weight_vec = _mm256_loadu_ps(features_weights_r + N_MAPPING * WH +xp * W + yp);
+                    weight_vec = _mm256_min_ps(weight_vec, color_weight_vec);
+                    weight_vec = exp256_ps(weight_vec);
 
-                    weight_sum_r[xp * W + yp + 0] += weight_0;
-                    weight_sum_r[xp * W + yp + 1] += weight_1;
-                    weight_sum_r[xp * W + yp + 2] += weight_2;
-                    weight_sum_r[xp * W + yp + 3] += weight_3;
+                    weight_sum_vec = _mm256_loadu_ps(weight_sum_r+0 * WH + xp * W + yp);
+                    weight_sum_vec = _mm256_add_ps(weight_sum_vec, weight_vec);
+                    _mm256_storeu_ps(weight_sum_r+0 * WH + xp * W + yp, weight_sum_vec);
                     
+                    __m256 output_r_vec, color_vec;
                     for (int i=0; i<3; i++){
-                        output_r[i][xp][yp+0] += weight_0 * color[i][xq][yq+0];
-                        output_r[i][xp][yp+1] += weight_1 * color[i][xq][yq+1];
-                        output_r[i][xp][yp+2] += weight_2 * color[i][xq][yq+2];
-                        output_r[i][xp][yp+3] += weight_3 * color[i][xq][yq+3];
+                        output_r_vec = _mm256_loadu_ps(output_r[i][xp] + yp);
+                        color_vec = _mm256_loadu_ps(color[i][xq] + yq);
+
+                        output_r_vec = _mm256_fmadd_ps(weight_vec, color_vec, output_r_vec);
+
+                        _mm256_storeu_ps(output_r[i][xp] + yp, output_r_vec);
                     }
-                    
+
+
+
                 }
             }
 
@@ -849,6 +849,34 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
                     _mm256_storeu_ps(temp2_g + N_MAPPING * WH + xp * W + (yp + 6 * 8), sum_6_vec);
                     _mm256_storeu_ps(temp2_g + N_MAPPING * WH + xp * W + (yp + 7 * 8), sum_7_vec);
                 }
+                
+                for(; yp < G_CONV_H_END_Y - 31; yp+=32) {
+
+                    __m256 sum_0_vec = _mm256_setzero_ps();
+                    __m256 sum_1_vec = _mm256_setzero_ps();
+                    __m256 sum_2_vec = _mm256_setzero_ps();
+                    __m256 sum_3_vec = _mm256_setzero_ps();
+
+                    for (int k=-F_G; k<=F_G; k++){
+
+                        __m256 temp_vec_0 = _mm256_loadu_ps(temp + N_MAPPING * WH + xp * W + yp+k);
+                        __m256 temp_vec_1 = _mm256_loadu_ps(temp + N_MAPPING * WH + xp * W + (yp+1*8)+k);
+                        __m256 temp_vec_2 = _mm256_loadu_ps(temp + N_MAPPING * WH + xp * W + (yp+2*8)+k);
+                        __m256 temp_vec_3 = _mm256_loadu_ps(temp + N_MAPPING * WH + xp * W + (yp+3*8)+k);
+
+                        sum_0_vec = _mm256_add_ps(sum_0_vec, temp_vec_0);
+                        sum_1_vec = _mm256_add_ps(sum_1_vec, temp_vec_1);
+                        sum_2_vec = _mm256_add_ps(sum_2_vec, temp_vec_2);
+                        sum_3_vec = _mm256_add_ps(sum_3_vec, temp_vec_3);
+                    }
+
+                    _mm256_storeu_ps(temp2_g + N_MAPPING * WH + xp * W + (yp + 0 * 8), sum_0_vec);
+                    _mm256_storeu_ps(temp2_g + N_MAPPING * WH + xp * W + (yp + 1 * 8), sum_1_vec);
+                    _mm256_storeu_ps(temp2_g + N_MAPPING * WH + xp * W + (yp + 2 * 8), sum_2_vec);
+                    _mm256_storeu_ps(temp2_g + N_MAPPING * WH + xp * W + (yp + 3 * 8), sum_3_vec);
+                }
+                
+                
                 for(; yp < G_CONV_W_END_Y; yp+=8) {
 
                     __m256 sum_0_vec = _mm256_setzero_ps();
@@ -1009,71 +1037,39 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
                     }
                 }
 
-                for(; yp < G_CONV_W_END_Y; yp+=4) {
+                for(; yp < G_CONV_W_END_Y; yp+=8) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
 
                     // Compute final color weight
-                    scalar sum_0 = 0.f;
-                    scalar sum_1 = 0.f;
-                    scalar sum_2 = 0.f;
-                    scalar sum_3 = 0.f;
-
-                    // Unrolled Summation => Fixed for F_G=3 => 2*F_G+1 = 7
-                    sum_0 += temp2_g[N_MAPPING * WH + (xp-3) * W + yp];
-                    sum_1 += temp2_g[N_MAPPING * WH +(xp-3) * W + yp+1];
-                    sum_2 += temp2_g[N_MAPPING * WH +(xp-3) * W+ yp+2];
-                    sum_3 += temp2_g[N_MAPPING * WH +(xp-3) * W + yp+3];
-
-                    sum_0 += temp2_g[N_MAPPING * WH +(xp-2) * W + yp];
-                    sum_1 += temp2_g[N_MAPPING * WH +(xp-2) * W + yp+1];
-                    sum_2 += temp2_g[N_MAPPING * WH +(xp-2) * W + yp+2];
-                    sum_3 += temp2_g[N_MAPPING * WH +(xp-2) * W+ yp+3];
-
-                    sum_0 += temp2_g[N_MAPPING * WH +(xp-1) * W + yp];
-                    sum_1 += temp2_g[N_MAPPING * WH +(xp-1) * W + yp+1];
-                    sum_2 += temp2_g[N_MAPPING * WH +(xp-1) * W + yp+2];
-                    sum_3 += temp2_g[N_MAPPING * WH +(xp-1) * W + yp+3];
-
-                    sum_0 += temp2_g[N_MAPPING * WH +(xp) * W + yp];
-                    sum_1 += temp2_g[N_MAPPING * WH +(xp) * W + yp+1];
-                    sum_2 += temp2_g[N_MAPPING * WH +(xp) * W + yp+2];
-                    sum_3 += temp2_g[N_MAPPING * WH +(xp) * W + yp+3];
-
-                    sum_0 += temp2_g[N_MAPPING * WH +(xp+1) * W + yp];
-                    sum_1 += temp2_g[N_MAPPING * WH +(xp+1) * W + yp+1];
-                    sum_2 += temp2_g[N_MAPPING * WH +(xp+1) * W + yp+2];
-                    sum_3 += temp2_g[N_MAPPING * WH +(xp+1) * W + yp+3];
-                    
-                    sum_0 += temp2_g[N_MAPPING * WH +(xp+2) * W + yp];
-                    sum_1 += temp2_g[N_MAPPING * WH +(xp+2) * W + yp+1];
-                    sum_2 += temp2_g[N_MAPPING * WH +(xp+2) * W + yp+2];
-                    sum_3 += temp2_g[N_MAPPING * WH +(xp+2) * W + yp+3];
-
-                    sum_0 += temp2_g[N_MAPPING * WH +(xp+3) * W + yp];
-                    sum_1 += temp2_g[N_MAPPING * WH +(xp+3) * W + yp+1];
-                    sum_2 += temp2_g[N_MAPPING * WH +(xp+3) * W + yp+2];
-                    sum_3 += temp2_g[N_MAPPING * WH +(xp+3) * W + yp+3];
-
+                    __m256 sum_vec = _mm256_setzero_ps();
+                    __m256 tmp_vec, color_weight_vec, weight_vec, weight_sum_vec;
+                    for (int k=-F_G; k<=F_G; k++){
+                        tmp_vec = _mm256_loadu_ps(temp2_g + N_MAPPING * WH +  (xp + k) * W + yp);
+                        sum_vec = _mm256_add_ps(sum_vec, tmp_vec);
+                    }
+                    color_weight_vec = _mm256_mul_ps(sum_vec, neigh_inv_g_vec);
 
                     // Compute final weight
-                    scalar weight_0 = exp(fmin((sum_0 * NEIGH_G_INV), features_weights_r[N_MAPPING * WH + xp * W + yp + 0]));
-                    scalar weight_1 = exp(fmin((sum_1 * NEIGH_G_INV), features_weights_r[N_MAPPING * WH + xp * W + yp + 1]));
-                    scalar weight_2 = exp(fmin((sum_2 * NEIGH_G_INV), features_weights_r[N_MAPPING * WH + xp * W + yp + 2]));
-                    scalar weight_3 = exp(fmin((sum_3 * NEIGH_G_INV), features_weights_r[N_MAPPING * WH + xp * W + yp + 3]));
+                    weight_vec = _mm256_loadu_ps(features_weights_r + N_MAPPING * WH + xp * W + yp);
+                    weight_vec = _mm256_min_ps(weight_vec, color_weight_vec);
+                    weight_vec = exp256_ps(weight_vec);
 
-                    weight_sum_g[xp * W + yp + 0] += weight_0;
-                    weight_sum_g[xp * W + yp + 1] += weight_1;
-                    weight_sum_g[xp * W + yp + 2] += weight_2;
-                    weight_sum_g[xp * W + yp + 3] += weight_3;
+                    weight_sum_vec = _mm256_loadu_ps(weight_sum_g+0 * WH + xp * W + yp);
+                    weight_sum_vec = _mm256_add_ps(weight_sum_vec, weight_vec);
+                    _mm256_storeu_ps(weight_sum_g+0 * WH + xp * W + yp, weight_sum_vec);
                     
+                    __m256 output_g_vec, color_vec;
                     for (int i=0; i<3; i++){
-                        output_g[i][xp][yp+0] += weight_0 * color[i][xq][yq+0];
-                        output_g[i][xp][yp+1] += weight_1 * color[i][xq][yq+1];
-                        output_g[i][xp][yp+2] += weight_2 * color[i][xq][yq+2];
-                        output_g[i][xp][yp+3] += weight_3 * color[i][xq][yq+3];
+                        output_g_vec = _mm256_loadu_ps(output_g[i][xp] + yp);
+                        color_vec = _mm256_loadu_ps(color[i][xq] + yq);
+
+                        output_g_vec = _mm256_fmadd_ps(weight_vec, color_vec, output_g_vec);
+
+                        _mm256_storeu_ps(output_g[i][xp] + yp, output_g_vec);
                     }
+
                     
                 }
             }
@@ -1085,7 +1081,7 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
 
             for(int xp = B_START_X; xp < B_END_X; ++xp) {
                 int yp = B_START_Y;
-                for(; yp < B_END_Y - 32; yp+=32) {
+                for(; yp < B_END_Y - 31; yp+=32) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -1139,28 +1135,30 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
 
                     }                    
                 }
-                for(; yp < B_END_Y; yp+=4) {
+                for(; yp < B_END_Y; yp+=8) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
 
-                    scalar weight_0 = exp(features_weights_b[N_MAPPING * WH + xp * W + yp]);
-                    scalar weight_1 = exp(features_weights_b[N_MAPPING * WH + xp * W + yp+1]);
-                    scalar weight_2 = exp(features_weights_b[N_MAPPING * WH + xp * W + yp+2]);
-                    scalar weight_3 = exp(features_weights_b[N_MAPPING * WH + xp * W + yp+3]);
 
-                    weight_sum_b[xp * W + yp] += weight_0;
-                    weight_sum_b[xp * W + yp+1] += weight_1;
-                    weight_sum_b[xp * W + yp+2] += weight_2;
-                    weight_sum_b[xp * W + yp+3] += weight_3;
+                    // Compute final weight
+                    __m256 weight_vec = _mm256_loadu_ps(features_weights_b + N_MAPPING * WH + xp * W + yp);
+                    weight_vec = exp256_ps(weight_vec);
 
+                    __m256 weight_sum_vec = _mm256_loadu_ps(weight_sum_b+0 * WH + xp * W + yp);
+                    weight_sum_vec = _mm256_add_ps(weight_sum_vec, weight_vec);
+                    _mm256_storeu_ps(weight_sum_b+0 * WH + xp * W + yp, weight_sum_vec);
                     
+                    __m256 output_b_vec, color_vec;
                     for (int i=0; i<3; i++){
-                        output_b[i][xp][yp] += weight_0 * color[i][xq][yq];
-                        output_b[i][xp][yp+1] += weight_1 * color[i][xq][yq+1];
-                        output_b[i][xp][yp+2] += weight_2 * color[i][xq][yq+2];
-                        output_b[i][xp][yp+3] += weight_3 * color[i][xq][yq+3];
+                        output_b_vec = _mm256_loadu_ps(output_b[i][xp] + yp);
+                        color_vec = _mm256_loadu_ps(color[i][xq] + yq);
+
+                        output_b_vec = _mm256_fmadd_ps(weight_vec, color_vec, output_b_vec);
+
+                        _mm256_storeu_ps(output_b[i][xp] + yp, output_b_vec);
                     }
+
                 }            
             }
             
@@ -1196,19 +1194,16 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
             }
         }
 
-        for(; yp < R_CONV_W_END_Y; yp+=4) {     
+        for(; yp < R_CONV_W_END_Y; yp+=8) {     
             
-            scalar w_0 = weight_sum_r[xp * W + yp];
-            scalar w_1 = weight_sum_r[xp * W + yp+1];
-            scalar w_2 = weight_sum_r[xp * W + yp+2];
-            scalar w_3 = weight_sum_r[xp * W + yp+3];
-
+            __m256 weight_sum_vec = _mm256_loadu_ps(weight_sum_r + xp * W + yp);
+            __m256 output_vec;
             for (int i=0; i<3; i++){
-                output_r[i][xp][yp] /= w_0;
-                output_r[i][xp][yp+1] /= w_1;
-                output_r[i][xp][yp+2] /= w_2;
-                output_r[i][xp][yp+3] /= w_3;
+                output_vec = _mm256_loadu_ps(output_r[i][xp] + yp);
+                output_vec = _mm256_div_ps(output_vec, weight_sum_vec);
+                _mm256_storeu_ps(output_r[i][xp] + yp, output_vec);
             }
+
         }
     }    
 
@@ -1242,26 +1237,23 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
             }
         }
 
-        for(; yp < G_CONV_W_END_Y; yp+=4) {     
+        for(; yp < G_CONV_W_END_Y; yp+=8) {     
             
-            scalar w_0 = weight_sum_g[xp * W + yp];
-            scalar w_1 = weight_sum_g[xp * W + yp+1];
-            scalar w_2 = weight_sum_g[xp * W + yp+2];
-            scalar w_3 = weight_sum_g[xp * W + yp+3];
-
+            __m256 weight_sum_vec = _mm256_loadu_ps(weight_sum_g +0 * WH + xp * W + yp);
+            __m256 output_vec;
             for (int i=0; i<3; i++){
-                output_g[i][xp][yp] /= w_0;
-                output_g[i][xp][yp+1] /= w_1;
-                output_g[i][xp][yp+2] /= w_2;
-                output_g[i][xp][yp+3] /= w_3;
+                output_vec = _mm256_loadu_ps(output_g[i][xp] + yp);
+                output_vec = _mm256_div_ps(output_vec, weight_sum_vec);
+                _mm256_storeu_ps(output_g[i][xp] + yp, output_vec);
             }
+
         }
     }
 
     // Final Weight Normalization B
     for(int xp = B_START_X; xp < B_END_X; ++xp) {
         int yp = B_START_Y;
-        for(; yp < B_END_Y - 32; yp+=32) {     
+        for(; yp < B_END_Y - 31; yp+=32) {     
 
             __m256 weight_sum_vec_0 = _mm256_loadu_ps(weight_sum_b + xp * W + (yp + 0 * 8));
             __m256 weight_sum_vec_1 = _mm256_loadu_ps(weight_sum_b + xp * W + (yp + 1 * 8));
@@ -1287,19 +1279,21 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
             }
         }
 
-        for(; yp < B_END_Y; yp+=4) {     
+        for(; yp < B_END_Y; yp+=8) {     
             
             scalar w_0 = weight_sum_b[xp * W + yp];
             scalar w_1 = weight_sum_b[xp * W + yp+1];
             scalar w_2 = weight_sum_b[xp * W + yp+2];
             scalar w_3 = weight_sum_b[xp * W + yp+3];
 
+            __m256 weight_sum_vec = _mm256_loadu_ps(weight_sum_b +0 * WH + xp * W + yp);
+            __m256 output_vec;
             for (int i=0; i<3; i++){
-                output_b[i][xp][yp] /= w_0;
-                output_b[i][xp][yp+1] /= w_1;
-                output_b[i][xp][yp+2] /= w_2;
-                output_b[i][xp][yp+3] /= w_3;
+                output_vec = _mm256_loadu_ps(output_b[i][xp] + yp);
+                output_vec = _mm256_div_ps(output_vec, weight_sum_vec);
+                _mm256_storeu_ps(output_b[i][xp] + yp, output_vec);
             }
+
         }
     }
 

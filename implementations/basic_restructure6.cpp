@@ -271,9 +271,9 @@ using namespace std;
         candidate_filtering_all_VEC(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, W, H);
     }
     
-    //write_buffer_exr("temp/candidate_FIRST.exr", &r, W, H);
-    //write_buffer_exr("temp/candidate_SECOND.exr", &g, W, H);
-    //write_buffer_exr("temp/candidate_THIRD.exr", &b, W, H);
+    write_buffer_exr("temp/candidate_FIRST.exr", &r, W, H);
+    write_buffer_exr("temp/candidate_SECOND.exr", &g, W, H);
+    write_buffer_exr("temp/candidate_THIRD.exr", &b, W, H);
 
 
     // ----------------------------------------------
