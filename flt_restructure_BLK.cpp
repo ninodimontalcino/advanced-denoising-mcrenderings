@@ -492,7 +492,7 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
 
 
             // Computing neighbour mapping
-            int N_MAPPING = (r_x + 10) * (2*R+1) + (r_y + 10);
+            int N_MAPPING = (r_x + R) * (2*R+1) + (r_y + R);
         
            // #######################################################################################
             // WEIGHT COMPUTATION
@@ -809,7 +809,7 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
                     }
                 }
 
-                for(; yp < R_CONV_W_END_Y; yp+=8) {
+                for(; yp < R_CONV_W_END_Y-7; yp+=8) {
                     
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -842,9 +842,40 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
 
                         _mm256_storeu_ps(output_r[i][xp] + yp, output_r_vec);
                     }
+                }
+                for(; yp < R_CONV_W_END_Y; yp++) {
+                    
+                    int xq = xp + r_x;
+                    int yq = yp + r_y;
 
+                    // Compute final color weight
+                    scalar sum_sca = 0;
+                    scalar tmp_sca, color_weight_sca, weight_sca, weight_sum_sca;
+                    for (int k=-F_R; k<=F_R; k++){
+                        tmp_sca = *(temp2_r + N_MAPPING * WH + (xp + k) * W + yp);
+                        sum_sca = sum_sca + tmp_sca;
+                    }
+                    color_weight_sca = sum_sca * NEIGH_R_INV;
+                    
 
+                    // Compute final weight
+                    weight_sca = *(features_weights_r + N_MAPPING * WH +xp * W + yp);
+                    weight_sca = fmin(weight_sca, color_weight_sca);
+                    weight_sca = exp(weight_sca);
 
+                    weight_sum_sca = *(weight_sum_r+0 * WH + xp * W + yp);
+                    weight_sum_sca = weight_sum_sca + weight_sca;
+                    *(weight_sum_r+0 * WH + xp * W + yp) = weight_sum_sca;
+                    
+                    scalar output_r_sca, color_sca;
+                    for (int i=0; i<3; i++){
+                        output_r_sca = *(output_r[i][xp] + yp);
+                        color_sca = *(color[i][xq] + yq);
+
+                        output_r_sca = weight_sca * color_sca + output_r_sca;
+
+                        *(output_r[i][xp] + yp) = output_r_sca;
+                    }
                 }
             }
 
@@ -1082,7 +1113,7 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
                     }
                 }
 
-                for(; yp < G_CONV_W_END_Y; yp+=8) {
+                for(; yp < G_CONV_W_END_Y-7; yp+=8) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -1114,8 +1145,40 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
 
                         _mm256_storeu_ps(output_g[i][xp] + yp, output_g_vec);
                     }
+                }
 
+                for(; yp < G_CONV_W_END_Y; yp++) {
+
+                    int xq = xp + r_x;
+                    int yq = yp + r_y;
+
+                    // Compute final color weight
+                    scalar sum_sca = 0;
+                    scalar tmp_sca, color_weight_sca, weight_sca, weight_sum_sca;
+                    for (int k=-F_G; k<=F_G; k++){
+                        tmp_sca = *(temp2_g + N_MAPPING * WH +  (xp + k) * W + yp);
+                        sum_sca = (sum_sca + tmp_sca);
+                    }
+                    color_weight_sca = (sum_sca * NEIGH_G_INV);
+
+                    // Compute final weight
+                    weight_sca = *(features_weights_r + N_MAPPING * WH + xp * W + yp);
+                    weight_sca = fmin(weight_sca, color_weight_sca);
+                    weight_sca = exp(weight_sca);
+
+                    weight_sum_sca = *(weight_sum_g+0 * WH + xp * W + yp);
+                    weight_sum_sca = (weight_sum_sca + weight_sca);
+                    *(weight_sum_g+0 * WH + xp * W + yp) = weight_sum_sca;
                     
+                    scalar output_g_sca, color_sca;
+                    for (int i=0; i<3; i++){
+                        output_g_sca = *(output_g[i][xp] + yp);
+                        color_sca = *(color[i][xq] + yq);
+
+                        output_g_sca = (weight_sca * color_sca + output_g_sca);
+
+                        *(output_g[i][xp] + yp) = output_g_sca;
+                    }
                 }
             }
 
@@ -1180,7 +1243,7 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
 
                     }                    
                 }
-                for(; yp < B_END_Y; yp+=8) {
+                for(; yp < B_END_Y-7; yp+=8) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -1204,7 +1267,32 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
                         _mm256_storeu_ps(output_b[i][xp] + yp, output_b_vec);
                     }
 
-                }            
+                } 
+                for(; yp < B_END_Y; yp++) {
+
+                    int xq = xp + r_x;
+                    int yq = yp + r_y;
+
+
+                    // Compute final weight
+                    scalar weight_sca = *(features_weights_b + N_MAPPING * WH + xp * W + yp);
+                    weight_sca = exp(weight_sca);
+
+                    scalar weight_sum_sca = *(weight_sum_b+0 * WH + xp * W + yp);
+                    weight_sum_sca = (weight_sum_sca + weight_sca);
+                    *(weight_sum_b+0 * WH + xp * W + yp) = weight_sum_sca;
+                    
+                    scalar output_b_sca, color_sca;
+                    for (int i=0; i<3; i++){
+                        output_b_sca = *(output_b[i][xp] + yp);
+                        color_sca = *(color[i][xq] + yq);
+
+                        output_b_sca = (weight_sca * color_sca + output_b_sca);
+
+                        *(output_b[i][xp] + yp) = output_b_sca;
+                    }
+
+                }           
             }
             
         }
@@ -1239,7 +1327,7 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
             }
         }
 
-        for(; yp < R_CONV_W_END_Y; yp+=8) {     
+        for(; yp < R_CONV_W_END_Y-7; yp+=8) {     
             
             __m256 weight_sum_vec = _mm256_loadu_ps(weight_sum_r + xp * W + yp);
             __m256 output_vec;
@@ -1247,6 +1335,17 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
                 output_vec = _mm256_loadu_ps(output_r[i][xp] + yp);
                 output_vec = _mm256_div_ps(output_vec, weight_sum_vec);
                 _mm256_storeu_ps(output_r[i][xp] + yp, output_vec);
+            }
+
+        }
+        for(; yp < R_CONV_W_END_Y; yp++) {     
+            
+            scalar weight_sum_sca = *(weight_sum_r + xp * W + yp);
+            scalar output_sca;
+            for (int i=0; i<3; i++){
+                output_sca = *(output_r[i][xp] + yp);
+                output_sca = (output_sca / weight_sum_sca);
+                *(output_r[i][xp] + yp) = output_sca;
             }
 
         }
@@ -1282,7 +1381,7 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
             }
         }
 
-        for(; yp < G_CONV_W_END_Y; yp+=8) {     
+        for(; yp < G_CONV_W_END_Y-7; yp+=8) {     
             
             __m256 weight_sum_vec = _mm256_loadu_ps(weight_sum_g +0 * WH + xp * W + yp);
             __m256 output_vec;
@@ -1290,6 +1389,18 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
                 output_vec = _mm256_loadu_ps(output_g[i][xp] + yp);
                 output_vec = _mm256_div_ps(output_vec, weight_sum_vec);
                 _mm256_storeu_ps(output_g[i][xp] + yp, output_vec);
+            }
+
+        }
+
+        for(; yp < G_CONV_W_END_Y; yp++) {     
+            
+            scalar weight_sum_vec = *(weight_sum_g +0 * WH + xp * W + yp);
+            scalar output_vec;
+            for (int i=0; i<3; i++){
+                output_vec = *(output_g[i][xp] + yp);
+                output_vec = (output_vec / weight_sum_vec);
+                *(output_g[i][xp] + yp) = output_vec;
             }
 
         }
@@ -1324,19 +1435,24 @@ void candidate_filtering_all_VEC_BLK(buffer output_r, buffer output_g, buffer ou
             }
         }
 
-        for(; yp < B_END_Y; yp+=8) {     
-            
-            scalar w_0 = weight_sum_b[xp * W + yp];
-            scalar w_1 = weight_sum_b[xp * W + yp+1];
-            scalar w_2 = weight_sum_b[xp * W + yp+2];
-            scalar w_3 = weight_sum_b[xp * W + yp+3];
-
+        for(; yp < B_END_Y-7; yp+=8) {
             __m256 weight_sum_vec = _mm256_loadu_ps(weight_sum_b +0 * WH + xp * W + yp);
             __m256 output_vec;
             for (int i=0; i<3; i++){
                 output_vec = _mm256_loadu_ps(output_b[i][xp] + yp);
                 output_vec = _mm256_div_ps(output_vec, weight_sum_vec);
                 _mm256_storeu_ps(output_b[i][xp] + yp, output_vec);
+            }
+
+        }
+
+        for(; yp < B_END_Y; yp++) {     
+            scalar weight_sum_sca = *(weight_sum_b +0 * WH + xp * W + yp);
+            scalar output_sca;
+            for (int i=0; i<3; i++){
+                output_sca = *(output_b[i][xp] + yp);
+                output_sca = (output_sca / weight_sum_sca);
+                *(output_b[i][xp] + yp) = output_sca;
             }
 
         }
