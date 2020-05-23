@@ -49,7 +49,7 @@ void sure_all_BLK(buffer sure, buffer c, buffer c_var, buffer cand_r, buffer can
 void filtering_basic_BLK(buffer output, buffer input, buffer c, buffer c_var, Flt_parameters p, int W, int H);
 void filtering_basic_f3_BLK(buffer output, buffer input, buffer c, buffer c_var, Flt_parameters p, int W, int H);   // Unrolled for specific f=3 and k_f = Inf
 void filtering_basic_f1_BLK(buffer output, buffer input, buffer c, buffer c_var, Flt_parameters p, int W, int H);   // Unrolled for specific f=1 and k_f = Inf
-void feature_prefiltering_BLK(buffer output, buffer output_var, buffer features, buffer features_var, Flt_parameters p, int W, int H);
+void feature_prefiltering_BLK(buffer output, buffer output_var, buffer features, buffer features_var, Flt_parameters p, int X0, int Y0, int W, int H);
 void candidate_filtering_BLK(buffer output, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters p, int W, int H);
 void candidate_filtering_FIRST_BLK(buffer output, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters p, int W, int H);  
 void candidate_filtering_SECOND_BLK(buffer output, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters p, int W, int H);

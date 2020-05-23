@@ -1207,7 +1207,7 @@ void filtering_basic_f1_BLK(buffer output, buffer input, buffer c, buffer c_var,
 
 
 
-void feature_prefiltering_BLK(buffer output, buffer output_var, buffer features, buffer features_var, Flt_parameters p, int W, int H){
+void feature_prefiltering_BLK(buffer output, buffer output_var, buffer features, buffer features_var, Flt_parameters p, int X0, int Y0, int W, int H){
 
     const __m256 EPSILON_vec = _mm256_set1_ps(EPSILON);
 
@@ -1223,8 +1223,11 @@ void feature_prefiltering_BLK(buffer output, buffer output_var, buffer features,
     // Init temp channel
     scalar* temp;
     scalar* temp2;
-    temp = (scalar*) malloc(W*H*sizeof(scalar));
-    temp2 = (scalar*) malloc(W*H*sizeof(scalar));
+    const int tempW = W + 2*p.f + 1;
+    const int tempH = H + 2*p.f + 1;
+    temp = (scalar*) malloc(tempW*tempH*sizeof(scalar));
+    temp2 = (scalar*) malloc(tempW*tempH*sizeof(scalar));
+    // printf("size: %d\n",tempW*tempH);
 
     // Precompute size of neighbourhood
     scalar neigh_inv = 1. / (3*(2*p.f+1)*(2*p.f+1));
@@ -1233,23 +1236,23 @@ void feature_prefiltering_BLK(buffer output, buffer output_var, buffer features,
     const __m256 neigh_inv_min_vec = _mm256_set1_ps(neigh_inv_min);
 
     // The end of the vectorized part
-    int final_yp = H - 32 + p.r+p.f;
+    int final_yp = H + Y0 - 32;
 
     // Covering the neighbourhood
     for (int r_x = -p.r; r_x <= p.r; r_x++){
         for (int r_y = -p.r; r_y <= p.r; r_y++){
         
             // Compute Color Weight for all pixels with fixed r
-            memset(temp, 0, W*H*sizeof(scalar));
+            memset(temp, 0, tempW*tempH*sizeof(scalar));
             for (int i=0; i<3; i++){
-                for(int xp = p.r; xp < W - p.r; ++xp) {
-                    for(int yp = p.r; yp < H - p.r; yp+=8) {
+                for (int xp =  X0-p.f; xp < W + X0 + p.f; ++xp){
+                    for(int yp = Y0-p.f; yp < H + Y0 + p.f; yp+=8) {
 
                         int xq = xp + r_x;
                         int yq = yp + r_y;
 
                         __m256 sqdist_vec, normalization_vec, var_cancel_vec;
-                        __m256 temp_vec = _mm256_loadu_ps(temp+ xp * W + yp);
+                        __m256 temp_vec = _mm256_loadu_ps(temp+ (xp-X0 + p.f) * tempW + (yp - Y0 + p.f));
                         __m256 features_p_vec = _mm256_loadu_ps(features[i][xp]+yp);
                         __m256 features_q_vec = _mm256_loadu_ps(features[i][xq]+yq);
                         __m256 features_var_p_vec = _mm256_loadu_ps(features_var[i][xp]+yp);
@@ -1269,7 +1272,7 @@ void feature_prefiltering_BLK(buffer output, buffer output_var, buffer features,
                         sqdist_vec = _mm256_div_ps(sqdist_vec, normalization_vec);
 
                         temp_vec = _mm256_add_ps(temp_vec, sqdist_vec);
-                        _mm256_storeu_ps(temp+xp*W+yp, temp_vec);
+                        _mm256_storeu_ps(temp+(xp-X0+p.f)*tempW+(yp-Y0+p.f), temp_vec);
                         
                     }
                 }
@@ -1278,8 +1281,8 @@ void feature_prefiltering_BLK(buffer output, buffer output_var, buffer features,
 
             // Apply Box-Filtering for Patch Contribution => Use Box-Filter Seperability
             // (1) Convolve along height
-            for(int xp = p.r; xp < W - p.r; ++xp) {
-                for(int yp = p.r + p.f; yp < H - p.r - p.f; yp+=64) {
+            for (int xp =  X0-p.f; xp < X0+W+p.f; ++xp){
+                for(int yp = Y0; yp < H +Y0; yp+=64) {
                     
                     __m256 sum_0_vec = _mm256_setzero_ps();
                     __m256 sum_1_vec = _mm256_setzero_ps();
@@ -1292,14 +1295,14 @@ void feature_prefiltering_BLK(buffer output, buffer output_var, buffer features,
 
                     for (int k=-p.f; k<=p.f; k++){
 
-                        __m256 temp_vec_0 = _mm256_loadu_ps(temp+xp * W + yp+k);
-                        __m256 temp_vec_1 = _mm256_loadu_ps(temp+xp * W + (yp+1*8)+k);
-                        __m256 temp_vec_2 = _mm256_loadu_ps(temp+xp * W + (yp+2*8)+k);
-                        __m256 temp_vec_3 = _mm256_loadu_ps(temp+xp * W + (yp+3*8)+k);
-                        __m256 temp_vec_4 = _mm256_loadu_ps(temp+xp * W + (yp+4*8)+k);
-                        __m256 temp_vec_5 = _mm256_loadu_ps(temp+xp * W + (yp+5*8)+k);
-                        __m256 temp_vec_6 = _mm256_loadu_ps(temp+xp * W + (yp+6*8)+k);
-                        __m256 temp_vec_7 = _mm256_loadu_ps(temp+xp * W + (yp+7*8)+k);
+                        __m256 temp_vec_0 = _mm256_loadu_ps(temp+(xp-X0+p.f) * tempW + (yp-Y0)+k);
+                        __m256 temp_vec_1 = _mm256_loadu_ps(temp+(xp-X0+p.f) * tempW + ((yp-Y0)+1*8)+k);
+                        __m256 temp_vec_2 = _mm256_loadu_ps(temp+(xp-X0+p.f) * tempW + ((yp-Y0)+2*8)+k);
+                        __m256 temp_vec_3 = _mm256_loadu_ps(temp+(xp-X0+p.f) * tempW + ((yp-Y0)+3*8)+k);
+                        __m256 temp_vec_4 = _mm256_loadu_ps(temp+(xp-X0+p.f) * tempW + ((yp-Y0)+4*8)+k);
+                        __m256 temp_vec_5 = _mm256_loadu_ps(temp+(xp-X0+p.f) * tempW + ((yp-Y0)+5*8)+k);
+                        __m256 temp_vec_6 = _mm256_loadu_ps(temp+(xp-X0+p.f) * tempW + ((yp-Y0)+6*8)+k);
+                        __m256 temp_vec_7 = _mm256_loadu_ps(temp+(xp-X0+p.f) * tempW + ((yp-Y0)+7*8)+k);
 
                         sum_0_vec = _mm256_add_ps(sum_0_vec, temp_vec_0);
                         sum_1_vec = _mm256_add_ps(sum_1_vec, temp_vec_1);
@@ -1311,20 +1314,22 @@ void feature_prefiltering_BLK(buffer output, buffer output_var, buffer features,
                         sum_7_vec = _mm256_add_ps(sum_7_vec, temp_vec_7);
                     }
 
-                    _mm256_storeu_ps(temp2+ xp * W + (yp + 0 * 8), sum_0_vec);
-                    _mm256_storeu_ps(temp2+ xp * W + (yp + 1 * 8), sum_1_vec);
-                    _mm256_storeu_ps(temp2+ xp * W + (yp + 2 * 8), sum_2_vec);
-                    _mm256_storeu_ps(temp2+ xp * W + (yp + 3 * 8), sum_3_vec);
-                    _mm256_storeu_ps(temp2+ xp * W + (yp + 4 * 8), sum_4_vec);
-                    _mm256_storeu_ps(temp2+ xp * W + (yp + 5 * 8), sum_5_vec);
-                    _mm256_storeu_ps(temp2+ xp * W + (yp + 6 * 8), sum_6_vec);
-                    _mm256_storeu_ps(temp2+ xp * W + (yp + 7 * 8), sum_7_vec);
+                    _mm256_storeu_ps(temp2+ (xp-X0+p.f) * tempW + ((yp-Y0) + 0 * 8), sum_0_vec);
+                    _mm256_storeu_ps(temp2+ (xp-X0+p.f) * tempW + ((yp-Y0) + 1 * 8), sum_1_vec);
+                    _mm256_storeu_ps(temp2+ (xp-X0+p.f) * tempW + ((yp-Y0) + 2 * 8), sum_2_vec);
+                    _mm256_storeu_ps(temp2+ (xp-X0+p.f) * tempW + ((yp-Y0) + 3 * 8), sum_3_vec);
+                    _mm256_storeu_ps(temp2+ (xp-X0+p.f) * tempW + ((yp-Y0) + 4 * 8), sum_4_vec);
+                    _mm256_storeu_ps(temp2+ (xp-X0+p.f) * tempW + ((yp-Y0) + 5 * 8), sum_5_vec);
+                    _mm256_storeu_ps(temp2+ (xp-X0+p.f) * tempW + ((yp-Y0) + 6 * 8), sum_6_vec);
+                    _mm256_storeu_ps(temp2+ (xp-X0+p.f) * tempW + ((yp-Y0) + 7 * 8), sum_7_vec);
+                //     if (r_x == 0 && r_y == 0)
+                //         printf("Access: %d\n", (xp-X0+p.f) * tempW + ((yp-Y0) + 7 * 8));
                 }
             }
 
             // (2) Convolve along width including weighted contribution
-            for(int xp = p.r + p.f; xp < W - p.r - p.f; ++xp) {
-                for(int yp = p.r + p.f; yp < H - 32; yp+=32) {
+            for(int xp = X0; xp < W+X0; ++xp) {
+                for(int yp = Y0; yp < H+Y0; yp+=32) {
 
                     int xq = xp + r_x;
                     int yq = yp + r_y;
@@ -1335,10 +1340,10 @@ void feature_prefiltering_BLK(buffer output, buffer output_var, buffer features,
                     __m256 sum_3_vec = _mm256_setzero_ps();
 
                     for (int k=-p.f; k<=p.f; k++){
-                        __m256 temp2_vec_0 = _mm256_loadu_ps(temp2+(xp+k) * W + (yp+0*8));
-                        __m256 temp2_vec_1 = _mm256_loadu_ps(temp2+(xp+k) * W + (yp+1*8));
-                        __m256 temp2_vec_2 = _mm256_loadu_ps(temp2+(xp+k) * W + (yp+2*8));
-                        __m256 temp2_vec_3 = _mm256_loadu_ps(temp2+(xp+k) * W + (yp+3*8));
+                        __m256 temp2_vec_0 = _mm256_loadu_ps(temp2+((xp-X0)+k) * tempW + ((yp-Y0)+0*8));
+                        __m256 temp2_vec_1 = _mm256_loadu_ps(temp2+((xp-X0)+k) * tempW + ((yp-Y0)+1*8));
+                        __m256 temp2_vec_2 = _mm256_loadu_ps(temp2+((xp-X0)+k) * tempW + ((yp-Y0)+2*8));
+                        __m256 temp2_vec_3 = _mm256_loadu_ps(temp2+((xp-X0)+k) * tempW + ((yp-Y0)+3*8));
                         
                         sum_0_vec = _mm256_add_ps(sum_0_vec, temp2_vec_0);
                         sum_1_vec = _mm256_add_ps(sum_1_vec, temp2_vec_1);
@@ -1346,6 +1351,9 @@ void feature_prefiltering_BLK(buffer output, buffer output_var, buffer features,
                         sum_3_vec = _mm256_add_ps(sum_3_vec, temp2_vec_3);
 
                     }
+                    // if (r_x == 0 && r_y == 0)
+                    //     printf("Access: %d\n", (xp-X0+p.f) * tempW + ((yp-Y0) + 3 * 8));
+
 
                     // New optimization: using the opposite of neigh_inv to avoid the multiplication by -1, and take the min instead of max
                     __m256 weight_vec_0 = _mm256_mul_ps(sum_0_vec, neigh_inv_min_vec);
@@ -1363,20 +1371,20 @@ void feature_prefiltering_BLK(buffer output, buffer output_var, buffer features,
                     weight_vec_2 = exp256_ps(weight_vec_2);
                     weight_vec_3 = exp256_ps(weight_vec_3);
 
-                    __m256 weight_sum_vec_0 = _mm256_loadu_ps(weight_sum+ xp * W + ( yp + 0 * 8));
-                    __m256 weight_sum_vec_1 = _mm256_loadu_ps(weight_sum+ xp * W + ( yp + 1 * 8));
-                    __m256 weight_sum_vec_2 = _mm256_loadu_ps(weight_sum+ xp * W + ( yp + 2 * 8));
-                    __m256 weight_sum_vec_3 = _mm256_loadu_ps(weight_sum+ xp * W + ( yp + 3 * 8));
+                    __m256 weight_sum_vec_0 = _mm256_loadu_ps(weight_sum+ (xp-X0) * W + ( (yp-Y0) + 0 * 8));
+                    __m256 weight_sum_vec_1 = _mm256_loadu_ps(weight_sum+ (xp-X0) * W + ( (yp-Y0) + 1 * 8));
+                    __m256 weight_sum_vec_2 = _mm256_loadu_ps(weight_sum+ (xp-X0) * W + ( (yp-Y0) + 2 * 8));
+                    __m256 weight_sum_vec_3 = _mm256_loadu_ps(weight_sum+ (xp-X0) * W + ( (yp-Y0) + 3 * 8));
 
                     weight_sum_vec_0 = _mm256_add_ps(weight_sum_vec_0, weight_vec_0);
                     weight_sum_vec_1 = _mm256_add_ps(weight_sum_vec_1, weight_vec_1);
                     weight_sum_vec_2 = _mm256_add_ps(weight_sum_vec_2, weight_vec_2);
                     weight_sum_vec_3 = _mm256_add_ps(weight_sum_vec_3, weight_vec_3);
 
-                    _mm256_storeu_ps(weight_sum+ xp * W + ( yp + 0 * 8), weight_sum_vec_0);
-                    _mm256_storeu_ps(weight_sum+ xp * W + ( yp + 1 * 8), weight_sum_vec_1);
-                    _mm256_storeu_ps(weight_sum+ xp * W + ( yp + 2 * 8), weight_sum_vec_2);
-                    _mm256_storeu_ps(weight_sum+ xp * W + ( yp + 3 * 8), weight_sum_vec_3);
+                    _mm256_storeu_ps(weight_sum+ (xp-X0) * W + ( (yp-Y0) + 0 * 8), weight_sum_vec_0);
+                    _mm256_storeu_ps(weight_sum+ (xp-X0) * W + ( (yp-Y0) + 1 * 8), weight_sum_vec_1);
+                    _mm256_storeu_ps(weight_sum+ (xp-X0) * W + ( (yp-Y0) + 2 * 8), weight_sum_vec_2);
+                    _mm256_storeu_ps(weight_sum+ (xp-X0) * W + ( (yp-Y0) + 3 * 8), weight_sum_vec_3);
                     
                     
                     for (int i=0; i<3; i++){
@@ -1415,46 +1423,6 @@ void feature_prefiltering_BLK(buffer output, buffer output_var, buffer features,
                         _mm256_storeu_ps(output_var[i][xp] + (yp + 1 * 8), output_var_vec_1);
                         _mm256_storeu_ps(output_var[i][xp] + (yp + 2 * 8), output_var_vec_2);
                         _mm256_storeu_ps(output_var[i][xp] + (yp + 3 * 8), output_var_vec_3);
-
-                    }
-                }
-
-                for(int yp = final_yp; yp < H - p.r - p.f; yp+=4) {
-
-                    int xq = xp + r_x;
-                    int yq = yp + r_y;
-
-                    scalar sum_0 = 0.f;
-                    scalar sum_1 = 0.f;
-                    scalar sum_2 = 0.f;
-                    scalar sum_3 = 0.f;
-
-                    for (int k=-p.f; k<=p.f; k++){
-                        sum_0 += temp2[(xp+k) * W + yp];
-                        sum_1 += temp2[(xp+k) * W + yp+1];
-                        sum_2 += temp2[(xp+k) * W + yp+2];
-                        sum_3 += temp2[(xp+k) * W + yp+3];
-                    }
-
-                    scalar weight_0 = exp(fmin(0.f, (sum_0 * neigh_inv_min)));
-                    scalar weight_1 = exp(fmin(0.f, (sum_1 * neigh_inv_min)));
-                    scalar weight_2 = exp(fmin(0.f, (sum_2 * neigh_inv_min)));
-                    scalar weight_3 = exp(fmin(0.f, (sum_3 * neigh_inv_min)));
-
-                    weight_sum[xp * W + yp] += weight_0;
-                    weight_sum[xp * W + yp+1] += weight_1;
-                    weight_sum[xp * W + yp+2] += weight_2;
-                    weight_sum[xp * W + yp+3] += weight_3;
-                    
-                    for (int i=0; i<3; i++){
-                        output[i][xp][yp] += weight_0 * features[i][xq][yq];
-                        output[i][xp][yp+1] += weight_1 * features[i][xq][yq+1];
-                        output[i][xp][yp+2] += weight_2 * features[i][xq][yq+2];
-                        output[i][xp][yp+3] += weight_3 * features[i][xq][yq+3];
-                        output_var[i][xp][yp] += weight_0 * features_var[i][xq][yq];
-                        output_var[i][xp][yp+1] += weight_1 * features_var[i][xq][yq+1];
-                        output_var[i][xp][yp+2] += weight_2 * features_var[i][xq][yq+2];
-                        output_var[i][xp][yp+3] += weight_3 * features_var[i][xq][yq+3];
                     }
                 }
             }
@@ -1462,13 +1430,13 @@ void feature_prefiltering_BLK(buffer output, buffer output_var, buffer features,
     }
 
     // Final Weight Normalization
-    for(int xp = p.r + p.f; xp < W - p.r - p.f; ++xp) {
-        for(int yp = p.r + p.f ; yp < H - 32; yp+=32) {     
+    for(int xp = X0; xp < W + X0; ++xp) {
+        for(int yp = Y0 ; yp < H + Y0; yp+=32) {     
 
-            __m256 weight_sum_vec_0 = _mm256_loadu_ps(weight_sum + xp * W + (yp + 0 * 8));
-            __m256 weight_sum_vec_1 = _mm256_loadu_ps(weight_sum + xp * W + (yp + 1 * 8));
-            __m256 weight_sum_vec_2 = _mm256_loadu_ps(weight_sum + xp * W + (yp + 2 * 8));
-            __m256 weight_sum_vec_3 = _mm256_loadu_ps(weight_sum + xp * W + (yp + 3 * 8));
+            __m256 weight_sum_vec_0 = _mm256_loadu_ps(weight_sum + (xp-X0) * W + ((yp-Y0) + 0 * 8));
+            __m256 weight_sum_vec_1 = _mm256_loadu_ps(weight_sum + (xp-X0) * W + ((yp-Y0) + 1 * 8));
+            __m256 weight_sum_vec_2 = _mm256_loadu_ps(weight_sum + (xp-X0) * W + ((yp-Y0) + 2 * 8));
+            __m256 weight_sum_vec_3 = _mm256_loadu_ps(weight_sum + (xp-X0) * W + ((yp-Y0) + 3 * 8));
 
 
             for (int i=0; i<3; i++){
@@ -1500,47 +1468,6 @@ void feature_prefiltering_BLK(buffer output, buffer output_var, buffer features,
                 _mm256_storeu_ps(output_var[i][xp] + (yp + 3 * 8), output_var_vec_3);
             }
         }
-
-        for(int yp = final_yp; yp < H - p.r - p.f; yp+=4) {     
-            
-            scalar w_0 = weight_sum[xp * W + yp];
-            scalar w_1 = weight_sum[xp * W + yp+1];
-            scalar w_2 = weight_sum[xp * W + yp+2];
-            scalar w_3 = weight_sum[xp * W + yp+3];
-
-            for (int i=0; i<3; i++){
-                output[i][xp][yp] /= w_0;
-                output_var[i][xp][yp] /= w_0;
-                output[i][xp][yp+1] /= w_1;
-                output_var[i][xp][yp+1] /= w_1;
-                output[i][xp][yp+2] /= w_2;
-                output_var[i][xp][yp+2] /= w_2;
-                output[i][xp][yp+3] /= w_3;
-                output_var[i][xp][yp+3] /= w_3;
-            }
-        }
-    }
-
-    // Handline Border Cases
-    // ---------------------
-    for (int i = 0; i < 3; i++){
-        for (int xp = 0; xp < W; xp++){
-            for(int yp = 0; yp < p.r+p.f; yp++){
-                output[i][xp][yp] = features[i][xp][yp];
-                output[i][xp][H - yp - 1] = features[i][xp][H - yp - 1];
-                output_var[i][xp][yp] = features_var[i][xp][yp];
-                output_var[i][xp][H - yp - 1] = features_var[i][xp][H - yp - 1];
-            }
-        }
-        for(int xp = 0; xp < p.r+p.f; xp++){
-             for (int yp = p.r+p.f ; yp < H - p.r - p.f; yp++){
-                output[i][xp][yp] = features[i][xp][yp];
-                output[i][W - xp - 1][yp] = features[i][W - xp - 1][yp];
-                output_var[i][xp][yp] = features_var[i][xp][yp];
-                output_var[i][W - xp - 1][yp] = features_var[i][W - xp - 1][yp];
-            }
-        }
-
     }
 
     // Free memory
