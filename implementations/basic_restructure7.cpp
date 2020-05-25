@@ -13,7 +13,8 @@
 using namespace std;
 
 /*! -------------------------------------------------------
-	Vanilla Denoising Algorithm (without any optimization)
+	Restructured Implementaton with Precomputation (VECTORIZED) with Blocking 
+    --> Storing Overlapping Computations in additional memory structure
     
     Parameters:
         - out_img (buffer)      Destination buffer for final denoised image
