@@ -9,7 +9,6 @@
 #include <immintrin.h>
 // #include "../avx_mathfun.h"
 
-
 using namespace std;
 
 /*! -------------------------------------------------------
@@ -83,184 +82,132 @@ using namespace std;
     // (3) Computation of Candidate Filters
     // ----------------------------------------------
 
-    if (BLOCK_SIZE < W){
 
-        // (A) GRADIENT COMPUTATION
-        // ---------------------------------
-        __m256 features_vec, diffL_sqr_vec, diffR_sqr_vec, diffU_sqr_vec, diffD_sqr_vec, tmp_1, tmp_2;
-        scalar *gradients;
-        gradients = (scalar*) malloc(3 * W * H * sizeof(scalar));
-        int F_MIN = 1;
+    // (A) GRADIENT COMPUTATION
+    // ---------------------------------
+    __m256 features_vec, diffL_sqr_vec, diffR_sqr_vec, diffU_sqr_vec, diffD_sqr_vec, tmp_1, tmp_2;
+    scalar *gradients;
+    gradients = (scalar*) malloc(3 * W * H * sizeof(scalar));
+    int F_MIN = 1;
 
-        for(int i=0; i<NB_FEATURES;++i) {
-            for(int x =  R + F_MIN; x < W - R - F_MIN; ++x) {
-                for(int y =  R+F_MIN; y < H - R - F_MIN; y+=8) {
-                    
-                    // (1) Loading
-                    features_vec  = _mm256_loadu_ps(f[i][x] + y);
-                    diffL_sqr_vec = _mm256_loadu_ps(f[i][x-1] + y);
-                    diffR_sqr_vec = _mm256_loadu_ps(f[i][x+1]+ y);
-                    diffU_sqr_vec = _mm256_loadu_ps(f[i][x] + y-1);
-                    diffD_sqr_vec = _mm256_loadu_ps(f[i][x] + y+1);
-
-                    // (2) Computing Squared Differences
-                    diffL_sqr_vec = _mm256_sub_ps(features_vec, diffL_sqr_vec);
-                    diffR_sqr_vec = _mm256_sub_ps(features_vec, diffR_sqr_vec);
-                    diffU_sqr_vec = _mm256_sub_ps(features_vec, diffU_sqr_vec);
-                    diffD_sqr_vec = _mm256_sub_ps(features_vec, diffD_sqr_vec);
-
-                    diffL_sqr_vec = _mm256_mul_ps(diffL_sqr_vec, diffL_sqr_vec);
-                    diffR_sqr_vec = _mm256_mul_ps(diffR_sqr_vec, diffR_sqr_vec);
-                    diffU_sqr_vec = _mm256_mul_ps(diffU_sqr_vec, diffU_sqr_vec);
-                    diffD_sqr_vec = _mm256_mul_ps(diffD_sqr_vec, diffD_sqr_vec);
-
-                    // (3) Final Gradient Computation
-                    tmp_1 = _mm256_min_ps(diffL_sqr_vec, diffR_sqr_vec);
-                    tmp_2 = _mm256_min_ps(diffU_sqr_vec, diffD_sqr_vec);
-
-                    tmp_1 = _mm256_add_ps(tmp_1, tmp_2);
-
-                    _mm256_storeu_ps(gradients+i * WH + x * W + y, tmp_1);
-
-                } 
-            }
-        }
-
-        // (B) GLOBAL MEMORY ALLOCATION
-        // ---------------------------------
-        int NEIGH_SIZE = (2*R + 1) * (2*R + 1);
-
-        // (a) Feature Weights
-        scalar* features_weights_r;
-        scalar* features_weights_b;
-        features_weights_r = (scalar*) malloc(NEIGH_SIZE * W * H * sizeof(scalar));
-        features_weights_b = (scalar*) malloc(NEIGH_SIZE * W * H * sizeof(scalar));
-        //memset(features_weights_r, 0, NEIGH_SIZE*W*H*sizeof(scalar));
-        //memset(features_weights_b, 0, NEIGH_SIZE*W*H*sizeof(scalar));
-
-        // (b) Temp Arrays for Convolution
-        scalar* temp;
-        scalar* temp2_r;
-        scalar* temp2_g;
-        temp = (scalar*) malloc(NEIGH_SIZE * W * H * sizeof(scalar));
-        temp2_r = (scalar*) malloc(NEIGH_SIZE * W * H * sizeof(scalar));
-        temp2_g = (scalar*) malloc(NEIGH_SIZE * W * H * sizeof(scalar));
-        //memset(temp, 0, NEIGH_SIZE*W*H*sizeof(scalar));
-
-
-        // (..) MAIN FILTERING
-        // ---------------------------------
-        int X0, Y0, BLOCK_TYPE;
-
-        // (A) FIRST COLUMN OF BLOCKS
-        X0 = 0;
-        // --> Issue LT Block
-        Y0 = 0;
-        BLOCK_TYPE = LT;
-        // std::cout << "Computing Block LT: (" << X0 << "," << Y0 << ")" << std::endl;
-        candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
-
-        // --> Issue L Blocks
-        for (Y0 = BLOCK_SIZE; Y0 < H - BLOCK_SIZE; Y0+= BLOCK_SIZE){
-            BLOCK_TYPE = LL;
-            // std::cout << "Computing Block L: (" << X0 << "," << Y0 << ")" << std::endl;
-            candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
-        }
-
-        // --> Issue LB Block
-        Y0 = H - BLOCK_SIZE;
-        BLOCK_TYPE = LB;
-        // std::cout << "Computing Block LB: (" << X0 << "," << Y0 << ")" << std::endl;
-        candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
-
-        // (B) INNER COLUMN's OF BLOCKS
-        for (int X0 = BLOCK_SIZE; X0 < W - BLOCK_SIZE; X0 += BLOCK_SIZE){
-            
-            Y0 = 0;
-            BLOCK_TYPE = TT;
-            // std::cout << "Computing Block TT: (" << X0 << "," << Y0 << ")" << std::endl;
-            candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
-
-            for (Y0 = BLOCK_SIZE; Y0 < H - BLOCK_SIZE; Y0+= BLOCK_SIZE){
-                BLOCK_TYPE = II;
-                // std::cout << "Computing Block II: (" << X0 << "," << Y0 << ")" << std::endl;
-                candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
-            }
-
-            Y0 = H - BLOCK_SIZE;
-            BLOCK_TYPE = BB;
-            // std::cout << "Computing Block BB: (" << X0 << "," << Y0 << ")" << std::endl;
-            candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
-
-        }
-
-        // (C) LAST COLUMN OF BLOCKS
-        X0 = W - BLOCK_SIZE;
-
-        // --> Issue RT Block
-        Y0 = 0;
-        BLOCK_TYPE = RT;
-        // std::cout << "Computing Block RT: (" << X0 << "," << Y0 << ")" << std::endl;
-        candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
-
-        // --> Issue R Blocks
-        for (Y0 = BLOCK_SIZE; Y0 < H - BLOCK_SIZE; Y0+= BLOCK_SIZE){
-            // std::cout << "Computing Block R: (" << X0 << "," << Y0 << ")" << std::endl;
-            BLOCK_TYPE = RR;
-            candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
-        }
-
-        // --> Issue RB Block
-        Y0 = H - BLOCK_SIZE;
-        BLOCK_TYPE = RB;
-        // std::cout << "Computing Block RB: (" << X0 << "," << Y0 << ")" << std::endl;
-        candidate_filtering_all_VEC_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, X0, Y0, BLOCK_TYPE, BLOCK_SIZE, W, H);
-
-
-        // (..) BORDER CASE HANDLING
-        // ----------------------------------
-        // Sorry I just included whole fmax for border
-        for (int i = 0; i < 3; i++){
-            for (int xp = 0; xp < W; xp++){
-                for(int yp = 0; yp < R + 3; yp++){
-                    r[i][xp][yp] = c[i][xp][yp];
-                    r[i][xp][H - yp - 1] = c[i][xp][H - yp - 1];
-                    b[i][xp][yp] = c[i][xp][yp];
-                    b[i][xp][H - yp - 1] = c[i][xp][H - yp - 1];
-                    g[i][xp][yp] = c[i][xp][yp];
-                    g[i][xp][H - yp - 1] = c[i][xp][H - yp - 1];
-                }
-            }
-            for(int xp = 0; xp < R + 3; xp++){
-                for (int yp = R + 3 ; yp < H - R - 3; yp++){
+    for(int i=0; i<NB_FEATURES;++i) {
+        for(int x =  R + F_MIN; x < W - R - F_MIN; ++x) {
+            for(int y =  R+F_MIN; y < H - R - F_MIN; y+=8) {
                 
-                    r[i][xp][yp] = c[i][xp][yp];
-                    r[i][W - xp - 1][yp] = c[i][W - xp - 1][yp];
-                    b[i][xp][yp] = c[i][xp][yp];
-                    b[i][W - xp - 1][yp] = c[i][W - xp - 1][yp];
-                    g[i][xp][yp] = c[i][xp][yp];
-                    g[i][W - xp - 1][yp] = c[i][W - xp - 1][yp];
-                }
+                // (1) Loading
+                features_vec  = _mm256_loadu_ps(f[i][x] + y);
+                diffL_sqr_vec = _mm256_loadu_ps(f[i][x-1] + y);
+                diffR_sqr_vec = _mm256_loadu_ps(f[i][x+1]+ y);
+                diffU_sqr_vec = _mm256_loadu_ps(f[i][x] + y-1);
+                diffD_sqr_vec = _mm256_loadu_ps(f[i][x] + y+1);
+
+                // (2) Computing Squared Differences
+                diffL_sqr_vec = _mm256_sub_ps(features_vec, diffL_sqr_vec);
+                diffR_sqr_vec = _mm256_sub_ps(features_vec, diffR_sqr_vec);
+                diffU_sqr_vec = _mm256_sub_ps(features_vec, diffU_sqr_vec);
+                diffD_sqr_vec = _mm256_sub_ps(features_vec, diffD_sqr_vec);
+
+                diffL_sqr_vec = _mm256_mul_ps(diffL_sqr_vec, diffL_sqr_vec);
+                diffR_sqr_vec = _mm256_mul_ps(diffR_sqr_vec, diffR_sqr_vec);
+                diffU_sqr_vec = _mm256_mul_ps(diffU_sqr_vec, diffU_sqr_vec);
+                diffD_sqr_vec = _mm256_mul_ps(diffD_sqr_vec, diffD_sqr_vec);
+
+                // (3) Final Gradient Computation
+                tmp_1 = _mm256_min_ps(diffL_sqr_vec, diffR_sqr_vec);
+                tmp_2 = _mm256_min_ps(diffU_sqr_vec, diffD_sqr_vec);
+
+                tmp_1 = _mm256_add_ps(tmp_1, tmp_2);
+
+                _mm256_storeu_ps(gradients+i * WH + x * W + y, tmp_1);
+
+            } 
+        }
+    }
+
+    // (B) GLOBAL MEMORY ALLOCATION
+    // ---------------------------------
+    int NEIGH_SIZE = (2*R + 1) * (2*R + 1);
+
+    // (a) Feature Weights
+    scalar* features_weights_r;
+    scalar* features_weights_b;
+    features_weights_r = (scalar*) malloc(NEIGH_SIZE * W * H * sizeof(scalar));
+    features_weights_b = (scalar*) malloc(NEIGH_SIZE * W * H * sizeof(scalar));
+    memset(features_weights_r, 0, NEIGH_SIZE*W*H*sizeof(scalar));
+    memset(features_weights_b, 0, NEIGH_SIZE*W*H*sizeof(scalar));
+
+    // (b) Temp Arrays for Convolution
+    scalar* temp;
+    scalar* temp2_r;
+    scalar* temp2_g;
+    temp = (scalar*) malloc(NEIGH_SIZE * W * H * sizeof(scalar));
+    temp2_r = (scalar*) malloc(NEIGH_SIZE * W * H * sizeof(scalar));
+    temp2_g = (scalar*) malloc(NEIGH_SIZE * W * H * sizeof(scalar));
+    memset(temp, 0, NEIGH_SIZE*W*H*sizeof(scalar));
+
+
+    // (..) MAIN FILTERING
+    // ---------------------------------
+    candidate_filtering_all_VEC_BLK_PREP(r, g, b, c, c_var, f_filtered, f_var_filtered, gradients, features_weights_r, features_weights_b, temp, temp2_r, temp2_g, p_all, W, H);
+
+    // (a) Candidate Filters
+    /*
+    for(int X0 = R+3; X0 < W - R - 4 - BLOCK_SIZE; X0 += BLOCK_SIZE) {
+        for(int Y0 = R+3; Y0 < H - R - 4 - BLOCK_SIZE; Y0 += BLOCK_SIZE) {
+            candidate_filtering_all_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, X0, Y0, BLOCK_SIZE, BLOCK_SIZE);
+        }
+        candidate_filtering_all_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, X0, H - R - 4 - BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+    }
+    for(int Y0 = R+3; Y0 < H - R - 4 - BLOCK_SIZE; Y0 += BLOCK_SIZE)
+        candidate_filtering_all_BLK(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, W - R - 4 - BLOCK_SIZE, Y0, BLOCK_SIZE, BLOCK_SIZE);
+    */
+
+    // (..) BORDER CASE HANDLING
+    // ----------------------------------
+    // Candidate FIRST and THIRD (due to F_R = F_B)
+    int F_R = 1; 
+    for (int i = 0; i < 3; i++){
+        for (int xp = 0; xp < W; xp++){
+            for(int yp = 0; yp < R + F_R; yp++){
+                r[i][xp][yp] = c[i][xp][yp];
+                r[i][xp][H - yp - 1] = c[i][xp][H - yp - 1];
+                b[i][xp][yp] = c[i][xp][yp];
+                b[i][xp][H - yp - 1] = c[i][xp][H - yp - 1];
             }
         }
-
-        // (..) FREE MEMORY
-        // ----------------------------------
-        free(features_weights_r);
-        free(features_weights_b);
-        free(temp);
-        free(temp2_r);
-        free(temp2_g);
-        free(gradients);
-    
-    } else { // DO NORMAL FILTERING IF BLOCK SIZE IS >= IMG_SIZE
-        candidate_filtering_all_VEC(r, g, b, c, c_var, f_filtered, f_var_filtered, p_all, W, H);
+        for(int xp = 0; xp < R + F_R; xp++){
+            for (int yp = R + F_R ; yp < H - R - F_R; yp++){
+            
+                r[i][xp][yp] = c[i][xp][yp];
+                r[i][W - xp - 1][yp] = c[i][W - xp - 1][yp];
+                b[i][xp][yp] = c[i][xp][yp];
+                b[i][W - xp - 1][yp] = c[i][W - xp - 1][yp];
+             }
+        }
     }
-    
-    write_buffer_exr("temp/candidate_FIRST.exr", &r, W, H);
-    write_buffer_exr("temp/candidate_SECOND.exr", &g, W, H);
-    write_buffer_exr("temp/candidate_THIRD.exr", &b, W, H);
 
+    // Candidate SECOND since F_G != F_R
+    int F_G = 3; 
+    for (int i = 0; i < 3; i++){
+        for (int xp = 0; xp < W; xp++){
+            for(int yp = 0; yp < R + F_G; yp++){
+                g[i][xp][yp] = c[i][xp][yp];
+                g[i][xp][H - yp - 1] = c[i][xp][H - yp - 1];
+            }
+        }
+        for(int xp = 0; xp < R + F_G; xp++){
+            for (int yp = R + F_G ; yp < H - R - F_G; yp++){
+                g[i][xp][yp] = c[i][xp][yp];
+                g[i][W - xp - 1][yp] = c[i][W - xp - 1][yp];
+            }
+        }
+    }
+
+    // (..) FREE MEMORY
+    // ----------------------------------
+    free(features_weights_r);
+    free(features_weights_b);
+    free(temp);
 
     // ----------------------------------------------
     // (4) Filtering SURE error estimates
@@ -341,8 +288,6 @@ using namespace std;
             }
         }
     }
-    
-    write_buffer_exr("temp/pass1.exr", &out_img, W, H);
   
 
     // ----------------------------------------------
