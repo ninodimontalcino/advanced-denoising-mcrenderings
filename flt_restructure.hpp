@@ -4,6 +4,19 @@
 #include "flt.hpp"
 
 
+// TYPE DEFINITION FOR BLOCKING
+#define LT 0
+#define LB 1
+#define RT 2
+#define RB 3
+#define LL  4
+#define RR  5
+#define TT  6
+#define BB  7
+#define II  8
+
+
+
 // ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 // OPTIMIZED VERSION (without scalar replacement)
 // ...
@@ -41,6 +54,51 @@ void candidate_filtering_FIRST_VEC(buffer output, buffer color, buffer color_var
 void candidate_filtering_SECOND_VEC(buffer output, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters p, int W, int H);
 void candidate_filtering_THIRD_VEC(buffer output, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters p, int W, int H);
 void candidate_filtering_all_VEC(buffer output_r, buffer output_g, buffer output_b, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters* p, int W, int H);
+
+// ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// CLEAN BLOCKING ATTEMPT
+
+void candidate_filtering_all_VEC_BLK(buffer output_r, 
+                                         buffer output_g, 
+                                         buffer output_b, 
+                                         buffer color, 
+                                         buffer color_var, 
+                                         buffer features, 
+                                         buffer features_var, 
+                                         scalar* gradients, 
+                                         scalar* features_weights_r,
+                                         scalar* features_weights_b,
+                                         scalar* temp,
+                                         scalar* temp2_r, 
+                                         scalar* temp2_g,
+                                         Flt_parameters* p,
+                                         int B_TYPE,
+                                         int X0,
+                                         int Y0, 
+                                         int B_SIZE,
+                                         int W, 
+                                         int H);
+
+
+void candidate_filtering_all_VEC_BLK_PREP(buffer output_r, 
+                                         buffer output_g, 
+                                         buffer output_b, 
+                                         buffer color, 
+                                         buffer color_var, 
+                                         buffer features, 
+                                         buffer features_var, 
+                                         scalar* gradients, 
+                                         scalar* features_weights_r,
+                                         scalar* features_weights_b,
+                                         scalar* temp,
+                                         scalar* temp2_r, 
+                                         scalar* temp2_g,
+                                         Flt_parameters* p, 
+                                         int W, 
+                                         int H);
+
+
+void candidate_filtering_all_VEC_BLK_noprec(buffer output_r, buffer output_g, buffer output_b, buffer color, buffer color_var, buffer features, buffer features_var, Flt_parameters* p, int X0, int Y0, int B_TYPE, int B_SIZE);
 
 
 // ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
