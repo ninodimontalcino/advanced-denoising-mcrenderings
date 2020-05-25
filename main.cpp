@@ -28,7 +28,7 @@
 #define MAX_FUNCS 32
 // TODO: define number of flops
 #define FLOPS (4.)
-#define EPS (1e-3)
+#define EPS (1e-4)
 
 using namespace std;
 
@@ -130,14 +130,12 @@ int main(int argc, char **argv)
   load_exr(stringToCharArray(filename_normal_variance), &f_normal_var, img_width, img_height);
 
   // (3) Load GT 
-  // => load only if RMSE computation is done (only available for 800x600, 256x256, 512x512, 1024x1024) 
-  if (RMSE){
-    load_exr(stringToCharArray(filename_GT), &gt, img_width, img_height);
-  }
+  load_exr(stringToCharArray(filename_GT), &gt, img_width, img_height);
 
   // (3) Feature Stacking
   // => Access Pattern: features[i][x][y] where i in (1:= albedo, 2:= depth, 3:= normal)
-  buffer features, features_var;
+  buffer features;
+  buffer features_var;
   allocate_buffer(&features, img_width, img_height);
   allocate_buffer(&features_var, img_width, img_height);
 
@@ -152,6 +150,7 @@ int main(int argc, char **argv)
   features_var[2] = f_normal_var[0];
 
   // DEBUGGING: Output loaded buffer
+  /*
   if(debug_EXR_loading){
     for (int i = 0; i < img_height; i ++) {
       for (int j = 0; j < img_width; j ++) {
@@ -160,6 +159,7 @@ int main(int argc, char **argv)
       cout << "\n";
     }
   }
+  */
   
   // ------------------------------------
   // (..) ...
@@ -176,42 +176,61 @@ int main(int argc, char **argv)
   }
   cout << numFuncs << " functions registered." << endl;
    
+
+  cout << "---------------------------------------------" << endl;
+  cout << " (1) Compute Reference Solution" << endl;
+  cout << "---------------------------------------------" << endl;
+
   // Call correct function and check output
   buffer out_img;
-  allocate_buffer(&out_img, img_width, img_height);
+  allocate_buffer_zero(&out_img, img_width, img_height);
   denoise_func f = userFuncs[0];
   f(out_img, c, c_var, features, features_var, r, img_width, img_height);
 
-  // Compute RMSE if flag RMSE is enabled (GT is only available for 800x600, 256x256, 512x512, 1024x1024) 
+  // Compute RMSE 
+  double _rmse = rmse(out_img, gt, img_width, img_height);
   if (RMSE){
-    // Compute RMSE between denoised image and GT (of Vanilla Implementation)
-    double _rmse = rmse(out_img, gt, img_width, img_height);
-    printf("RMSE: %f \n", _rmse);
+    printf("RMSE: %f \n\n", _rmse);
   }
 
 
   // Run functions and check if they produce the same output as the Vanilla Implementation 
+
+  cout << "---------------------------------------------" << endl;
+  cout << " (2) Validating optimized functions" << endl;
+  cout << "---------------------------------------------" << endl;
+
   buffer out_img_f;
-  allocate_buffer(&out_img_f, img_width, img_height);
+  allocate_buffer_zero(&out_img_f, img_width, img_height);
 
   // Only run for optimized functions => don't repeat vanilla computation
   for (i = 1; i < numFuncs; i++) {
+    cout << endl << "Validating: " << funcNames[i] << endl;
     denoise_func f = userFuncs[i];
     f(out_img_f, c, c_var, features, features_var, r, img_width, img_height);
 
+    double _rmse2 = rmse(out_img_f, gt, img_width, img_height);
     if (RMSE){
-      double _rmse = rmse(out_img_f, gt, img_width, img_height);
-      printf("RMSE: %f \n", _rmse);
+      printf("RMSE: %f \n", _rmse2);
     }
 
     //Compare out_img_f with out_img_f
-    if (!compare_buffers(out_img, out_img_f, img_width, img_height)){
+    //if (!compare_buffers(out_img, out_img_f, img_width, img_height)){
+    double error[4];
+    maxAbsError(error, out_img, out_img_f, img_width, img_height);
+    if (abs(_rmse -_rmse2) > EPS){
       printf("Function %d produces a different result! \n", i);
+      printf("Abs. Max. Buffer Difference: %f at position: [%f][%f][%f] \n", error[0], error[1], error[2], error[3]);
     }
 
   }
 
+  free_buffer(&out_img_f, img_width);
+
   // Performance Testing
+  cout << "---------------------------------------------" << endl;
+  cout << " (3) Performance Tests (including warmup)" << endl;
+  cout << "---------------------------------------------" << endl;
   for (i = 0; i < numFuncs; i++)
   {
     perf = perf_test(userFuncs[i], funcNames[i], funcFlops[i], c, c_var, features, features_var, r, img_width, img_height);
@@ -249,8 +268,8 @@ double perf_test(denoise_func f, string desc, int flops, buffer c, buffer svar_c
   myInt64 start, end;
 
   // Init Buffer for output
-  buffer out_img;
-  allocate_buffer(&out_img, img_width, img_height);
+  buffer out_img_perf;
+  allocate_buffer_zero(&out_img_perf, img_width, img_height);
 
   // Warm-up phase: we determine a number of executions that allows
   // the code to be executed for at least CYCLES_REQUIRED cycles.
@@ -259,7 +278,7 @@ double perf_test(denoise_func f, string desc, int flops, buffer c, buffer svar_c
     num_runs = num_runs * multiplier;
     start = start_tsc();
     for (size_t i = 0; i < num_runs; i++) {
-      f(out_img, c, svar_c, features, svar_f, r, img_width, img_height);      
+      f(out_img_perf, c, svar_c, features, svar_f, r, img_width, img_height);      
     }
     end = stop_tsc(start);
 
@@ -276,7 +295,7 @@ double perf_test(denoise_func f, string desc, int flops, buffer c, buffer svar_c
 
     start = start_tsc();
     for (size_t i = 0; i < num_runs; ++i) {
-      f(out_img, c, svar_c, features, svar_f, r, img_width, img_height);
+      f(out_img_perf, c, svar_c, features, svar_f, r, img_width, img_height);
     }
     end = stop_tsc(start);
 
@@ -285,6 +304,8 @@ double perf_test(denoise_func f, string desc, int flops, buffer c, buffer svar_c
     cyclesList.push_back(cycles);
     perfList.push_back(FLOPS / cycles);
   }
+
+  free_buffer(&out_img_perf, img_width);
 
   cyclesList.sort();
   cycles = cyclesList.front();  

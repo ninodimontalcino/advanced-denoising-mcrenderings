@@ -5,6 +5,8 @@
 
 #define DEBUG 0
 
+const int BLOCK_SIZE = 64;
+
 // Signature of the denoise algorithm
 typedef void(*denoise_func)(buffer , buffer , buffer, buffer , buffer, int, int, int);
 void add_function(denoise_func f, std::string name, int flop);

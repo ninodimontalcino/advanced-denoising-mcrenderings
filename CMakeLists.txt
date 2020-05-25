@@ -6,7 +6,10 @@ project(team053)
 
 
 set(CMAKE_BUILD_TYPE Release)
+#set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_FLAGS "-Wno-deprecated -O3 -ffast-math -march=native -fno-tree-vectorize" )
+#set(CMAKE_CXX_FLAGS "-Wno-deprecated -O3 -ffast-math -fno-tree-vectorize" )
 
 ###########################################################################
 # OpenEXR (taken from https://github.com/mmp/pbrt-v3/blob/master/CMakeLists.txt)
@@ -45,23 +48,38 @@ add_executable(main
 
               # Header Files
               tsc_x86.h 
+              denoise.h
               exr.h
               memory_mgmt.hpp
-              denoise.h
-              flt.hpp 
               validation.hpp
+              flt.hpp 
+              flt_restructure.hpp
 
               # General Source Files
               main.cpp 
               exr.cpp
               memory_mgmt.cpp 
-              flt.cpp 
               validation.cpp
+              flt.cpp 
+              flt_restructure.cpp 
+              flt_restructure_ILP.cpp
+              flt_restructure_VEC.cpp 
+              flt_restructure_BLK.cpp 
+              flt_restructure_BLK_noprec.cpp 
 
               # Implementations (BASIC and OPTIMIZED)
               implementations/register.hpp
               implementations/basic.cpp
-              
+              implementations/basic_restructure.cpp
+              implementations/basic_restructure1.cpp
+              implementations/basic_restructure2.cpp
+              implementations/basic_restructure3.cpp
+              implementations/basic_restructure4.cpp
+              implementations/basic_restructure5.cpp
+              implementations/basic_restructure6.cpp
+              implementations/basic_restructure7.cpp
+              implementations/basic_restructure8.cpp
+
               )
 
 # --------------------------

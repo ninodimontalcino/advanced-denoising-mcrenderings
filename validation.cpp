@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <math.h>
 
+#include "denoise.h"
 #include "validation.hpp"
 
 
@@ -27,7 +28,7 @@ scalar rmse(buffer denoised, buffer gt, int img_width, int img_height){
     rmse = rmse / n;
 
     // Compute square-root => RMSE
-    rmse = sqrt(rmse);
+    rmse = sqrtf(rmse);
 
     return rmse;
 
@@ -52,4 +53,49 @@ bool compare_buffers(buffer buf1, buffer buf2, int img_width, int img_height) {
     }
     return true;
 }
+
+double squared_diff(buffer buf1, buffer buf2, int img_width, int img_height){
+    double sqr_diff = 0.f;
+    
+    for(int i=0;i<3;++i) {
+        for(int x = 0; x < img_width; ++x) {
+            for(int y = 0; y < img_height; ++y) {
+                sqr_diff += (buf1[i][x][y] - buf2[i][x][y]) * (buf1[i][x][y] - buf2[i][x][y]);
+            }
+        }
+    }
+
+    return sqr_diff;
+}
+
+
+void maxAbsError(double res[4], buffer buf1, buffer buf2, int img_width, int img_height){
+    double maxError = 0.f;
+    int locC = 0;
+    int locX = 0;
+    int locY = 0;
+    
+    for(int i=0;i<3;++i) {
+        for(int x = 0; x < img_width; ++x) {
+            for(int y = 0; y < img_height; ++y) {
+                double local_error = abs(buf1[i][x][y] - buf2[i][x][y]);
+                if (local_error > 1e-4 && DEBUG){
+                    printf("Difference of %f at position: [%d][%d][%d] \n", local_error, i, x, y);
+                }
+                if (local_error > maxError){
+                    maxError = local_error;
+                    locC = i;
+                    locX = x;
+                    locY = y;
+                }
+            }
+        }
+    }
+
+    res[0] = maxError;
+    res[1] = locC;
+    res[2] = locX;
+    res[3] = locY;
+}
+
 

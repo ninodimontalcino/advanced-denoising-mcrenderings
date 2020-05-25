@@ -2,6 +2,7 @@
 #include "memory_mgmt.hpp"
 
 
+
 void load_exr(const char fileName[], buffer* buf, int &img_width, int &img_height) 
 {
         
